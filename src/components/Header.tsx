@@ -29,9 +29,16 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Redirectinator Logo */}
               <div className="w-72 h-18">
                 <img 
-                  src="/logo.svg" 
+                  src="/logo-cobalt.png" 
                   alt="Redirectinator" 
                   className="w-full h-full object-contain"
+                  onError={(e) => {
+                    // Fallback to SVG if PNG fails
+                    const target = e.target as HTMLImageElement;
+                    if (target.src.includes('.png')) {
+                      target.src = '/logo-cobalt.svg';
+                    }
+                  }}
                 />
               </div>
               
