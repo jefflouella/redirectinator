@@ -18,13 +18,13 @@ export const InternetArchiveDonation: React.FC<InternetArchiveDonationProps> = (
       </div>
       
       <div className="donation-content text-center">
-        <div 
-          className="wayback-logo mx-auto mb-4 cursor-pointer transition-opacity duration-200 hover:opacity-80 text-center"
+        <img 
+          src="/wayback-logo.png" 
+          alt="WayBack Machine by Internet Archive"
+          className="wayback-logo mx-auto mb-4 cursor-pointer transition-opacity duration-200 hover:opacity-80"
           onClick={handleDonate}
-        >
-          <div className="text-2xl font-bold text-blue-600 mb-2">WayBack Machine</div>
-          <div className="text-sm text-gray-600">by Internet Archive</div>
-        </div>
+          style={{ maxWidth: '200px', height: 'auto' }}
+        />
         
         <p className="donation-message text-sm text-gray-600 mb-4 leading-relaxed">
           The Wayback Machine API is free to use. Help keep 
