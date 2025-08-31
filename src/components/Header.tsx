@@ -25,14 +25,14 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between py-4">
           {/* Logo and Brand */}
           <div className="flex items-center space-x-4">
-            <div className="flex flex-col space-y-1">
-              {/* Redirectinator Logo only (no text name) */}
+            <div className="flex flex-col">
+              {/* Redirectinator Logo with text */}
               <img 
                 src="/logo.svg" 
                 alt="Redirectinator"
-                className="h-[70px] w-auto object-contain"
+                className="h-[56px] w-auto object-contain"
               />
-              <p className="text-sm text-gray-600 font-medium">Find your way through every redirect</p>
+              <p className="text-gray-600 font-medium mt-0 text-right" style={{ fontSize: '0.83rem' }}>Find your way through every redirect</p>
             </div>
           </div>
 
