@@ -110,25 +110,7 @@ function App() {
     }
   }, [currentProject, settings.autoSave, settings.autoSaveInterval]);
 
-  // Handle URL-based routing
-  useEffect(() => {
-    const path = window.location.pathname;
-    if (path === '/about') {
-      setActiveTab('about');
-    } else if (path === '/privacy') {
-      setActiveTab('privacy');
-    } else if (path === '/terms') {
-      setActiveTab('terms');
-    } else {
-      setActiveTab('dashboard');
-    }
-  }, []);
 
-  // Update URL when tab changes
-  useEffect(() => {
-    const path = activeTab === 'dashboard' ? '/' : `/${activeTab}`;
-    window.history.replaceState(null, '', path);
-  }, [activeTab]);
 
   const exportResults = async (format: 'csv' | 'json' | 'excel' | 'report') => {
     if (!currentProject) return;
