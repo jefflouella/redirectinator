@@ -1,270 +1,230 @@
-# Redirectinator v2.0
+# 🔄 Redirectinator
 
-A professional-grade, client-side web application for bulk URL redirect analysis and monitoring. Built for SEO professionals who need to validate redirect chains without server infrastructure costs.
+**Professional URL redirect checker and monitoring tool for SEO professionals and technical marketers.**
 
-![Redirectinator Dashboard](https://img.shields.io/badge/version-2.0.0-blue)
-![React](https://img.shields.io/badge/React-18.2.0-61dafb)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.3.0-3178c6)
-![License](https://img.shields.io/badge/license-MIT-green)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 
-## 🚀 Features
+## ✨ Features
 
-### Core Functionality
-- **Client-side Processing**: All URL checking runs in your browser
-- **Bulk Analysis**: Handle thousands of URLs efficiently
-- **Real-time Progress**: Live processing indicators and progress tracking
-- **Comprehensive Analysis**: Full redirect chain tracking, loop detection, performance metrics
-- **Target Validation**: Confirm URLs redirect to expected destinations
+### 🚀 Core Functionality
+- **Bulk URL Analysis**: Process hundreds of URLs simultaneously with intelligent batching
+- **Real-time Processing**: Live progress tracking with stop/resume capabilities
+- **Historical Discovery**: Find historical URLs via Internet Archive integration
+- **Export Capabilities**: Export results in CSV, JSON, Excel, and detailed reports
+- **Project Management**: Organize and manage multiple projects with collaboration features
 
-### Input Methods
-- **Single URL Entry**: Manual input with BaseURL and TargetURL fields
-- **Bulk CSV Upload**: Upload files with Starting URL and Target Redirect columns
-- **Copy/Paste Interface**: Textarea for multiple URLs in CSV format
-- **Authentication Support**: Username/password for staging sites
+### 🛠 Technical Features
+- **Client-side Processing**: Fast, secure processing directly in your browser
+- **Server-side Fallback**: Advanced redirect checking with Puppeteer backend
+- **Local Data Storage**: All data stored locally using IndexedDB
+- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile
+- **Modern UI/UX**: Clean, professional interface with dark/light themes
 
-### Analysis & Results
-- **Full Redirect Chain Tracking**: Complete path from start to finish
-- **Loop Detection**: Identifies infinite redirect loops
-- **Mixed Type Detection**: Flags chains with multiple redirect types
-- **Performance Metrics**: Response times and performance impact
-- **Domain Analysis**: Tracks domain changes and HTTPS upgrades
-- **Comprehensive Status Codes**: Full HTTP status analysis
+### 📊 Analysis Capabilities
+- **Redirect Chain Tracking**: Follow complete redirect chains up to 10 levels deep
+- **Status Code Analysis**: Detailed HTTP status code reporting
+- **Response Time Metrics**: Performance analysis for each URL
+- **Final Destination Mapping**: Track where each URL ultimately leads
+- **Error Detection**: Identify broken links and server issues
 
-### Data Management
-- **Local Storage**: IndexedDB for large datasets (GBs capacity)
-- **Project Organization**: Multiple saved projects per user
-- **Auto-save**: Continuous progress saving
-- **Export Options**: CSV, JSON, Excel, and Markdown reports
-- **Import/Export**: Share projects between users
-
-## 🛠️ Technology Stack
-
-- **Frontend**: React 18 + TypeScript
-- **Styling**: Tailwind CSS
-- **Build Tool**: Vite
-- **Storage**: IndexedDB (via idb library)
-- **Icons**: Lucide React
-- **CSV Processing**: PapaParse
-- **File Downloads**: FileSaver.js
-
-## 📦 Installation
+## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js 18+ 
 - npm or yarn
 
-### Setup
-```bash
-# Clone the repository
-git clone https://github.com/techseo/redirectinator.git
-cd redirectinator
+### Installation
 
-# Install dependencies
-npm install
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/jefflouella/redirectinator.git
+   cd redirectinator
+   ```
 
-# Start development server
-npm run dev
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+4. **Start the backend server** (optional, for advanced features)
+   ```bash
+   npm run server
+   ```
+
+5. **Open your browser**
+   Navigate to `http://localhost:3000`
+
+## 📖 Usage
+
+### Basic URL Analysis
+1. Navigate to the **Dashboard** tab
+2. Enter URLs in the input field (one per line or bulk import)
+3. Configure processing options (timeout, max redirects, etc.)
+4. Click **Start Processing** to begin analysis
+5. Monitor real-time progress and results
+6. Export results in your preferred format
+
+### Historical URL Discovery
+1. Go to the **Wayback Discovery** tab
+2. Enter a domain or specific URL
+3. Set date range for historical snapshots
+4. Discover and analyze historical URLs
+5. Export findings for further analysis
+
+### Project Management
+1. Create new projects in the **Projects** tab
+2. Organize URLs by project or client
+3. Share results with team members
+4. Track progress across multiple campaigns
+
+## 🏗 Architecture
+
+### Frontend
+- **React 18** with TypeScript for type safety
+- **Vite** for fast development and building
+- **Tailwind CSS** for responsive styling
+- **Lucide React** for consistent icons
+- **IndexedDB** for local data persistence
+
+### Backend (Optional)
+- **Express.js** server for advanced processing
+- **Puppeteer** for complex redirect analysis
+- **CORS** enabled for cross-origin requests
+- **Proxy support** for development
+
+### Data Flow
 ```
-
-The application will be available at `http://localhost:3000`
-
-### Build for Production
-```bash
-# Build the application
-npm run build
-
-# Preview the build
-npm run preview
+URL Input → Processing Queue → Analysis Engine → Results Storage → Export
+     ↓              ↓              ↓              ↓              ↓
+  Validation    Batching      Client/Server    IndexedDB    CSV/JSON/Excel
 ```
-
-## 🎯 Usage
-
-### Getting Started
-1. **Create a Project**: Start by creating a new project in the Projects tab
-2. **Add URLs**: Use any of the input methods to add URLs for analysis
-3. **Process URLs**: Click "Process URLs" to start the analysis
-4. **Review Results**: View detailed results in the comprehensive table
-5. **Export Data**: Download results in various formats
-
-### Input Formats
-
-#### Single URL
-- **Starting URL**: `http://example.com`
-- **Target Redirect**: `https://example.com`
-
-#### CSV Format
-```csv
-Starting URL,Target Redirect
-http://example.com,https://example.com
-http://test.com,https://test.com
-```
-
-#### Bulk Text
-```
-http://example.com,https://example.com
-http://test.com,https://test.com
-```
-
-### Results Analysis
-
-The application provides comprehensive analysis including:
-
-- **Result Status**: Direct, Redirect, Error, or Loop
-- **HTTP Status Chain**: Complete redirect chain (e.g., "301 → 200")
-- **Performance Metrics**: Response times and redirect counts
-- **Security Analysis**: Loop detection, mixed redirect types
-- **Domain Analysis**: Cross-domain redirects and HTTPS upgrades
 
 ## 🔧 Configuration
 
-### Settings
-- **Batch Size**: Number of URLs to process simultaneously (1-100)
-- **Delay Between Requests**: Milliseconds between requests (0-5000ms)
-- **Timeout**: Request timeout in milliseconds (1000-30000ms)
-- **Auto-save**: Automatic project saving
-- **Theme**: Light, Dark, or Auto (system preference)
+### Processing Options
+- **Timeout**: Set request timeout (default: 30 seconds)
+- **Max Redirects**: Limit redirect chain depth (default: 10)
+- **Batch Size**: Control concurrent requests (default: 5)
+- **User Agent**: Customize request headers
+- **Follow Redirects**: Enable/disable redirect following
 
-### Advanced Options
-- **Authentication**: Username/password for protected staging sites
-- **Max Redirects**: Maximum redirect chain length (default: 10)
-- **Include Headers**: Additional HTTP header analysis
-
-## 📊 Export Options
-
-### Available Formats
+### Export Options
 - **CSV**: Standard spreadsheet format
-- **JSON**: Machine-readable format with metadata
-- **Excel**: Formatted for spreadsheet applications
-- **Markdown Report**: Professional analysis report
+- **JSON**: Structured data format
+- **Excel**: Advanced spreadsheet with formatting
+- **Detailed Report**: Comprehensive analysis document
 
-### Export Features
-- **Filtered Exports**: Export only specific result types
-- **Custom Headers**: Include/exclude column headers
-- **Metadata**: Export includes analysis metadata and timestamps
+## 📁 Project Structure
 
-## 🔒 Privacy & Security
-
-### Client-side Processing
-- All URL checking happens in your browser
-- No data is sent to external servers
-- Complete privacy and data control
-
-### Local Storage
-- All data stored locally using IndexedDB
-- No database costs or server infrastructure
-- Data never leaves your device
-
-### CORS Handling
-- Graceful fallback for blocked requests
-- Clear error reporting for CORS issues
-- Support for authentication headers
-
-## 🚀 Performance
-
-### Scalability
-- **Memory Management**: Intelligent chunking prevents browser crashes
-- **Batch Processing**: Configurable batch sizes for optimal performance
-- **Progress Tracking**: Real-time updates during processing
-- **Pause/Resume**: Interrupt and continue long-running processes
-
-### Optimization
-- **Virtualized Rendering**: Only display visible table rows
-- **Lazy Loading**: Progressive result loading
-- **Resource Monitoring**: Track browser memory usage
-- **Auto-optimization**: Adjust batch sizes based on performance
-
-## 🛠️ Development
-
-### Project Structure
 ```
-src/
-├── components/          # React components
-│   ├── Header.tsx      # Application header
-│   ├── Dashboard.tsx   # Main dashboard
-│   ├── UrlInput.tsx    # URL input interface
-│   ├── ResultsTable.tsx # Results display
-│   ├── ProjectManager.tsx # Project management
-│   ├── Settings.tsx    # Application settings
-│   └── NotificationProvider.tsx # Toast notifications
-├── services/           # Business logic
-│   ├── redirectChecker.ts # URL analysis engine
-│   ├── storage.ts      # IndexedDB storage
-│   └── exportService.ts # Export functionality
-├── types/              # TypeScript definitions
-│   └── index.ts        # Application types
-└── main.tsx           # Application entry point
+redirectinator/
+├── src/
+│   ├── components/          # React components
+│   │   ├── Dashboard.tsx    # Main dashboard
+│   │   ├── Header.tsx       # Navigation header
+│   │   ├── Footer.tsx       # Application footer
+│   │   ├── AboutPage.tsx    # About page
+│   │   ├── PrivacyPage.tsx  # Privacy policy
+│   │   └── TermsPage.tsx    # Terms & conditions
+│   ├── hooks/               # Custom React hooks
+│   ├── services/            # Business logic services
+│   ├── types/               # TypeScript type definitions
+│   └── main.tsx            # Application entry point
+├── server.js               # Express backend server
+├── package.json            # Dependencies and scripts
+└── README.md              # This file
 ```
+
+## 🛠 Development
 
 ### Available Scripts
 ```bash
 npm run dev          # Start development server
 npm run build        # Build for production
 npm run preview      # Preview production build
+npm run server       # Start backend server
 npm run lint         # Run ESLint
 npm run format       # Format code with Prettier
-npm run type-check   # TypeScript type checking
 ```
 
-### Contributing
+### Code Quality
+- **ESLint** for code linting
+- **Prettier** for code formatting
+- **TypeScript** for type safety
+- **React Strict Mode** enabled
+
+## 🌟 Key Features in Detail
+
+### Intelligent Batching
+- Automatically batches URLs for optimal performance
+- Configurable batch sizes based on server capacity
+- Progress tracking for each batch
+- Error handling with retry logic
+
+### Historical Analysis
+- Integration with Internet Archive Wayback Machine
+- Date range selection for historical snapshots
+- Bulk historical URL discovery
+- Export historical findings
+
+### Export Capabilities
+- **CSV Export**: Standard spreadsheet format with all data
+- **JSON Export**: Structured data for API integration
+- **Excel Export**: Advanced formatting with multiple sheets
+- **Detailed Reports**: Comprehensive analysis documents
+
+### Project Management
+- Create and manage multiple projects
+- Organize URLs by client or campaign
+- Share results with team members
+- Track progress across projects
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### Development Setup
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📈 Roadmap
-
-### Phase 1 (Current) - Core Functionality ✅
-- [x] Basic URL input (single + bulk CSV)
-- [x] Core redirect checking with full analysis
-- [x] Results table with all specified metrics
-- [x] Local storage and project persistence
-- [x] CSV export functionality
-- [x] Real-time progress tracking
-
-### Phase 2 - Scale & Performance
-- [ ] Web Workers for background processing
-- [ ] Advanced memory management
-- [ ] Pause/resume functionality
-- [ ] Search and filtering improvements
-- [ ] Bulk operations
-
-### Phase 3 - Professional Features
-- [ ] Project templates and organization
-- [ ] Advanced export formats
-- [ ] Data validation and cleanup
-- [ ] Performance optimization tools
-- [ ] Enterprise-ready features
-
-### Phase 4 - Enhancement & Growth
-- [ ] API integrations
-- [ ] Advanced analytics and reporting
-- [ ] Collaboration features
-- [ ] White-label options
-- [ ] Premium feature set
-
-## 🤝 Support
-
-### Documentation
-- [User Guide](docs/user-guide.md)
-- [API Reference](docs/api-reference.md)
-- [Troubleshooting](docs/troubleshooting.md)
-
-### Community
-- [GitHub Issues](https://github.com/techseo/redirectinator/issues)
-- [Discussions](https://github.com/techseo/redirectinator/discussions)
-- [Wiki](https://github.com/techseo/redirectinator/wiki)
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 👨‍💻 Creator
+
+**Jeff Louella** - [Website](https://www.jefflouella.com) | [GitHub](https://github.com/jefflouella)
+
+Redirectinator was created to solve real-world SEO challenges and provide professionals with the tools they need for comprehensive URL analysis and monitoring.
+
 ## 🙏 Acknowledgments
 
-- Built with ❤️ by the Tech SEO team
-- Inspired by the need for cost-effective, privacy-focused SEO tools
-- Powered by modern web technologies and best practices
+- **Internet Archive** for historical URL data
+- **React Team** for the amazing framework
+- **Vite Team** for the fast build tool
+- **Tailwind CSS** for the utility-first CSS framework
+- **Lucide** for the beautiful icons
+
+## 📞 Support
+
+- **Documentation**: Check the [Wiki](https://github.com/jefflouella/redirectinator/wiki)
+- **Issues**: Report bugs on [GitHub Issues](https://github.com/jefflouella/redirectinator/issues)
+- **Discussions**: Join the conversation on [GitHub Discussions](https://github.com/jefflouella/redirectinator/discussions)
+- **Email**: Contact at [support@redirectinator.com](mailto:support@redirectinator.com)
 
 ---
 
-**Redirectinator v2.0** - Professional URL redirect analysis, now client-side and cost-free.
+**Made with ❤️ by Jeff Louella**
+
+*Professional URL analysis tools for the modern web.*
