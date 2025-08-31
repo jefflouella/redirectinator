@@ -27,18 +27,14 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center space-x-4">
             <div className="flex flex-col items-center space-y-1">
               {/* Redirectinator Logo */}
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">R</span>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-xl">R</span>
                 </div>
                 <div className="flex flex-col">
                   <h1 className="text-2xl font-bold text-gray-900">Redirectinator</h1>
                   <p className="text-sm text-gray-600 font-medium">Find your way through every redirect</p>
                 </div>
-              </div>
-              
-              <div>
-                <p className="text-sm text-gray-600 font-medium">Find your way through every redirect</p>
               </div>
             </div>
           </div>
