@@ -22,6 +22,32 @@ import { useAppSettings } from './hooks/useAppSettings';
 function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'settings' | 'about' | 'privacy' | 'terms'>('dashboard');
   const [isUrlOverlayOpen, setIsUrlOverlayOpen] = useState(false);
+
+  // URL-based routing
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path === '/about') {
+      setActiveTab('about');
+    } else if (path === '/privacy') {
+      setActiveTab('privacy');
+    } else if (path === '/terms') {
+      setActiveTab('terms');
+    } else if (path === '/projects') {
+      setActiveTab('projects');
+    } else if (path === '/settings') {
+      setActiveTab('settings');
+    } else {
+      setActiveTab('dashboard');
+    }
+  }, []);
+
+  // Update URL when activeTab changes
+  useEffect(() => {
+    const path = activeTab === 'dashboard' ? '/' : `/${activeTab}`;
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, '', path);
+    }
+  }, [activeTab]);
   const { settings, updateSettings } = useAppSettings();
   const { currentProject, projects, loadProject, createNewProject, deleteProject } = useProjects(settings);
   const { results, processingStatus, processUrls, stopProcessing, clearResults: clearUrlProcessingResults } = useUrlProcessing(
