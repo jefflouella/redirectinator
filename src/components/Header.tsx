@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
               <img 
                 src="/logo.svg" 
                 alt="Redirectinator"
-                className="h-10 w-auto object-contain"
+                className="h-[70px] w-auto object-contain"
               />
               <p className="text-sm text-gray-600 font-medium">Find your way through every redirect</p>
             </div>
