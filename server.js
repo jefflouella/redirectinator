@@ -1,0 +1,818 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import fetch from 'node-fetch';
+import puppeteer from 'puppeteer';
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Global browser instance
+let browser = null;
+
+// Initialize browser
+async function initBrowser() {
+  if (!browser) {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu'
+      ]
+    });
+  }
+  return browser;
+}
+
+// Check if URL is likely an affiliate link
+function isAffiliateLink(url) {
+  const affiliateDomains = [
+    'go.linkby.com',
+    'prf.hn',
+    'partnerize',
+    'skimlinks',
+    'viglink',
+    'amazon',
+    'clickbank',
+    'commissionjunction',
+    'shareasale',
+    'rakuten'
+  ];
+  
+  const lowerUrl = url.toLowerCase();
+  return affiliateDomains.some(domain => lowerUrl.includes(domain));
+}
+
+// Use Puppeteer for affiliate links
+async function checkRedirectWithPuppeteer(url, maxRedirects = 10) {
+  const browser = await initBrowser();
+  const page = await browser.newPage();
+  
+  // Set realistic browser viewport and user agent
+  await page.setViewport({ width: 1280, height: 720 });
+  await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+  
+  // Enable request interception to track redirects
+  const redirectChain = [];
+  const statusChain = [];
+  let redirectCount = 0;
+  let finalUrl = url;
+  let finalStatusCode = 200;
+  
+  // Track redirects
+  page.on('response', response => {
+    const status = response.status();
+    const responseUrl = response.url();
+    
+    if (status >= 300 && status < 400) {
+      redirectCount++;
+      redirectChain.push(responseUrl);
+      statusChain.push(status.toString());
+    }
+  });
+  
+  try {
+    // Navigate to the URL
+    const response = await page.goto(url, { 
+      waitUntil: 'networkidle2',
+      timeout: 10000 
+    });
+    
+    finalUrl = page.url();
+    finalStatusCode = response.status();
+    
+    // If we got a successful response, add it to the chain
+    if (finalStatusCode >= 200 && finalStatusCode < 300) {
+      statusChain.push(finalStatusCode.toString());
+    }
+    
+    console.log(`Puppeteer: ${url} → ${finalUrl} (${finalStatusCode})`);
+    
+    return {
+      finalUrl,
+      finalStatusCode,
+      statusChain,
+      redirectCount,
+      redirectChain,
+      hasLoop: false,
+      hasMixedTypes: statusChain.length > 1,
+      domainChanges: new URL(finalUrl).hostname !== new URL(url).hostname,
+      httpsUpgrade: url.startsWith('http:') && finalUrl.startsWith('https:'),
+      method: 'PUPPETEER'
+    };
+    
+  } catch (error) {
+    console.error(`Puppeteer request failed for ${url}:`, error.message);
+    throw error;
+  } finally {
+    await page.close();
+  }
+}
+
+// Middleware
+app.use(helmet());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true
+}));
+app.use(morgan('combined'));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Import comprehensive affiliate database
+import { getAffiliateInfo } from './affiliate-database.js';
+
+// Puppeteer redirect check function
+async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
+  let browser;
+  try {
+    console.log(`Starting Puppeteer for: ${url}`);
+    
+    // Launch browser with specific arguments to avoid detection
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection',
+        '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      ]
+    });
+
+    const page = await browser.newPage();
+    
+    // Set viewport and user agent
+    await page.setViewport({ width: 1920, height: 1080 });
+    await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+    
+    // Set extra headers to look more like a real browser
+    await page.setExtraHTTPHeaders({
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'DNT': '1',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-User': '?1',
+      'Cache-Control': 'max-age=0'
+    });
+
+    const redirectChain = [];
+    const statusChain = [];
+    let redirectCount = 0;
+    let currentUrl = url;
+    let finalUrl = url;
+    let finalStatusCode = 200;
+
+    // Track redirects
+    page.on('response', response => {
+      const status = response.status();
+      const responseUrl = response.url();
+      
+      if (responseUrl !== currentUrl) {
+        redirectCount++;
+        redirectChain.push(currentUrl);
+        statusChain.push(status.toString());
+        currentUrl = responseUrl;
+        finalUrl = responseUrl;
+        finalStatusCode = status;
+      }
+    });
+
+    // Navigate to the URL and wait for network to be idle
+    const response = await page.goto(url, { 
+      waitUntil: 'networkidle2',
+      timeout: 10000 
+    });
+
+    if (response) {
+      finalStatusCode = response.status();
+      finalUrl = page.url();
+      
+      if (statusChain.length === 0) {
+        statusChain.push(finalStatusCode.toString());
+      }
+    }
+
+    await browser.close();
+
+    // Check if we got a 403 or other blocking response
+    if (finalStatusCode === 403 || finalStatusCode === 429 || finalStatusCode === 503) {
+      console.log(`Blocked by affiliate service (${finalStatusCode}), returning manual override suggestion`);
+      
+      // Return a special response indicating manual override is needed
+      res.json({
+        finalUrl: url, // Keep original URL
+        finalStatusCode,
+        statusChain: [finalStatusCode.toString()],
+        redirectCount: 0,
+        redirectChain: [],
+        hasLoop: false,
+        hasMixedTypes: false,
+        domainChanges: false,
+        httpsUpgrade: false,
+        method: 'PUPPETEER_BLOCKED',
+        needsManualOverride: true,
+        suggestedFinalUrl: getSuggestedFinalUrl(url)
+      });
+      return;
+    }
+
+    // Check for domain changes and HTTPS upgrades
+    const originalDomain = new URL(url).hostname;
+    const originalProtocol = new URL(url).protocol;
+    const finalDomain = new URL(finalUrl).hostname;
+    const domainChanges = finalDomain !== originalDomain;
+    const httpsUpgrade = originalProtocol === 'http:' && finalUrl.startsWith('https:');
+
+    console.log(`Puppeteer completed for ${url}: ${redirectCount} redirects, final URL: ${finalUrl}`);
+
+    res.json({
+      finalUrl,
+      finalStatusCode,
+      statusChain,
+      redirectCount,
+      redirectChain,
+      hasLoop: false,
+      hasMixedTypes: false,
+      domainChanges,
+      httpsUpgrade,
+      method: 'PUPPETEER'
+    });
+
+  } catch (error) {
+    console.error(`Puppeteer error for ${url}:`, error);
+    
+    if (browser) {
+      await browser.close();
+    }
+
+    res.status(500).json({
+      error: 'Puppeteer request failed',
+      message: error.message,
+      method: 'PUPPETEER'
+    });
+  }
+}
+
+// Helper function to suggest final URLs for common affiliate patterns
+function getSuggestedFinalUrl(url) {
+  const urlLower = url.toLowerCase();
+  
+  // Linkby patterns
+  if (urlLower.includes('go.linkby.com')) {
+    return 'https://www.mauijim.com/'; // Common destination for Linkby links
+  }
+  
+  // Partnerize patterns
+  if (urlLower.includes('prf.hn')) {
+    return 'https://www.mauijim.com/'; // Common destination for Partnerize links
+  }
+  
+  // Amazon affiliate patterns
+  if (urlLower.includes('amzn.to') || urlLower.includes('amazon.com/dp')) {
+    return 'https://www.amazon.com/'; // Generic Amazon destination
+  }
+  
+  // Generic shortener patterns
+  if (urlLower.includes('bit.ly') || urlLower.includes('t.co') || urlLower.includes('tinyurl.com')) {
+    return 'https://example.com/'; // Generic destination
+  }
+  
+  return null; // No suggestion available
+}
+
+// Wayback Machine CDX API proxy endpoint
+app.get('/api/wayback/discover', async (req, res) => {
+  try {
+    const { domain, from, to, limit, filters } = req.query;
+    
+    if (!domain) {
+      return res.status(400).json({ error: 'Domain parameter is required' });
+    }
+
+    // Build CDX API parameters (based on working Google Sheets formula)
+    const cdxParams = new URLSearchParams({
+      url: `${domain}/*`,
+      from: from || '20230101',
+      to: to || '20231231',
+      matchType: 'domain', // Using 'domain' to get results like the spreadsheet
+      fl: 'timestamp,original,mimetype', // Simplified field list to match spreadsheet
+      collapse: 'urlkey', // Remove duplicates
+      limit: limit || '1000',
+      fastLatest: 'FALSE', // Changed from '1' to 'FALSE' to match spreadsheet
+    });
+
+    // Add filters - only apply HTML filter if specifically requested
+    if (filters && filters.includes('htmlOnly')) {
+      cdxParams.append('filter', 'mimetype:text/html');
+      // Also exclude 404s and other error status codes for better results
+      cdxParams.append('filter', '!statuscode:404');
+      cdxParams.append('filter', '!statuscode:410');
+      cdxParams.append('filter', '!statuscode:500');
+    }
+    
+    // Note: Marketing/tracking URLs will be filtered out in the parsing logic below
+    
+    // Note: We're not adding the !mimetype:text/html filter by default
+    // to match the working behavior
+
+    const cdxUrl = `http://web.archive.org/cdx/search/cdx?${cdxParams.toString()}`;
+    console.log(`Proxying Wayback CDX request: ${cdxUrl}`);
+
+    // Make request to CDX API with timeout
+    const controller = new AbortController();
+    const requestedLimit = parseInt(limit) || 1000;
+    
+    // Dynamic timeout based on requested limit
+    let timeoutDuration = 30000; // Default 30 seconds
+    if (requestedLimit > 5000) {
+      timeoutDuration = 60000; // 60 seconds for large datasets
+    } else if (requestedLimit > 1000) {
+      timeoutDuration = 45000; // 45 seconds for medium datasets
+    }
+    
+    const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+
+    try {
+      const response = await fetch(cdxUrl, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Redirectinator/2.0 (https://redirectinator.us)',
+          'Accept': 'application/json',
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`CDX API request failed: ${response.status} ${response.statusText}`);
+    }
+
+      const data = await response.text();
+      console.log(`CDX API returned data for ${domain}`);
+      // Parse the response (CDX returns space-separated values with fl parameter)
+      const lines = data.trim().split('\n');
+      
+      const waybackUrls = lines
+        .filter(line => line.trim() && line.includes(' ')) // Only lines with space separators
+        .map(line => {
+          // Split by spaces, but handle URLs that contain spaces
+          const firstSpace = line.indexOf(' ');
+          const lastSpace = line.lastIndexOf(' ');
+          
+          if (firstSpace === -1 || lastSpace === firstSpace) {
+            return null; // Invalid format
+          }
+          
+          const timestamp = line.substring(0, firstSpace);
+          const mimeType = line.substring(lastSpace + 1);
+          const original = line.substring(firstSpace + 1, lastSpace);
+          
+          return {
+            timestamp: timestamp,
+            original: original,
+            mimeType: mimeType,
+            statusCode: '200',
+            digest: 'N/A',
+            length: 'N/A',
+          };
+        })
+        .filter(url => {
+          return url && url.original && url.timestamp && url.timestamp.length >= 8;
+        })
+        .filter(url => {
+          // Filter out marketing/tracking URLs and internal system files (not useful for redirect analysis)
+          const original = url.original.toLowerCase();
+          return !original.includes('irclickid=') &&
+                 !original.includes('utm_') &&
+                 !original.includes('ref=') &&
+                 !original.includes('source=') &&
+                 !original.includes('campaign=') &&
+                 !original.includes('affiliate=') &&
+                 !original.includes('partner=') &&
+                 !original.includes('tracking=') &&
+                 !original.includes('clickid=') &&
+                 // Filter out API endpoints and internal system files
+                 !original.includes('/api/') &&
+                 !original.includes('/bf?') &&
+                 !original.includes('type=js') &&
+                 !original.includes('type=css') &&
+                 !original.includes('type=json') &&
+                 !original.includes('sn=v_') &&
+                 !original.includes('svrid') &&
+                 !original.includes('model.json') &&
+                 !original.includes('tcfb/') &&
+                 !original.includes('magellan/') &&
+                 // Filter out other common internal patterns
+                 !original.includes('/static/') &&
+                 !original.includes('/assets/') &&
+                 !original.includes('/js/') &&
+                 !original.includes('/css/') &&
+                 !original.includes('/images/') &&
+                 !original.includes('/fonts/');
+        });
+
+      res.json({
+        urls: waybackUrls,
+        totalFound: waybackUrls.length,
+        domain,
+        timeframe: `${from} to ${to}`,
+        filtersApplied: filters ? filters.split(',') : [],
+      });
+
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      if (fetchError.name === 'AbortError') {
+        console.error(`Wayback CDX API request timed out after ${timeoutDuration/1000} seconds, providing demo data`);
+        
+        // Provide demo data when API times out
+        const requestedLimit = parseInt(limit) || 1000;
+        const maxDemoUrls = Math.min(requestedLimit, 50); // Cap demo at 50 for performance
+        
+        const commonPaths = [
+          '/', '/about', '/contact', '/products', '/services', '/blog', '/support',
+          '/help', '/faq', '/pricing', '/features', '/download', '/login', '/signup',
+          '/news', '/press', '/careers', '/team', '/investors', '/partners', '/api',
+          '/docs', '/tutorials', '/resources', '/community', '/forum', '/events',
+          '/webinars', '/case-studies', '/testimonials', '/reviews', '/portfolio',
+          '/gallery', '/media', '/videos', '/podcasts', '/whitepapers', '/guides',
+          '/templates', '/tools', '/calculator', '/comparison', '/demo', '/trial',
+          '/pricing', '/plans', '/enterprise', '/solutions', '/industries', '/use-cases'
+        ];
+        
+        const demoUrls = [];
+        for (let i = 0; i < maxDemoUrls; i++) {
+          const path = commonPaths[i % commonPaths.length];
+          const dayOffset = Math.floor(i / 3); // Spread across multiple days
+          const timestamp = `202306${(15 + dayOffset).toString().padStart(2, '0')}000000`;
+          
+          demoUrls.push({
+            timestamp,
+            original: `http://${domain}${path}`,
+            mimeType: 'text/html',
+            statusCode: '200',
+            digest: `DEMO${(123456789 + i).toString()}`,
+            length: (1000 + i * 100).toString(),
+          });
+        }
+
+        res.json({
+          urls: demoUrls,
+          totalFound: demoUrls.length,
+          domain,
+          timeframe: `${from} to ${to}`,
+          filtersApplied: filters ? filters.split(',') : [],
+          demo: true,
+          message: `Demo data provided due to API timeout after ${timeoutDuration/1000} seconds. Large datasets (${requestedLimit} URLs requested) may take longer to process. Try reducing the limit or date range, or wait and try again.`
+        });
+      } else {
+        console.error('Wayback discovery proxy error:', fetchError);
+        res.status(500).json({ 
+          error: 'Failed to discover URLs from Wayback Machine',
+          details: fetchError.message 
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Wayback discovery proxy error:', error);
+    res.status(500).json({ 
+      error: 'Failed to discover URLs from Wayback Machine',
+      details: error.message 
+    });
+  }
+});
+
+// Redirect checker endpoint
+app.post('/api/check-redirect', async (req, res) => {
+  try {
+    const { url, method = 'HEAD', followRedirects = false, maxRedirects = 10, usePuppeteer = false } = req.body;
+    
+    // Debug logging
+    console.log(`Processing ${url} with method=${method}, followRedirects=${followRedirects}`);
+
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
+    console.log(`Checking redirects for: ${url} using ${method}${usePuppeteer ? ' with Puppeteer' : ''}`);
+
+    // Check if this is an affiliate link that we explicitly block
+    const affiliateInfo = getAffiliateInfo(url);
+    
+    if (affiliateInfo) {
+      console.log(`Affiliate link blocked: ${url} - ${affiliateInfo.service}`);
+      return res.json({
+        finalUrl: url,
+        finalStatusCode: 403,
+        statusChain: ['403'],
+        redirectCount: 0,
+        redirectChain: [],
+        hasLoop: false,
+        hasMixedTypes: false,
+        domainChanges: false,
+        httpsUpgrade: false,
+        method: 'BLOCKED_AFFILIATE',
+        blockedReason: `Affiliate links from ${affiliateInfo.service} are not supported due to anti-bot protection. Please use the direct destination URL instead.`,
+        affiliateService: affiliateInfo.service,
+        suggestedDirectUrl: affiliateInfo.suggestedUrl
+      });
+    }
+
+    const redirectChain = [];
+    const statusChain = [];
+    let currentUrl = url;
+    let redirectCount = 0;
+    let hasLoop = false;
+    let hasMixedTypes = false;
+    const visitedUrls = new Set();
+    const redirectTypes = new Set();
+
+    const originalDomain = new URL(url).hostname;
+    const originalProtocol = new URL(url).protocol;
+
+    // If not following redirects manually, use follow mode
+    if (followRedirects && method === 'GET') {
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          redirect: 'follow',
+          signal: AbortSignal.timeout(5000), // 5 second timeout
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Cache-Control': 'max-age=0'
+          }
+        });
+
+        const finalUrl = response.url || url;
+        const finalStatusCode = response.status;
+
+        // Check for redirects
+        if (finalUrl !== url) {
+          redirectCount = 1; // We don't know exact count but know there was at least one
+          redirectChain.push(url);
+
+          const finalDomain = new URL(finalUrl).hostname;
+          const domainChanges = finalDomain !== originalDomain;
+          const httpsUpgrade = originalProtocol === 'http:' && finalUrl.startsWith('https:');
+
+          return res.json({
+            finalUrl,
+            finalStatusCode,
+            statusChain: [finalStatusCode.toString()],
+            redirectCount,
+            redirectChain,
+            hasLoop: false,
+            hasMixedTypes: false,
+            domainChanges,
+            httpsUpgrade,
+            method: 'GET_FOLLOW'
+          });
+        }
+
+        return res.json({
+          finalUrl,
+          finalStatusCode,
+          statusChain: [finalStatusCode.toString()],
+          redirectCount: 0,
+          redirectChain: [],
+          hasLoop: false,
+          hasMixedTypes: false,
+          domainChanges: false,
+          httpsUpgrade: false,
+          method: 'GET_FOLLOW'
+        });
+
+      } catch (error) {
+        console.error(`GET request failed for ${url}:`, error.message);
+        return res.status(500).json({
+          error: 'Request failed',
+          message: error.message,
+          method: 'GET_FOLLOW'
+        });
+      }
+    }
+
+    // Manual redirect tracking
+    console.log(`Starting manual redirect tracking for ${url}, maxRedirects=${maxRedirects}`);
+    while (redirectCount < maxRedirects) {
+      if (visitedUrls.has(currentUrl)) {
+        hasLoop = true;
+        break;
+      }
+      visitedUrls.add(currentUrl);
+
+      try {
+        const response = await fetch(currentUrl, {
+          method: method,
+          redirect: 'manual',
+          signal: AbortSignal.timeout(5000), // 5 second timeout
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Cache-Control': 'max-age=0'
+          }
+        });
+
+        const status = response.status;
+        statusChain.push(status.toString());
+        redirectTypes.add(status);
+
+        console.log(`${method} ${currentUrl} → ${status} ${response.headers.get('location') || '(no location)'}`);
+
+        if (status >= 200 && status < 300) {
+          // Success - no more redirects
+          console.log(`SUCCESS: ${currentUrl} returned ${status}, ending redirect chain`);
+          break;
+        } else if (status >= 300 && status < 400) {
+          // Redirect
+          redirectCount++;
+          redirectChain.push(currentUrl);
+          console.log(`REDIRECT DETECTED: ${currentUrl} → ${status}, redirectCount now ${redirectCount}`);
+
+          const location = response.headers.get('location');
+          if (!location) {
+            throw new Error('Redirect response missing Location header');
+          }
+
+          // Check for domain changes
+          const newUrl = new URL(location, currentUrl);
+          currentUrl = newUrl.toString();
+        } else if (status >= 400 && status < 500) {
+          // Client error (4xx) - break the chain
+          console.log(`CLIENT ERROR: ${currentUrl} returned ${status}, ending redirect chain`);
+          break;
+        } else if (status >= 500) {
+          // Server error (5xx) - break the chain
+          console.log(`SERVER ERROR: ${currentUrl} returned ${status}, ending redirect chain`);
+          break;
+        } else {
+          // Other error status
+          break;
+        }
+      } catch (error) {
+        console.error(`${method} request failed for ${currentUrl}:`, error.message);
+
+        // If HEAD fails, try GET as fallback for this URL only
+        if (method === 'HEAD') {
+          console.log(`HEAD failed for ${currentUrl}, trying GET`);
+          try {
+            const getResponse = await fetch(currentUrl, {
+              method: 'GET',
+              redirect: 'manual',
+              signal: AbortSignal.timeout(5000), // 5 second timeout
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'DNT': '1',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Sec-Fetch-User': '?1',
+                'Cache-Control': 'max-age=0'
+              }
+            });
+
+            const status = getResponse.status;
+            statusChain.push(status.toString());
+            redirectTypes.add(status);
+
+            console.log(`GET ${currentUrl} → ${status} ${getResponse.headers.get('location') || '(no location)'}`);
+
+            if (status >= 200 && status < 300) {
+              // Success with GET
+              console.log(`SUCCESS: ${currentUrl} returned ${status} with GET, ending redirect chain`);
+              break;
+            } else if (status >= 300 && status < 400) {
+              // Redirect with GET
+              redirectCount++;
+              redirectChain.push(currentUrl);
+
+              const location = getResponse.headers.get('location');
+              if (location) {
+                const newUrl = new URL(location, currentUrl);
+                currentUrl = newUrl.toString();
+                continue; // Continue the loop with the new URL
+              } else {
+                // No location header, break
+                break;
+              }
+            } else if (status >= 400 && status < 500) {
+              // Client error (4xx) with GET - break the chain
+              console.log(`CLIENT ERROR: ${currentUrl} returned ${status} with GET, ending redirect chain`);
+              break;
+            } else if (status >= 500) {
+              // Server error (5xx) with GET - break the chain
+              console.log(`SERVER ERROR: ${currentUrl} returned ${status} with GET, ending redirect chain`);
+              break;
+            } else {
+              // Other error status with GET
+              break;
+            }
+          } catch (getError) {
+            console.error(`GET fallback failed for ${currentUrl}:`, getError.message);
+          }
+        }
+
+        return res.status(500).json({
+          error: 'Request failed',
+          message: error.message,
+          method: method
+        });
+      }
+    }
+
+    console.log(`Redirect chain complete. Final URL: ${currentUrl}, Total redirects: ${redirectCount}`);
+    console.log(`Status chain: ${statusChain.join(' → ')}`);
+    console.log(`Redirect URLs: ${redirectChain.join(' → ')}`);
+
+    // Check for mixed redirect types
+    hasMixedTypes = redirectTypes.size > 1;
+
+    // Check for domain changes and HTTPS upgrades
+    let domainChanges = false;
+    let httpsUpgrade = false;
+
+    if (redirectChain.length > 0) {
+      const finalDomain = new URL(currentUrl).hostname;
+      domainChanges = finalDomain !== originalDomain;
+      httpsUpgrade = originalProtocol === 'http:' && currentUrl.startsWith('https:');
+    }
+
+    res.json({
+      finalUrl: currentUrl,
+      finalStatusCode: parseInt(statusChain[statusChain.length - 1] || '0'),
+      statusChain,
+      redirectCount,
+      redirectChain,
+      hasLoop,
+      hasMixedTypes,
+      domainChanges,
+      httpsUpgrade,
+      method: method
+    });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({
+      error: 'Server error',
+      message: error.message
+    });
+  }
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Redirect Checker Proxy Server running on port ${PORT}`);
+  console.log(`📡 Accepting requests from: http://localhost:3000`);
+});
+
+export default app;
