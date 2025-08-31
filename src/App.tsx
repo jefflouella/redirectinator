@@ -18,36 +18,11 @@ import { useUrlProcessing } from './hooks/useUrlProcessing';
 import { useResultsPersistence } from './hooks/useResultsPersistence';
 import { useSummaryStats } from './hooks/useSummaryStats';
 import { useAppSettings } from './hooks/useAppSettings';
+import { useRouting } from './hooks/useRouting';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'settings' | 'about' | 'privacy' | 'terms'>('dashboard');
+  const { activeTab, navigateTo } = useRouting();
   const [isUrlOverlayOpen, setIsUrlOverlayOpen] = useState(false);
-
-  // URL-based routing
-  useEffect(() => {
-    const path = window.location.pathname;
-    if (path === '/about') {
-      setActiveTab('about');
-    } else if (path === '/privacy') {
-      setActiveTab('privacy');
-    } else if (path === '/terms') {
-      setActiveTab('terms');
-    } else if (path === '/projects') {
-      setActiveTab('projects');
-    } else if (path === '/settings') {
-      setActiveTab('settings');
-    } else {
-      setActiveTab('dashboard');
-    }
-  }, []);
-
-  // Update URL when activeTab changes
-  useEffect(() => {
-    const path = activeTab === 'dashboard' ? '/' : `/${activeTab}`;
-    if (window.location.pathname !== path) {
-      window.history.pushState({}, '', path);
-    }
-  }, [activeTab]);
   const { settings, updateSettings } = useAppSettings();
   const { currentProject, projects, loadProject, createNewProject, deleteProject } = useProjects(settings);
   const { results, processingStatus, processUrls, stopProcessing, clearResults: clearUrlProcessingResults } = useUrlProcessing(
@@ -183,7 +158,7 @@ function App() {
       <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#f9fafb' }}>
         <Header 
           currentProject={currentProject}
-          onTabChange={setActiveTab}
+          onTabChange={navigateTo}
           activeTab={activeTab}
         />
         
@@ -234,7 +209,7 @@ function App() {
               onCreateProject={createNewProject}
               onLoadProject={loadProject}
               onDeleteProject={deleteProject}
-              onGoToDashboard={() => setActiveTab('dashboard')}
+              onGoToDashboard={() => navigateTo('dashboard')}
             />
           )}
           
@@ -246,15 +221,15 @@ function App() {
           )}
 
           {activeTab === 'about' && (
-            <AboutPage onBack={() => setActiveTab('dashboard')} />
+            <AboutPage onBack={() => navigateTo('dashboard')} />
           )}
 
           {activeTab === 'privacy' && (
-            <PrivacyPage onBack={() => setActiveTab('dashboard')} />
+            <PrivacyPage onBack={() => navigateTo('dashboard')} />
           )}
 
           {activeTab === 'terms' && (
-            <TermsPage onBack={() => setActiveTab('dashboard')} />
+            <TermsPage onBack={() => navigateTo('dashboard')} />
           )}
         </main>
 
