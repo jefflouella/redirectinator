@@ -1,0 +1,17 @@
+# Don't ignore the public directory and its contents
+!public/
+!public/**
+
+# Don't ignore package files
+!package.json
+!package-lock.json
+
+# Don't ignore source files
+!src/
+!src/**
+
+# Don't ignore config files
+!vite.config.ts
+!tsconfig.json
+!tailwind.config.js
+!postcss.config.js
