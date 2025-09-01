@@ -5,7 +5,6 @@ import {
   Trash2,
   Play,
   CheckCircle,
-  Edit,
   ArrowRight,
   AlertTriangle,
   Sparkles,

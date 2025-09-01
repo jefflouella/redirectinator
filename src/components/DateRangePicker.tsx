@@ -106,11 +106,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     return date >= selectedFromDate && date <= selectedToDate;
   };
 
-  // Check if date is start or end of range
-  const isRangeBoundary = (date: Date) => {
-    return date.getTime() === selectedFromDate.getTime() || 
-           date.getTime() === selectedToDate.getTime();
-  };
+
 
   // Check if date is today
   const isToday = (date: Date) => {

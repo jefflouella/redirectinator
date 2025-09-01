@@ -1,17 +1,17 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { 
-  X, 
-  Trash2, 
-  Filter, 
-  Search, 
-  CheckSquare, 
-  Square, 
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import {
+  X,
+  Trash2,
+  Search,
+  CheckSquare,
+  Square,
   AlertTriangle,
   CheckCircle,
   Copy,
   ExternalLink
 } from 'lucide-react';
 import { useNotifications } from './NotificationProvider';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface UrlCleanerProps {
   urls: Array<{ startingUrl: string; targetRedirect: string }>;
@@ -36,6 +36,21 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [urlsToDelete, setUrlsToDelete] = useState<string[]>([]);
   const { addNotification } = useNotifications();
+  const { trackCopyAction, trackSearch, trackFilter, trackBulkAction, trackCleanup, trackUIInteraction } = useAnalytics();
+
+  // Track search term changes
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      trackSearch(searchTerm, 'url_cleaner', processedUrls.length);
+    }
+  }, [searchTerm, trackSearch, processedUrls.length]);
+
+  // Track parameter filter changes
+  useEffect(() => {
+    if (selectedParameter) {
+      trackFilter('parameter', selectedParameter, processedUrls.length);
+    }
+  }, [selectedParameter, trackFilter, processedUrls.length]);
 
   // Process URLs to extract parameters and detect duplicates
   const processedUrls = useMemo(() => {
@@ -80,7 +95,7 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
     // Mark duplicates
     urlMap.forEach((group, baseUrl) => {
       if (group.length > 1) {
-        group.forEach((url, index) => {
+        group.forEach((url, _index) => {
           url.isDuplicate = true;
           url.duplicateGroup = baseUrl;
         });
@@ -126,10 +141,12 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
   const toggleSelectAll = useCallback(() => {
     if (selectedUrls.size === filteredUrls.length) {
       setSelectedUrls(new Set());
+      trackUIInteraction('deselect_all', 'bulk_select_button', 'url_cleaner');
     } else {
       setSelectedUrls(new Set(filteredUrls.map(url => url.id)));
+      trackUIInteraction('select_all', 'bulk_select_button', 'url_cleaner');
     }
-  }, [selectedUrls.size, filteredUrls]);
+  }, [selectedUrls.size, filteredUrls, trackUIInteraction]);
 
   // Handle bulk delete
   const handleBulkDelete = useCallback(() => {
@@ -192,7 +209,9 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
       message: `Removed ${removedCount} duplicate URL${removedCount !== 1 ? 's' : ''}. ${deduplicatedUrls.length} unique URLs remain.`,
       duration: 4000
     });
-  }, [processedUrls.processed, onUrlsUpdated, addNotification]);
+
+    trackCleanup('remove_duplicates', removedCount, 'url_cleaner');
+  }, [processedUrls.processed, onUrlsUpdated, addNotification, trackCleanup]);
 
   // Copy URL to clipboard
   const copyUrl = useCallback((url: string) => {
@@ -203,7 +222,8 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
       message: 'URL copied to clipboard.',
       duration: 2000
     });
-  }, [addNotification]);
+    trackCopyAction('url', 'url_cleaner');
+  }, [addNotification, trackCopyAction]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

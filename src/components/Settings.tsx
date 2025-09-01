@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AppSettings } from '@/types';
 import { SEMrushService } from '@/services/semrushService';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import {
   Settings as SettingsIcon,
-  Database,
   Zap,
   Shield,
-  Palette,
   Info,
   Key,
   Loader2,
@@ -41,7 +39,7 @@ export const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings }
 
   useEffect(() => {
     checkSemrushApiKeyStatus();
-  }, []);
+  }, [checkSemrushApiKeyStatus]);
 
   // Close info tooltips when clicking outside
   useEffect(() => {
@@ -66,14 +64,14 @@ export const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings }
     };
   }, [showBatchSizeInfo, showDelayInfo, showTimeoutInfo, showAutoSaveInfo]);
 
-  const checkSemrushApiKeyStatus = async () => {
+  const checkSemrushApiKeyStatus = useCallback(async () => {
     try {
       const hasKey = await semrushService.hasApiKey();
       setHasSemrushKey(hasKey);
     } catch (error) {
       console.error('Failed to check SEMrush API key status:', error);
     }
-  };
+  }, [semrushService]);
 
   const handleTestSemrushApiKey = async () => {
     if (!semrushApiKey.trim()) {

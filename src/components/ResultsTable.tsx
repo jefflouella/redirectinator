@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { RedirectResult } from '@/types';
-import { 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle, 
+import { useAnalytics } from '@/hooks/useAnalytics';
+import {
+  CheckCircle,
+  XCircle,
+  AlertCircle,
   Clock,
   ExternalLink,
   Filter,
@@ -23,26 +24,45 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showDetails, setShowDetails] = useState<Set<string>>(new Set());
+  const { trackCopyAction, trackSearch, trackFilter, trackUIInteraction } = useAnalytics();
+
+  // Track search term changes
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      trackSearch(searchTerm, 'results_table', filteredResults.length);
+    }
+  }, [searchTerm, trackSearch, filteredResults.length]);
+
+  // Track status filter changes
+  useEffect(() => {
+    if (statusFilter !== 'all') {
+      trackFilter('status', statusFilter, filteredResults.length);
+    }
+  }, [statusFilter, trackFilter, filteredResults.length]);
 
   const filteredResults = useMemo(() => {
     return results.filter(result => {
-      const matchesSearch = 
+      const matchesSearch =
         result.startingUrl.toLowerCase().includes(searchTerm.toLowerCase()) ||
         result.targetRedirect.toLowerCase().includes(searchTerm.toLowerCase()) ||
         result.finalUrl.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const matchesStatus = statusFilter === 'all' || result.result === statusFilter;
-      
+
       return matchesSearch && matchesStatus;
     });
   }, [results, searchTerm, statusFilter]);
 
   const toggleDetails = (resultId: string) => {
     const newShowDetails = new Set(showDetails);
-    if (newShowDetails.has(resultId)) {
-      newShowDetails.delete(resultId);
-    } else {
+    const isExpanding = !newShowDetails.has(resultId);
+
+    if (isExpanding) {
       newShowDetails.add(resultId);
+      trackUIInteraction('expand_details', 'result_row', 'results_table');
+    } else {
+      newShowDetails.delete(resultId);
+      trackUIInteraction('collapse_details', 'result_row', 'results_table');
     }
     setShowDetails(newShowDetails);
   };
@@ -91,6 +111,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+    trackCopyAction('url', 'results_table');
   };
 
   const getStatusCodeColor = (httpStatus: string) => {

@@ -104,8 +104,7 @@ export class SEMrushService {
       // Build API parameters - using correct format from SEMrush documentation
       const apiParams = new URLSearchParams({
         key: apiKey,
-        // Allow overriding type for experimentation; default to domain_organic
-        type: (params as any).reportType || 'domain_organic',
+        type: 'domain_organic',
         display_limit: (params.limit || 1000).toString(),
         export_columns: 'Ph,Po,Nq,Cp,Ur,Tr,Tc,Co,Nr,Td', // Standard columns for organic pages
         database: params.country || 'us',

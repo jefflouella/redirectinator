@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, Filter, AlertCircle, CheckCircle, Loader2, Info, X } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Search, AlertCircle, CheckCircle, Loader2, Info, X } from 'lucide-react';
 import { SEMrushService, SEMrushDiscoveryParams, SEMrushDiscoveryResult } from '@/services/semrushService';
 
 interface SEMrushDiscoveryTabProps {
@@ -40,27 +40,16 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
   const [showInfo, setShowInfo] = useState(false);
 
   const [hasApiKey, setHasApiKey] = useState(false);
-  const [remainingUnits, setRemainingUnits] = useState<number | null>(null);
+  const [, setRemainingUnits] = useState<number | null>(null);
   const infoRef = useRef<HTMLDivElement>(null);
 
   const semrushService = new SEMrushService();
 
-  // Calculate API impact based on URL limit
-  const calculateApiImpact = (limit: number) => {
-    // SEMrush domain_organic endpoint costs 1 API unit per request
-    // The limit parameter determines how many results are returned in one request
-    return {
-      apiUnits: 1, // Always 1 unit per request regardless of limit
-      maxResults: Math.min(limit, 10000), // SEMrush max is 10,000
-      costDescription: limit > 10000 ? 'Limited to 10,000 results (SEMrush maximum)' : `${limit} results`
-    };
-  };
 
-  const apiImpact = calculateApiImpact(urlLimit);
 
   useEffect(() => {
     checkApiKeyStatus();
-  }, []);
+  }, [checkApiKeyStatus]);
 
   // Close info tooltip when clicking outside
   useEffect(() => {
@@ -79,7 +68,7 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
     };
   }, [showInfo]);
 
-  const checkApiKeyStatus = async () => {
+  const checkApiKeyStatus = useCallback(async () => {
     try {
       const hasKey = await semrushService.hasApiKey();
       setHasApiKey(hasKey);
@@ -92,7 +81,7 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
     } catch (error) {
       console.error('Failed to check API key status:', error);
     }
-  };
+  }, [semrushService]);
 
   const handleDiscover = async () => {
     if (!domain.trim()) {

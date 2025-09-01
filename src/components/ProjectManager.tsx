@@ -41,7 +41,6 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showImportInfo, setShowImportInfo] = useState(false);
   const [showCreateInfo, setShowCreateInfo] = useState(false);
 
   const handleCreateProject = async () => {

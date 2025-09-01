@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, FileText, Shield, Users, Globe, AlertTriangle, Scale, Mail, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, FileText, Shield, Users, Globe, AlertTriangle, Scale, Mail, CheckCircle } from 'lucide-react';
 
 interface TermsPageProps {
   onBack: () => void;

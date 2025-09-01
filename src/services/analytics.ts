@@ -65,18 +65,72 @@ export class AnalyticsService {
   }
 
   /**
-   * Track feature usage
+   * Track feature usage with specific action names
    */
-  public trackFeatureUsage(feature: string, details?: Record<string, any>): void {
+  public trackFeatureUsage(feature: string, details?: Record<string, unknown>): void {
+    // Use more specific action names for better analytics granularity
+    const actionMap: Record<string, string> = {
+      'semrush_api_key_added': 'api_key_added',
+      'semrush_api_key_removed': 'api_key_removed',
+      'semrush_api_key_validation_failed': 'api_key_validation_failed',
+      'semrush_api_key_error': 'api_key_error',
+      'semrush_api_key_removal_error': 'api_key_removal_error',
+      'csv_upload': 'file_upload_csv',
+      'xml_sitemap_upload': 'file_upload_xml',
+      'input_method_selected': 'input_method_changed',
+      'setting_changed': 'settings_updated',
+      'tab_navigation': 'tab_switched',
+      'processing_stopped': 'processing_cancelled',
+      'results_cleared': 'results_reset',
+      'copy_to_clipboard': 'content_copied',
+      'search_performed': 'search_executed',
+      'filter_applied': 'filter_used',
+      'url_selected': 'url_interaction',
+      'bulk_action': 'bulk_operation',
+      'duplicate_removal': 'cleanup_duplicates',
+      'parameter_filter': 'parameter_filtered'
+    };
+
+    const action = actionMap[feature] || 'feature_used';
+
     this.trackEvent({
-      action: 'feature_used',
+      action: action,
       category: 'engagement',
       label: feature,
       custom_parameters: {
-        feature_used: feature,
+        feature_name: feature,
+        feature_category: this.getFeatureCategory(feature),
         ...details
       }
     });
+  }
+
+  /**
+   * Get category for a feature
+   */
+  private getFeatureCategory(feature: string): string {
+    if (feature.includes('api_key') || feature.includes('semrush')) {
+      return 'api_management';
+    }
+    if (feature.includes('upload') || feature.includes('file')) {
+      return 'data_import';
+    }
+    if (feature.includes('input_method') || feature.includes('tab')) {
+      return 'navigation';
+    }
+    if (feature.includes('processing') || feature.includes('url_')) {
+      return 'data_processing';
+    }
+    if (feature.includes('copy') || feature.includes('search') || feature.includes('filter')) {
+      return 'data_interaction';
+    }
+    if (feature.includes('export') || feature.includes('download')) {
+      return 'data_export';
+    }
+    if (feature.includes('setting') || feature.includes('config')) {
+      return 'configuration';
+    }
+    return 'general';
   }
 
   /**
@@ -154,6 +208,111 @@ export class AnalyticsService {
       custom_parameters: {
         error_type: errorType,
         error_context: context
+      }
+    });
+  }
+
+  /**
+   * Track copy actions
+   */
+  public trackCopyAction(contentType: string, context?: string): void {
+    this.trackEvent({
+      action: 'content_copied',
+      category: 'data_interaction',
+      label: contentType,
+      custom_parameters: {
+        content_type: contentType,
+        copy_context: context,
+        feature_category: 'data_interaction'
+      }
+    });
+  }
+
+  /**
+   * Track search actions
+   */
+  public trackSearch(query: string, context: string, resultCount?: number): void {
+    this.trackEvent({
+      action: 'search_executed',
+      category: 'data_interaction',
+      label: context,
+      value: resultCount,
+      custom_parameters: {
+        search_query: query.length > 0 ? 'has_query' : 'empty_query',
+        search_context: context,
+        result_count: resultCount,
+        feature_category: 'data_interaction'
+      }
+    });
+  }
+
+  /**
+   * Track filtering actions
+   */
+  public trackFilter(filterType: string, filterValue: string, resultCount?: number): void {
+    this.trackEvent({
+      action: 'filter_used',
+      category: 'data_interaction',
+      label: filterType,
+      value: resultCount,
+      custom_parameters: {
+        filter_type: filterType,
+        filter_value: filterValue,
+        result_count: resultCount,
+        feature_category: 'data_interaction'
+      }
+    });
+  }
+
+  /**
+   * Track bulk operations
+   */
+  public trackBulkAction(action: string, itemCount: number, context?: string): void {
+    this.trackEvent({
+      action: 'bulk_operation',
+      category: 'data_processing',
+      label: action,
+      value: itemCount,
+      custom_parameters: {
+        bulk_action_type: action,
+        item_count: itemCount,
+        bulk_context: context,
+        feature_category: 'data_processing'
+      }
+    });
+  }
+
+  /**
+   * Track cleanup actions
+   */
+  public trackCleanup(action: string, itemsAffected: number, context?: string): void {
+    this.trackEvent({
+      action: 'cleanup_operation',
+      category: 'data_processing',
+      label: action,
+      value: itemsAffected,
+      custom_parameters: {
+        cleanup_action: action,
+        items_affected: itemsAffected,
+        cleanup_context: context,
+        feature_category: 'data_processing'
+      }
+    });
+  }
+
+  /**
+   * Track user interface interactions
+   */
+  public trackUIInteraction(interaction: string, element: string, context?: string): void {
+    this.trackEvent({
+      action: 'ui_interaction',
+      category: 'navigation',
+      label: interaction,
+      custom_parameters: {
+        interaction_type: interaction,
+        ui_element: element,
+        interaction_context: context,
+        feature_category: 'navigation'
       }
     });
   }

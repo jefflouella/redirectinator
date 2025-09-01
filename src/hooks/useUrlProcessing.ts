@@ -113,7 +113,7 @@ export const useUrlProcessing = (
         currentUrl: undefined,
       }));
     }
-  }, [currentProject]);
+  }, [currentProject, onResultSaved]);
 
   const clearResults = useCallback(() => {
     setResults([]);

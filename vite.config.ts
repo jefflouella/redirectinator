@@ -22,7 +22,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false, // Disable source maps for production
+    minify: 'esbuild', // Ensure minification is enabled
     assetsDir: 'assets',
     publicDir: 'public',
     copyPublicDir: true,

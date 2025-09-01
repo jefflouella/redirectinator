@@ -9,13 +9,11 @@ import {
   FileText,
   Globe,
   BarChart3,
-  Search,
   AlertCircle,
   CheckCircle,
   Loader2,
   Info,
   Download,
-  Calendar,
   Filter,
   ArrowRight
 } from 'lucide-react';
@@ -149,9 +147,9 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
-          const parsedUrls = (results.data as any[])
-            .filter((row: any) => row['Starting URL']) // Only require starting URL
-            .map((row: any) => ({
+          const parsedUrls = (results.data as Record<string, unknown>[])
+            .filter((row) => row['Starting URL']) // Only require starting URL
+            .map((row) => ({
               startingUrl: String(row['Starting URL']).trim(),
               targetRedirect: String(row['Target Redirect'] || '').trim(), // Make target optional
             }));

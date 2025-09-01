@@ -17,34 +17,6 @@ export const useProjects = (settings: AppSettings) => {
     }
   }, []);
 
-  const createDefaultProject = useCallback(async (): Promise<Project> => {
-    const defaultProject: Project = {
-      id: crypto.randomUUID(),
-      name: 'My First Project',
-      description: 'Default project for URL redirect analysis',
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      urls: [],
-      settings: {
-        batchSize: settings.defaultBatchSize,
-        delayBetweenRequests: settings.defaultDelay,
-        timeout: settings.defaultTimeout,
-        followRedirects: false,
-        maxRedirects: 10,
-        includeHeaders: false,
-      },
-      results: [],
-    };
-
-    try {
-      await storageService.saveProject(defaultProject);
-      return defaultProject;
-    } catch (error) {
-      console.error('Failed to create default project:', error);
-      throw error;
-    }
-  }, [settings]);
-
   const loadInitialData = useCallback(async () => {
     try {
       // Load projects
