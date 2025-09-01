@@ -4,11 +4,11 @@
 export interface WaybackUrl {
   timestamp: string;        // YYYYMMDDHHMMSS
   original: string;         // Original URL from Wayback
-  mimeType: string;         // text/html
-  statusCode: string;       // 200, 404, etc.
+  mimeType?: string;        // text/html (optional, not always returned by API)
+  statusCode?: string;      // 200, 404, etc. (optional, not always returned by API)
   redirectUrl?: string;     // If redirected
-  digest: string;           // Content hash
-  length: string;           // Content length
+  digest?: string;          // Content hash (optional, not always returned by API)
+  length?: string;          // Content length (optional, not always returned by API)
 }
 
 export interface WaybackDiscoveryParams {
@@ -101,9 +101,15 @@ export class WaybackService {
 
     // Filter by MIME type (if not already done by API)
     if (filters.htmlOnly) {
-      filteredUrls = filteredUrls.filter(url => 
-        url.mimeType.toLowerCase().includes('text/html')
-      );
+      filteredUrls = filteredUrls.filter(url => {
+        // Handle case where mimeType might be undefined (from API response)
+        if (!url.mimeType) {
+          // If no mimeType, assume it's HTML content for now
+          // This is a fallback since the API doesn't always return mimeType
+          return true;
+        }
+        return url.mimeType.toLowerCase().includes('text/html');
+      });
     }
 
     // Exclude system files
