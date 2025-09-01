@@ -26,11 +26,11 @@ export default async function handler(req, res) {
     const fromDate = from || '20200101';
     const toDate = to || '20241231';
     
-    // Validate date format (CDX API expects YYYYMMDD)
-    const dateRegex = /^\d{8}$/;
+    // Validate date format (CDX API supports 1-14 digit format: yyyyMMddhhmmss)
+    const dateRegex = /^\d{1,14}$/;
     if (!dateRegex.test(fromDate) || !dateRegex.test(toDate)) {
       return res.status(400).json({ 
-        error: 'Invalid date format. Dates must be in YYYYMMDD format (e.g., 20230401)' 
+        error: 'Invalid date format. Dates must be in 1-14 digit format (e.g., 2023, 202304, 20230401, 20230401120000)' 
       });
     }
 
@@ -63,8 +63,9 @@ export default async function handler(req, res) {
 
     params.append('url', urlPattern);
 
-    // Note: CDX API doesn't support mime filtering in the same way
-    // We'll filter the results after fetching instead
+    // Add CDX API filters for HTML content and successful status codes
+    params.append('filter', 'mimetype:text/html');
+    params.append('filter', 'statuscode:200');
 
     // Add date range if specified
     if (fromDate && toDate) {
@@ -112,16 +113,21 @@ export default async function handler(req, res) {
             .filter(row => row && Array.isArray(row) && row.length >= 2)
             .map(row => {
               // The CDX API returns: [urlkey, timestamp, original, mimetype, statuscode, digest, length]
+              // Since we're filtering by mimetype:text/html and statuscode:200, we get cleaner results
               const original = row[2] || row[0]; // original is at index 2, fallback to 0
               const timestamp = row[1]; // timestamp is at index 1
+              const mimetype = row[3]; // mimetype is at index 3
+              const statuscode = row[4]; // statuscode is at index 4
               
               return {
                 original: original,
-                timestamp: timestamp
+                timestamp: timestamp,
+                mimetype: mimetype,
+                statuscode: statuscode
               };
             })
             .filter(url => {
-              // Basic validation
+              // Basic validation - since we're pre-filtering, this is mostly for safety
               return url && url.original && url.timestamp && url.timestamp.length >= 8;
             });
         }
@@ -132,7 +138,7 @@ export default async function handler(req, res) {
 
       console.log(`Found ${waybackUrls.length} URLs before filtering`);
 
-      // Apply additional filters
+      // Apply additional post-processing filters for URLs that slip through
       const filteredUrls = waybackUrls.filter(url => {
         // Filter out marketing/tracking URLs and internal system files
         const original = url.original.toLowerCase();
@@ -145,25 +151,11 @@ export default async function handler(req, res) {
                !original.includes('partner=') &&
                !original.includes('tracking=') &&
                !original.includes('clickid=') &&
-               // Filter out API endpoints and internal system files
-               !original.includes('/api/') &&
-               !original.includes('/bf?') &&
-               !original.includes('type=js') &&
-               !original.includes('type=css') &&
-               !original.includes('type=json') &&
-               !original.includes('sn=v_') &&
-               !original.includes('svrid') &&
-               !original.includes('model.json') &&
-               !original.includes('tcfb/') &&
-               !original.includes('magellan/') &&
-               // Filter out WordPress JSON API endpoints
+               // Filter out WordPress JSON API endpoints (should be caught by mimetype filter, but safety net)
                !original.includes('/wp-json/') &&
                !original.includes('/wp-admin/') &&
                !original.includes('/wp-content/') &&
                !original.includes('/wp-includes/') &&
-               !original.includes('/wp-cron.php') &&
-               !original.includes('/wp-config.php') &&
-               !original.includes('/wp-login.php') &&
                // Filter out other common internal patterns
                !original.includes('/static/') &&
                !original.includes('/assets/') &&
@@ -173,23 +165,6 @@ export default async function handler(req, res) {
                !original.includes('/fonts/') &&
                !original.includes('/media/') &&
                !original.includes('/uploads/') &&
-               // Filter out file extensions that are not HTML
-               !original.endsWith('.js') &&
-               !original.endsWith('.css') &&
-               !original.endsWith('.json') &&
-               !original.endsWith('.xml') &&
-               !original.endsWith('.txt') &&
-               !original.endsWith('.pdf') &&
-               !original.endsWith('.jpg') &&
-               !original.endsWith('.jpeg') &&
-               !original.endsWith('.png') &&
-               !original.endsWith('.gif') &&
-               !original.endsWith('.svg') &&
-               !original.endsWith('.ico') &&
-               !original.endsWith('.woff') &&
-               !original.endsWith('.woff2') &&
-               !original.endsWith('.ttf') &&
-               !original.endsWith('.eot') &&
                // Filter out robots.txt and sitemaps
                !original.includes('/robots.txt') &&
                !original.includes('/sitemap') &&
