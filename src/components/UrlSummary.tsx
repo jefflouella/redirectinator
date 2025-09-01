@@ -6,9 +6,12 @@ import {
   Play,
   CheckCircle,
   Edit,
-  ArrowRight
+  ArrowRight,
+  AlertTriangle,
+  Sparkles
 } from 'lucide-react';
 import { useUrlPersistence } from '@/hooks/useUrlPersistence';
+import { useNotifications } from './NotificationProvider';
 
 interface UrlSummaryProps {
   currentProject: Project | null;
@@ -25,7 +28,11 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
   onEditUrls,
   onNavigateToProjects
 }) => {
-  const { urls, isLoading: urlsLoading, clearUrls, refreshUrls } = useUrlPersistence(currentProject);
+  const { urls, isLoading: urlsLoading, clearUrls, refreshUrls, detectDuplicates, cleanDuplicates } = useUrlPersistence(currentProject);
+  const { addNotification } = useNotifications();
+
+  // Detect duplicates
+  const duplicateInfo = detectDuplicates();
 
   // Refresh URLs when component mounts or when current project changes
   React.useEffect(() => {
@@ -75,6 +82,23 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
     }
 
     onProcessUrls(urls);
+  };
+
+  const handleCleanDuplicates = () => {
+    if (duplicateInfo.hasDuplicates) {
+      const removedCount = duplicateInfo.totalCount - duplicateInfo.uniqueCount;
+      cleanDuplicates();
+      
+      // Show notification
+      addNotification({
+        type: 'success',
+        title: 'Duplicates Cleaned',
+        message: `Removed ${removedCount} duplicate URL${removedCount !== 1 ? 's' : ''}. Now ${duplicateInfo.uniqueCount} unique URLs remain.`,
+        duration: 4000
+      });
+      
+      console.log(`Cleaned ${removedCount} duplicate URLs`);
+    }
   };
 
   // Show empty state when no URLs
@@ -143,19 +167,45 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
     <div className="card">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-            <CheckCircle className="w-5 h-5 text-green-600" />
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+            duplicateInfo.hasDuplicates ? 'bg-amber-100' : 'bg-green-100'
+          }`}>
+            {duplicateInfo.hasDuplicates ? (
+              <AlertTriangle className="w-5 h-5 text-amber-600" />
+            ) : (
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            )}
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
               URLs Ready ({urls.length})
+              {duplicateInfo.hasDuplicates && (
+                <span className="ml-2 text-sm font-normal text-amber-600">
+                  • {duplicateInfo.duplicateCount} duplicate{duplicateInfo.duplicateCount !== 1 ? 's' : ''}
+                </span>
+              )}
             </h3>
             <p className="text-sm text-gray-600">
               {currentProject ? `Project: ${currentProject.name}` : 'No project selected'}
+              {duplicateInfo.hasDuplicates && (
+                <span className="ml-2 text-amber-600">
+                  ({duplicateInfo.uniqueCount} unique URLs)
+                </span>
+              )}
             </p>
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          {duplicateInfo.hasDuplicates && (
+            <button
+              onClick={handleCleanDuplicates}
+              className="btn-secondary flex items-center space-x-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+              title={`Remove ${duplicateInfo.duplicateCount} duplicate URL${duplicateInfo.duplicateCount !== 1 ? 's' : ''}`}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Clean Duplicates</span>
+            </button>
+          )}
           <button
             onClick={onEditUrls}
             className="btn-secondary flex items-center space-x-2"
@@ -172,6 +222,22 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Duplicate Warning */}
+      {duplicateInfo.hasDuplicates && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start space-x-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-amber-800">
+              <p className="font-medium">Duplicate URLs detected</p>
+              <p>
+                Found {duplicateInfo.duplicateCount} duplicate URL{duplicateInfo.duplicateCount !== 1 ? 's' : ''} 
+                out of {duplicateInfo.totalCount} total. Only {duplicateInfo.uniqueCount} unique URLs will be processed.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* URL Preview */}
       <div className="space-y-2 max-h-32 overflow-y-auto mb-4">
@@ -210,6 +276,8 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
         <div className="text-sm text-gray-600">
           {!currentProject
             ? 'Please select or create a project first'
+            : duplicateInfo.hasDuplicates
+            ? `${duplicateInfo.uniqueCount} unique URL${duplicateInfo.uniqueCount !== 1 ? 's' : ''} ready to process (${duplicateInfo.duplicateCount} duplicates will be skipped)`
             : `${urls.length} URL${urls.length !== 1 ? 's' : ''} ready to process`
           }
         </div>

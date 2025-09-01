@@ -7,6 +7,13 @@ interface UrlData {
   targetRedirect: string;
 }
 
+interface DuplicateInfo {
+  hasDuplicates: boolean;
+  duplicateCount: number;
+  uniqueCount: number;
+  totalCount: number;
+}
+
 export const useUrlPersistence = (currentProject: Project | null) => {
   const [urls, setUrls] = useState<UrlData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -54,6 +61,52 @@ export const useUrlPersistence = (currentProject: Project | null) => {
       console.error('Failed to auto-save URLs:', error);
     }
   }, [currentProject]);
+
+  // Detect duplicates
+  const detectDuplicates = useCallback((urlList: UrlData[] = urls): DuplicateInfo => {
+    const seen = new Set<string>();
+    const duplicates = new Set<string>();
+    
+    urlList.forEach(url => {
+      const normalizedUrl = url.startingUrl.toLowerCase().trim();
+      if (seen.has(normalizedUrl)) {
+        duplicates.add(normalizedUrl);
+      } else {
+        seen.add(normalizedUrl);
+      }
+    });
+
+    const uniqueCount = seen.size;
+    const duplicateCount = duplicates.size;
+    const totalCount = urlList.length;
+
+    return {
+      hasDuplicates: duplicateCount > 0,
+      duplicateCount,
+      uniqueCount,
+      totalCount
+    };
+  }, [urls]);
+
+  // Clean duplicates - keep the first occurrence of each URL
+  const cleanDuplicates = useCallback(() => {
+    const seen = new Set<string>();
+    const cleanedUrls: UrlData[] = [];
+    
+    urls.forEach(url => {
+      const normalizedUrl = url.startingUrl.toLowerCase().trim();
+      if (!seen.has(normalizedUrl)) {
+        seen.add(normalizedUrl);
+        cleanedUrls.push(url);
+      }
+    });
+
+    if (cleanedUrls.length < urls.length) {
+      setUrls(cleanedUrls);
+      saveUrlsToProject(cleanedUrls);
+      console.log(`Cleaned ${urls.length - cleanedUrls.length} duplicate URLs`);
+    }
+  }, [urls, saveUrlsToProject]);
 
   // Add URL with auto-save
   const addUrl = useCallback((url: UrlData) => {
@@ -114,5 +167,7 @@ export const useUrlPersistence = (currentProject: Project | null) => {
     setAllUrls,
     clearUrls,
     refreshUrls,
+    detectDuplicates,
+    cleanDuplicates,
   };
 };

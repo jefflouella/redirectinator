@@ -6,7 +6,8 @@
   "main": "index.html",
   "scripts": {
     "dev": "vite --port 3000 --strictPort",
-    "server": "PORT=3000 node server.js",
+    "server": "PORT=3001 node server.js",
+    "dev:combined": "concurrently \"npm run server\" \"npm run dev\"",
     "dev:full": "npm run build && npm run server",
     "build": "vite build",
     "preview": "vite preview",

@@ -96,8 +96,9 @@ export class SEMrushService {
       }
 
       console.log(`Discovering top pages for ${params.domain} from ${params.startDate} to ${params.endDate}`);
-      // SEMrush expects display_date as YYYYMMDD (monthly snapshot). Normalize here.
-      const normalizedDisplayDate = (params.endDate || '').replace(/-/g, '');
+      // SEMrush expects display_date as YYYYMM15 (15th of the month). Normalize here.
+      const endDate = new Date(params.endDate || '');
+      const normalizedDisplayDate = `${endDate.getFullYear()}${String(endDate.getMonth() + 1).padStart(2, '0')}15`;
       console.log(`Using display_date: ${normalizedDisplayDate} for SEMrush API call`);
 
       // Build API parameters - using correct format from SEMrush documentation
@@ -137,6 +138,7 @@ export class SEMrushService {
         
         // Remove duplicates based on URL, keeping the one with the best position
         const uniquePages = this.removeDuplicateUrls(pages);
+        const duplicateCount = pages.length - uniquePages.length;
 
         // Build result
         const result: SEMrushDiscoveryResult = {
@@ -148,7 +150,11 @@ export class SEMrushService {
           device: params.device || 'desktop',
         };
 
-        console.log(`SEMrush discovery complete: ${result.totalFound} pages found for ${params.domain}`);
+        if (duplicateCount > 0) {
+          console.log(`SEMrush discovery complete: ${result.totalFound} unique pages found for ${params.domain} (${duplicateCount} duplicates removed)`);
+        } else {
+          console.log(`SEMrush discovery complete: ${result.totalFound} pages found for ${params.domain}`);
+        }
         return result;
 
       } catch (fetchError) {
