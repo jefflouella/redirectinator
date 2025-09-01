@@ -144,15 +144,6 @@ export default async function handler(req, res) {
       method: method.toUpperCase()
     });
 
-      } catch (error) {
-        console.error('Error following redirect:', error);
-        return res.status(500).json({ 
-          error: 'Failed to follow redirect',
-          details: error.message 
-        });
-      }
-    }
-
   } catch (error) {
     console.error('Redirect checker error:', error);
     res.status(500).json({ 
