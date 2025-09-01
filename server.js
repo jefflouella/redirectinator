@@ -837,7 +837,8 @@ app.post('/api/check-redirect', async (req, res) => {
     const { url, method = 'HEAD', followRedirects = false, maxRedirects = 10, usePuppeteer = false } = req.body;
     
     // Debug logging
-    console.log(`Processing ${url} with method=${method}, followRedirects=${followRedirects}`);
+    console.log(`Processing ${url} with method=${method}, followRedirects=${followRedirects}, usePuppeteer=${usePuppeteer}`);
+    console.log(`Full request body:`, req.body);
 
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
@@ -871,6 +872,8 @@ app.post('/api/check-redirect', async (req, res) => {
     if (usePuppeteer) {
       console.log(`Using Puppeteer for enhanced redirect detection: ${url}`);
       return await performPuppeteerRedirectCheck(url, maxRedirects, res);
+    } else {
+      console.log(`NOT using Puppeteer, usePuppeteer=${usePuppeteer}, type=${typeof usePuppeteer}`);
     }
 
     // Manual redirect tracking
