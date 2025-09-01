@@ -167,14 +167,12 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
 
         {/* Creator Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
-          <div className="text-center mb-8">
+          <div className="text-center max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Meet the Creator</h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-gray-600 mb-6">
               Built by Jeff Louella, a seasoned technical SEO expert with over 25 years of experience
             </p>
-          </div>
-
-          <div className="text-center max-w-4xl mx-auto">
+            
             <h3 className="text-2xl font-semibold text-gray-900 mb-4">Jeff Louella</h3>
             <p className="text-gray-600 mb-4">
               Technical SEO & Digital Problem Solver with a unique blend of developer fluency and strategic insight. 
