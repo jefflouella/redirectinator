@@ -27,6 +27,30 @@ export interface RedirectResult {
     originalUrl: string;
     archivedDate: string;
   };
+  // New fields for enhanced redirect tracking
+  redirectTypes?: RedirectType[];
+  redirectChainDetails?: RedirectStep[];
+  hasMetaRefresh?: boolean;
+  hasJavaScriptRedirect?: boolean;
+}
+
+// New interfaces for enhanced redirect tracking
+export interface RedirectType {
+  type: 'http' | 'meta' | 'javascript';
+  statusCode?: number;
+  url: string;
+  targetUrl?: string;
+  delay?: number; // For meta refresh
+}
+
+export interface RedirectStep {
+  step: number;
+  url: string;
+  type: 'http' | 'meta' | 'javascript' | 'final';
+  statusCode?: number;
+  targetUrl?: string;
+  delay?: number;
+  method?: string;
 }
 
 export interface Project {

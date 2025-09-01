@@ -748,6 +748,12 @@ app.post('/api/check-redirect', async (req, res) => {
 
     // Manual redirect tracking
     console.log(`Starting manual redirect tracking for ${url}, maxRedirects=${maxRedirects}`);
+    const redirectTypeDetails = [];
+    const redirectChainDetails = [];
+    let hasMetaRefresh = false;
+    let hasJavaScriptRedirect = false;
+    let stepCounter = 0;
+    
     while (redirectCount < maxRedirects) {
       if (visitedUrls.has(currentUrl)) {
         hasLoop = true;
@@ -783,6 +789,90 @@ app.post('/api/check-redirect', async (req, res) => {
         console.log(`${method} ${currentUrl} → ${status} ${response.headers.get('location') || '(no location)'}`);
 
         if (status >= 200 && status < 300) {
+          // Success - check for meta refresh and JavaScript redirects
+          try {
+            const htmlContent = await response.text();
+            
+            // Check for meta refresh
+            const metaRefreshMatch = htmlContent.match(/<meta[^>]*http-equiv=["']refresh["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+            if (metaRefreshMatch) {
+              const content = metaRefreshMatch[1];
+              const parts = content.split(';');
+              const delay = parseInt(parts[0]) || 0;
+              const targetUrl = parts[1] ? parts[1].trim() : '';
+              
+              if (targetUrl) {
+                console.log(`Meta refresh detected: ${delay}s delay, target: ${targetUrl}`);
+                hasMetaRefresh = true;
+                redirectCount++;
+                
+                                 // Add meta refresh to types
+                 redirectTypeDetails.push({
+                   type: 'meta',
+                   url: currentUrl,
+                   targetUrl: targetUrl,
+                   delay: delay
+                 });
+                
+                // Add to detailed chain
+                redirectChainDetails.push({
+                  step: ++stepCounter,
+                  url: currentUrl,
+                  type: 'meta',
+                  targetUrl: targetUrl,
+                  delay: delay,
+                  method: 'Meta Refresh'
+                });
+                
+                // Update current URL and continue
+                const newUrl = new URL(targetUrl, currentUrl);
+                currentUrl = newUrl.toString();
+                continue;
+              }
+            }
+            
+            // Check for JavaScript redirects
+            const jsRedirectPatterns = [
+              /window\.location\s*=\s*['"]([^'"]+)['"]/g,
+              /window\.location\.href\s*=\s*['"]([^'"]+)['"]/g,
+              /window\.location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+              /location\.href\s*=\s*['"]([^'"]+)['"]/g,
+              /location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+            ];
+            
+            let jsRedirectFound = false;
+            jsRedirectPatterns.forEach(pattern => {
+              let match;
+              while ((match = pattern.exec(htmlContent)) !== null) {
+                console.log(`JavaScript redirect pattern found: ${match[1]}`);
+                hasJavaScriptRedirect = true;
+                jsRedirectFound = true;
+                
+                                 // Add JavaScript redirect to types
+                 redirectTypeDetails.push({
+                   type: 'javascript',
+                   url: currentUrl,
+                   targetUrl: match[1]
+                 });
+                
+                // Add to detailed chain
+                redirectChainDetails.push({
+                  step: ++stepCounter,
+                  url: currentUrl,
+                  type: 'javascript',
+                  targetUrl: match[1],
+                  method: 'JavaScript'
+                });
+              }
+            });
+            
+            if (jsRedirectFound) {
+              redirectCount++;
+            }
+          } catch (parseError) {
+            console.log('Error parsing HTML content for meta refresh/JS redirects:', parseError.message);
+          }
+          
           // Success - no more redirects
           console.log(`SUCCESS: ${currentUrl} returned ${status}, ending redirect chain`);
           break;
@@ -796,6 +886,24 @@ app.post('/api/check-redirect', async (req, res) => {
           if (!location) {
             throw new Error('Redirect response missing Location header');
           }
+
+                     // Add HTTP redirect to types
+           redirectTypeDetails.push({
+             type: 'http',
+             statusCode: status,
+             url: currentUrl,
+             targetUrl: location
+           });
+          
+          // Add to detailed chain
+          redirectChainDetails.push({
+            step: ++stepCounter,
+            url: currentUrl,
+            type: 'http',
+            statusCode: status,
+            targetUrl: location,
+            method: 'HTTP'
+          });
 
           // Check for domain changes
           const newUrl = new URL(location, currentUrl);
@@ -846,6 +954,90 @@ app.post('/api/check-redirect', async (req, res) => {
             console.log(`GET ${currentUrl} → ${status} ${getResponse.headers.get('location') || '(no location)'}`);
 
             if (status >= 200 && status < 300) {
+              // Success with GET - check for meta refresh and JavaScript redirects
+              try {
+                const htmlContent = await getResponse.text();
+                
+                // Check for meta refresh
+                const metaRefreshMatch = htmlContent.match(/<meta[^>]*http-equiv=["']refresh["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+                if (metaRefreshMatch) {
+                  const content = metaRefreshMatch[1];
+                  const parts = content.split(';');
+                  const delay = parseInt(parts[0]) || 0;
+                  const targetUrl = parts[1] ? parts[1].trim() : '';
+                  
+                  if (targetUrl) {
+                    console.log(`Meta refresh detected with GET: ${delay}s delay, target: ${targetUrl}`);
+                    hasMetaRefresh = true;
+                    redirectCount++;
+                    
+                                         // Add meta refresh to types
+                     redirectTypeDetails.push({
+                       type: 'meta',
+                       url: currentUrl,
+                       targetUrl: targetUrl,
+                       delay: delay
+                     });
+                    
+                    // Add to detailed chain
+                    redirectChainDetails.push({
+                      step: ++stepCounter,
+                      url: currentUrl,
+                      type: 'meta',
+                      targetUrl: targetUrl,
+                      delay: delay,
+                      method: 'Meta Refresh'
+                    });
+                    
+                    // Update current URL and continue
+                    const newUrl = new URL(targetUrl, currentUrl);
+                    currentUrl = newUrl.toString();
+                    continue;
+                  }
+                }
+                
+                // Check for JavaScript redirects
+                const jsRedirectPatterns = [
+                  /window\.location\s*=\s*['"]([^'"]+)['"]/g,
+                  /window\.location\.href\s*=\s*['"]([^'"]+)['"]/g,
+                  /window\.location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+                  /location\.href\s*=\s*['"]([^'"]+)['"]/g,
+                  /location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+                ];
+                
+                let jsRedirectFound = false;
+                jsRedirectPatterns.forEach(pattern => {
+                  let match;
+                  while ((match = pattern.exec(htmlContent)) !== null) {
+                    console.log(`JavaScript redirect pattern found with GET: ${match[1]}`);
+                    hasJavaScriptRedirect = true;
+                    jsRedirectFound = true;
+                    
+                                         // Add JavaScript redirect to types
+                     redirectTypeDetails.push({
+                       type: 'javascript',
+                       url: currentUrl,
+                       targetUrl: match[1]
+                     });
+                    
+                    // Add to detailed chain
+                    redirectChainDetails.push({
+                      step: ++stepCounter,
+                      url: currentUrl,
+                      type: 'javascript',
+                      targetUrl: match[1],
+                      method: 'JavaScript'
+                    });
+                  }
+                });
+                
+                if (jsRedirectFound) {
+                  redirectCount++;
+                }
+              } catch (parseError) {
+                console.log('Error parsing HTML content for meta refresh/JS redirects with GET:', parseError.message);
+              }
+              
               // Success with GET
               console.log(`SUCCESS: ${currentUrl} returned ${status} with GET, ending redirect chain`);
               break;
@@ -856,6 +1048,24 @@ app.post('/api/check-redirect', async (req, res) => {
 
               const location = getResponse.headers.get('location');
               if (location) {
+                                 // Add HTTP redirect to types
+                 redirectTypeDetails.push({
+                   type: 'http',
+                   statusCode: status,
+                   url: currentUrl,
+                   targetUrl: location
+                 });
+                
+                // Add to detailed chain
+                redirectChainDetails.push({
+                  step: ++stepCounter,
+                  url: currentUrl,
+                  type: 'http',
+                  statusCode: status,
+                  targetUrl: location,
+                  method: 'HTTP'
+                });
+                
                 const newUrl = new URL(location, currentUrl);
                 currentUrl = newUrl.toString();
                 continue; // Continue the loop with the new URL
@@ -905,6 +1115,14 @@ app.post('/api/check-redirect', async (req, res) => {
       httpsUpgrade = originalProtocol === 'http:' && currentUrl.startsWith('https:');
     }
 
+    // Add final step to detailed chain
+    redirectChainDetails.push({
+      step: ++stepCounter,
+      url: currentUrl,
+      type: 'final',
+      method: 'Final Destination'
+    });
+
     res.json({
       finalUrl: currentUrl,
       finalStatusCode: parseInt(statusChain[statusChain.length - 1] || '0'),
@@ -915,7 +1133,11 @@ app.post('/api/check-redirect', async (req, res) => {
       hasMixedTypes,
       domainChanges,
       httpsUpgrade,
-      method: method
+      method: method,
+      redirectTypes: redirectTypeDetails,
+      redirectChainDetails,
+      hasMetaRefresh,
+      hasJavaScriptRedirect
     });
 
   } catch (error) {

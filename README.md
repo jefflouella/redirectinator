@@ -7,28 +7,66 @@
 [![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 
-## ✨ Features
+## Features
 
-### 🚀 Core Functionality
-- **Bulk URL Analysis**: Process hundreds of URLs simultaneously with intelligent batching
-- **Real-time Processing**: Live progress tracking with stop/resume capabilities
-- **Historical Discovery**: Find historical URLs via Internet Archive integration
-- **Export Capabilities**: Export results in CSV, JSON, Excel, and detailed reports
-- **Project Management**: Organize and manage multiple projects with collaboration features
+- **Comprehensive Redirect Tracking**: Detect and analyze HTTP redirects (301, 302, 307, 308)
+- **Meta Refresh Detection**: Automatically detect HTML meta refresh redirects with delay timing
+- **JavaScript Redirect Detection**: Identify JavaScript-based redirects in page content
+- **Enhanced Redirect Chain Analysis**: View detailed step-by-step redirect information including types and methods
+- **Affiliate Link Protection**: Built-in detection and blocking of affiliate links that use anti-bot protection
+- **Wayback Machine Integration**: Discover historical URLs and analyze their redirect patterns
+- **SEMrush Integration**: Import and analyze URLs from SEMrush campaigns
+- **Bulk URL Processing**: Process multiple URLs simultaneously with configurable batch sizes
+- **Export Capabilities**: Export results in CSV, JSON, or Excel formats
+- **Project Management**: Organize URLs into projects with custom settings
+- **Real-time Processing**: Live status updates and progress tracking
+- **Advanced Filtering**: Filter results by status, redirect types, and other criteria
 
-### 🛠 Technical Features
-- **Client-side Processing**: Fast, secure processing directly in your browser
-- **Server-side Fallback**: Advanced redirect checking with Puppeteer backend
-- **Local Data Storage**: All data stored locally using IndexedDB
-- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile
-- **Modern UI/UX**: Clean, professional interface with dark/light themes
+## Redirect Detection Types
 
-### 📊 Analysis Capabilities
-- **Redirect Chain Tracking**: Follow complete redirect chains up to 10 levels deep
-- **Status Code Analysis**: Detailed HTTP status code reporting
-- **Response Time Metrics**: Performance analysis for each URL
-- **Final Destination Mapping**: Track where each URL ultimately leads
-- **Error Detection**: Identify broken links and server issues
+The tool now tracks three main types of redirects:
+
+### 1. HTTP Redirects
+- **Status Codes**: 301 (Permanent), 302 (Temporary), 307 (Temporary), 308 (Permanent)
+- **Detection Method**: Server response headers with Location field
+- **Display**: Blue badges showing status codes (e.g., "301", "302")
+
+### 2. Meta Refresh Redirects
+- **Detection Method**: HTML `<meta http-equiv="refresh">` tags
+- **Features**: Shows delay timing and target URL
+- **Display**: Green badges labeled "Meta" with delay information
+
+### 3. JavaScript Redirects
+- **Detection Method**: Script content analysis for common redirect patterns
+- **Patterns Detected**: `window.location`, `location.href`, `location.replace`
+- **Display**: Purple badges labeled "JavaScript"
+
+### Redirect Chain Display
+
+The enhanced results table now shows:
+- **HTTP Status Column**: Displays the complete redirect chain (e.g., "301 → Meta → JS → 200")
+- **Redirect Types Column**: Visual badges for each redirect type in the chain
+- **Expanded Details**: Step-by-step breakdown of each redirect with:
+  - Step number and type
+  - Source and target URLs
+  - Delay timing (for meta refresh)
+  - Redirect method used
+
+### Example Output
+
+For a URL that goes through multiple redirect types, you'll see:
+```
+Starting URL: http://example.com/start
+HTTP Status: 301 → Meta → JS → 200
+Redirect Types: [301] [Meta] [JavaScript]
+Final URL: https://example.com/final
+```
+
+In the expanded details, you'll see:
+- **Step 1**: HTTP 301 redirect from start URL to intermediate page
+- **Step 2**: Meta refresh (5s delay) to JavaScript page
+- **Step 3**: JavaScript redirect to final destination
+- **Step 4**: Final destination reached
 
 ## 🚀 Quick Start
 

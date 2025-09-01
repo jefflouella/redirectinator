@@ -220,6 +220,9 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                 HTTP Status
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
+                Redirect Types
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
                 Redirects
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
@@ -279,6 +282,30 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                   </td>
                   
                   <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {result.redirectTypes && result.redirectTypes.length > 0 ? (
+                        result.redirectTypes.map((redirectType, idx) => (
+                          <span
+                            key={idx}
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              redirectType.type === 'http' 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : redirectType.type === 'meta' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-purple-100 text-purple-800'
+                            }`}
+                            title={`${redirectType.type.toUpperCase()} redirect${redirectType.delay ? ` (${redirectType.delay}s delay)` : ''}`}
+                          >
+                            {redirectType.type === 'http' && redirectType.statusCode ? `${redirectType.statusCode}` : redirectType.type.charAt(0).toUpperCase() + redirectType.type.slice(1)}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                      )}
+                    </div>
+                  </td>
+                  
+                  <td className="px-4 py-3">
                     <div className="text-sm text-tech-600">
                       {result.numberOfRedirects}
                     </div>
@@ -330,7 +357,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                 {/* Expanded Details */}
                 {showDetails.has(result.id) && (
                   <tr className="bg-gray-25">
-                    <td colSpan={8} className="px-4 py-4">
+                    <td colSpan={9} className="px-4 py-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Left Column */}
                         <div className="space-y-3">
@@ -426,6 +453,83 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                             </div>
                           ) : (
                             <div className="text-sm text-tech-500 italic">No redirects</div>
+                          )}
+                          
+                          {/* Enhanced Redirect Chain Details */}
+                          {result.redirectChainDetails && result.redirectChainDetails.length > 0 && (
+                            <div className="mt-4">
+                              <h4 className="text-sm font-medium text-tech-700 mb-2">Detailed Redirect Analysis</h4>
+                              <div className="space-y-2">
+                                {result.redirectChainDetails.map((step, index) => (
+                                  <div key={index} className="text-sm bg-gray-50 p-3 rounded border">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="font-medium text-tech-700">Step {step.step}</span>
+                                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                        step.type === 'http' 
+                                          ? 'bg-blue-100 text-blue-800' 
+                                          : step.type === 'meta' 
+                                          ? 'bg-green-100 text-green-800' 
+                                          : step.type === 'javascript'
+                                          ? 'bg-purple-100 text-purple-800'
+                                          : 'bg-gray-100 text-gray-800'
+                                      }`}>
+                                        {step.type === 'http' && step.statusCode ? `HTTP ${step.statusCode}` : 
+                                         step.type === 'meta' ? 'Meta Refresh' :
+                                         step.type === 'javascript' ? 'JavaScript' :
+                                         step.type === 'final' ? 'Final' : step.type}
+                                      </span>
+                                    </div>
+                                    <div className="text-gray-600 mb-1">
+                                      <strong>URL:</strong> {step.url}
+                                    </div>
+                                    {step.targetUrl && (
+                                      <div className="text-gray-600 mb-1">
+                                        <strong>Target:</strong> {step.targetUrl}
+                                      </div>
+                                    )}
+                                    {step.delay !== undefined && step.delay > 0 && (
+                                      <div className="text-gray-600 mb-1">
+                                        <strong>Delay:</strong> {step.delay}s
+                                      </div>
+                                    )}
+                                    {step.method && (
+                                      <div className="text-gray-600">
+                                        <strong>Method:</strong> {step.method}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Redirect Type Summary */}
+                          {result.redirectTypes && result.redirectTypes.length > 0 && (
+                            <div className="mt-4">
+                              <h4 className="text-sm font-medium text-tech-700 mb-2">Redirect Type Summary</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {result.redirectTypes.map((redirectType, idx) => (
+                                  <div
+                                    key={idx}
+                                    className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${
+                                      redirectType.type === 'http' 
+                                        ? 'bg-blue-100 text-blue-800 border border-blue-200' 
+                                        : redirectType.type === 'meta' 
+                                        ? 'bg-green-100 text-green-800 border border-green-200' 
+                                        : 'bg-purple-100 text-purple-800 border border-purple-200'
+                                    }`}
+                                  >
+                                    <span className="mr-2">
+                                      {redirectType.type === 'http' ? '🌐' : 
+                                       redirectType.type === 'meta' ? '⏰' : '⚡'}
+                                    </span>
+                                    {redirectType.type === 'http' && redirectType.statusCode ? `HTTP ${redirectType.statusCode}` : 
+                                     redirectType.type === 'meta' ? `Meta Refresh${redirectType.delay ? ` (${redirectType.delay}s)` : ''}` :
+                                     'JavaScript'}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>

@@ -55,6 +55,11 @@ export class RedirectChecker {
         affiliateService: result.affiliateService,
         suggestedDirectUrl: result.suggestedDirectUrl,
         timestamp: Date.now(),
+        // New fields for enhanced redirect tracking
+        redirectTypes: result.redirectTypes,
+        redirectChainDetails: result.redirectChainDetails,
+        hasMetaRefresh: result.hasMetaRefresh,
+        hasJavaScriptRedirect: result.hasJavaScriptRedirect,
       };
     } catch (error) {
       const responseTime = Math.round(performance.now() - startTime);

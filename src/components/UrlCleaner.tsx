@@ -36,7 +36,7 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [urlsToDelete, setUrlsToDelete] = useState<string[]>([]);
   const { addNotification } = useNotifications();
-  const { trackCopyAction, trackSearch, trackFilter, trackBulkAction, trackCleanup, trackUIInteraction } = useAnalytics();
+  const { trackCopyAction, trackSearch, trackFilter, trackCleanup, trackUIInteraction } = useAnalytics();
 
   // Process URLs to extract parameters and detect duplicates
   const processedUrls = useMemo(() => {
