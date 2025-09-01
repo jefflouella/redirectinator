@@ -5,7 +5,8 @@ import { RedirectChecker } from '@/services/redirectChecker';
 
 export const useUrlProcessing = (
   currentProject: Project | null,
-  onResultSaved?: (results: RedirectResult[]) => void
+  onResultSaved?: (results: RedirectResult[]) => void,
+  mode: 'default' | 'advanced' = 'default'
 ) => {
   const [results, setResults] = useState<RedirectResult[]>([]);
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>({
@@ -43,6 +44,7 @@ export const useUrlProcessing = (
     }));
 
     const checker = new RedirectChecker(currentProject.settings);
+    checker.setMode(mode); // Set the detection mode
     const batchSize = currentProject.settings.batchSize;
     const newResults: RedirectResult[] = [];
 

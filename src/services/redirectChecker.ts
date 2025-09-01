@@ -20,9 +20,29 @@ interface CheckResult {
 
 export class RedirectChecker {
   private settings: ProjectSettings;
+  private mode: 'default' | 'advanced';
 
   constructor(settings: ProjectSettings) {
     this.settings = settings;
+    this.mode = 'default'; // Default to default mode for speed
+  }
+
+  // Set the detection mode
+  setMode(mode: 'default' | 'advanced') {
+    this.mode = mode;
+    console.log(`Redirect detection mode set to: ${mode}`);
+  }
+
+  // Get current mode
+  getMode(): 'default' | 'advanced' {
+    return this.mode;
+  }
+
+  // Toggle between modes
+  toggleMode() {
+    this.mode = this.mode === 'default' ? 'advanced' : 'default';
+    console.log(`Redirect detection mode toggled to: ${this.mode}`);
+    return this.mode;
   }
 
   async checkRedirect(startingUrl: string, targetRedirect: string = ''): Promise<RedirectResult> {
@@ -318,9 +338,8 @@ export class RedirectChecker {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.settings.timeout);
 
-      // Determine if we should use Puppeteer for enhanced redirect detection
-      // Use Puppeteer for URLs that might have client-side redirects (meta refresh, JavaScript)
-      const shouldUsePuppeteer = this.shouldUsePuppeteer(url);
+      // Use mode-based logic instead of automatic detection
+      const usePuppeteer = this.mode === 'advanced';
 
       // Try to connect to the backend server via proxy
       let proxyResponse = null;
@@ -336,11 +355,11 @@ export class RedirectChecker {
             method: 'GET',
             followRedirects: false,
             maxRedirects: this.settings.maxRedirects,
-            usePuppeteer: shouldUsePuppeteer
+            usePuppeteer: usePuppeteer
           }),
         });
 
-        console.log(`Connected to backend server via proxy${shouldUsePuppeteer ? ' with Puppeteer' : ''}`);
+        console.log(`Connected to backend server via proxy${usePuppeteer ? ' with Advanced mode (Puppeteer)' : ' with Default mode'}`);
       } catch (error) {
         console.error('Failed to connect to backend server via proxy:', error);
         throw error;
@@ -348,7 +367,7 @@ export class RedirectChecker {
 
       if (proxyResponse && proxyResponse.ok) {
         const data = await proxyResponse.json();
-        console.log(`Backend server successfully analyzed ${url}:`, data);
+        console.log(`Backend server successfully analyzed ${url} in ${this.mode} mode:`, data);
         clearTimeout(timeoutId);
         return data;
       }
@@ -362,29 +381,7 @@ export class RedirectChecker {
     }
   }
 
-  private shouldUsePuppeteer(url: string): boolean {
-    // Use Puppeteer for URLs that might have client-side redirects
-    const urlLower = url.toLowerCase();
-    
-    // Always use Puppeteer for affiliate links
-    if (this.isAffiliateLink(url)) {
-      return true;
-    }
-    
-    // Use Puppeteer for URLs that might have meta refresh or JavaScript redirects
-    const clientSideRedirectPatterns = [
-      // Common domains that use client-side redirects
-      'tamethebots.com',
-      'redirect',
-      'meta',
-      'javascript',
-      'jsredirect',
-      'metaredirect',
-      // Add more patterns as needed
-    ];
-    
-    return clientSideRedirectPatterns.some(pattern => urlLower.includes(pattern));
-  }
+
 
   private determineResult(checkResult: CheckResult, targetRedirect: string): 'direct' | 'redirect' | 'error' | 'loop' {
     // Debug logging

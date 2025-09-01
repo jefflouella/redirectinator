@@ -77,6 +77,7 @@ export interface ProjectSettings {
   followRedirects: boolean;
   maxRedirects: number;
   includeHeaders: boolean;
+  redirectMode?: 'default' | 'advanced'; // New field for mode selection
   authentication?: {
     username: string;
     password: string;

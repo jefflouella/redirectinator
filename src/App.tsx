@@ -26,6 +26,7 @@ function App() {
   const { activeTab, navigateTo } = useRouting();
   const [isUrlOverlayOpen, setIsUrlOverlayOpen] = useState(false);
   const [refreshCounter, setRefreshCounter] = useState(0);
+  const [mode, setMode] = useState<'default' | 'advanced'>('default');
   const { settings, updateSettings } = useAppSettings();
   const { currentProject, projects, loadProject, createNewProject, deleteProject, updateProject, setCurrentProject } = useProjects(settings);
   const { results, processingStatus, processUrls, stopProcessing } = useUrlProcessing(
@@ -33,7 +34,8 @@ function App() {
     (newResults) => {
       // Save results to persistent storage when processing completes
       saveResults(newResults);
-    }
+    },
+    mode // Pass the current mode
   );
   
   // Use persistent results storage
@@ -186,6 +188,8 @@ function App() {
                 summaryStats={summaryStats}
                 processingStatus={processingStatus}
                 onExport={exportResults}
+                mode={mode}
+                onModeChange={setMode}
               />
               
               <UrlSummary 
