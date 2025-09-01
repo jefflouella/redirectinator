@@ -1,8 +1,8 @@
 // Google Analytics service for privacy-focused tracking
 declare global {
   interface Window {
-    gtag: (...args: any[]) => void;
-    dataLayer: any[];
+    gtag: (...args: unknown[]) => void;
+    dataLayer: unknown[];
   }
 }
 
@@ -15,12 +15,16 @@ export interface AnalyticsEvent {
 }
 
 export class AnalyticsService {
-  private static instance: AnalyticsService;
+  private static instance: AnalyticsService | null = null;
   private isEnabled: boolean = true;
 
   private constructor() {
-    // Check if gtag is available
-    this.isEnabled = typeof window !== 'undefined' && typeof window.gtag === 'function';
+    // Check if gtag is available (only in browser environment)
+    if (typeof window !== 'undefined') {
+      this.isEnabled = typeof window.gtag === 'function';
+    } else {
+      this.isEnabled = false;
+    }
   }
 
   public static getInstance(): AnalyticsService {
@@ -34,7 +38,7 @@ export class AnalyticsService {
    * Track a custom event
    */
   public trackEvent(event: AnalyticsEvent): void {
-    if (!this.isEnabled) return;
+    if (!this.isEnabled || typeof window === 'undefined' || !window.gtag) return;
 
     try {
       window.gtag('event', event.action, {
@@ -52,7 +56,7 @@ export class AnalyticsService {
    * Track page views
    */
   public trackPageView(page: string): void {
-    if (!this.isEnabled) return;
+    if (!this.isEnabled || typeof window === 'undefined' || !window.gtag) return;
 
     try {
       window.gtag('config', 'G-WL1D9YFCH9', {

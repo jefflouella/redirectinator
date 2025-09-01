@@ -4,8 +4,10 @@ import { analytics } from '@/services/analytics';
 export const useAnalytics = () => {
   // Track page views on route changes
   useEffect(() => {
-    const currentPath = window.location.pathname;
-    analytics.trackPageView(currentPath);
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname;
+      analytics.trackPageView(currentPath);
+    }
   }, []);
 
   const trackFeatureUsage = useCallback((feature: string, details?: Record<string, unknown>) => {
