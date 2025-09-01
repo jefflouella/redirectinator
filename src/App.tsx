@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
 import { UrlInputOverlay } from './components/UrlInputOverlay';
@@ -28,7 +28,7 @@ function App() {
   const [refreshCounter, setRefreshCounter] = useState(0);
   const { settings, updateSettings } = useAppSettings();
   const { currentProject, projects, loadProject, createNewProject, deleteProject, updateProject, setCurrentProject } = useProjects(settings);
-  const { results, processingStatus, processUrls, stopProcessing, clearResults: clearUrlProcessingResults } = useUrlProcessing(
+  const { results, processingStatus, processUrls, stopProcessing } = useUrlProcessing(
     currentProject,
     (newResults) => {
       // Save results to persistent storage when processing completes
@@ -40,12 +40,9 @@ function App() {
   const { 
     results: persistentResults, 
     saveResults, 
-    addResult, 
-    updateResult, 
     clearResults,
     getUnprocessedUrls,
-    getProgressStats,
-    markUrlProcessed
+    getProgressStats
   } = useResultsPersistence({ projectId: currentProject?.id || null });
   
   // Use persistent results if available, otherwise use in-memory results
@@ -126,8 +123,20 @@ function App() {
 
   const exportResults = async (format: 'csv' | 'json' | 'excel' | 'report') => {
     try {
-      const exportService = new ExportService();
-      await exportService.exportResults(finalResults, format);
+      switch (format) {
+        case 'csv':
+          ExportService.exportToCSV(finalResults, { format: 'csv', includeHeaders: true });
+          break;
+        case 'json':
+          ExportService.exportToJSON(finalResults, { format: 'json', includeHeaders: true });
+          break;
+        case 'excel':
+          ExportService.exportToExcel(finalResults, { format: 'excel', includeHeaders: true });
+          break;
+        case 'report':
+          ExportService.generateReport(finalResults);
+          break;
+      }
       
       // Track export usage
       trackExport(format, finalResults.length);
@@ -176,7 +185,6 @@ function App() {
               <Dashboard 
                 summaryStats={summaryStats}
                 processingStatus={processingStatus}
-                currentProject={currentProject}
                 onExport={exportResults}
               />
               
