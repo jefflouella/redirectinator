@@ -38,20 +38,6 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
   const { addNotification } = useNotifications();
   const { trackCopyAction, trackSearch, trackFilter, trackBulkAction, trackCleanup, trackUIInteraction } = useAnalytics();
 
-  // Track search term changes
-  useEffect(() => {
-    if (searchTerm.trim()) {
-      trackSearch(searchTerm, 'url_cleaner', processedUrls.length);
-    }
-  }, [searchTerm, trackSearch, processedUrls.length]);
-
-  // Track parameter filter changes
-  useEffect(() => {
-    if (selectedParameter) {
-      trackFilter('parameter', selectedParameter, processedUrls.length);
-    }
-  }, [selectedParameter, trackFilter, processedUrls.length]);
-
   // Process URLs to extract parameters and detect duplicates
   const processedUrls = useMemo(() => {
     const urlMap = new Map<string, UrlWithMetadata[]>();
@@ -224,6 +210,20 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
     });
     trackCopyAction('url', 'url_cleaner');
   }, [addNotification, trackCopyAction]);
+
+  // Track search term changes
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      trackSearch(searchTerm, 'url_cleaner', processedUrls.length);
+    }
+  }, [searchTerm, trackSearch, processedUrls.length]);
+
+  // Track parameter filter changes
+  useEffect(() => {
+    if (selectedParameter) {
+      trackFilter('parameter', selectedParameter, processedUrls.length);
+    }
+  }, [selectedParameter, trackFilter, processedUrls.length]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

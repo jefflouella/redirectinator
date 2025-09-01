@@ -26,20 +26,6 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
   const [showDetails, setShowDetails] = useState<Set<string>>(new Set());
   const { trackCopyAction, trackSearch, trackFilter, trackUIInteraction } = useAnalytics();
 
-  // Track search term changes
-  useEffect(() => {
-    if (searchTerm.trim()) {
-      trackSearch(searchTerm, 'results_table', filteredResults.length);
-    }
-  }, [searchTerm, trackSearch, filteredResults.length]);
-
-  // Track status filter changes
-  useEffect(() => {
-    if (statusFilter !== 'all') {
-      trackFilter('status', statusFilter, filteredResults.length);
-    }
-  }, [statusFilter, trackFilter, filteredResults.length]);
-
   const filteredResults = useMemo(() => {
     return results.filter(result => {
       const matchesSearch =
@@ -146,6 +132,20 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
     // Other codes - default
     return 'text-gray-600';
   };
+
+  // Track search term changes
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      trackSearch(searchTerm, 'results_table', filteredResults.length);
+    }
+  }, [searchTerm, trackSearch, filteredResults.length]);
+
+  // Track status filter changes
+  useEffect(() => {
+    if (statusFilter !== 'all') {
+      trackFilter('status', statusFilter, filteredResults.length);
+    }
+  }, [statusFilter, trackFilter, filteredResults.length]);
 
   return (
     <div className="card">
