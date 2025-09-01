@@ -822,6 +822,15 @@ app.post('/api/check-redirect', async (req, res) => {
       });
     }
 
+    // Check if we should use Puppeteer for enhanced redirect detection
+    if (usePuppeteer) {
+      console.log(`Using Puppeteer for enhanced redirect detection: ${url}`);
+      return await performPuppeteerRedirectCheck(url, maxRedirects, res);
+    }
+
+    // Manual redirect tracking
+    console.log(`Starting manual redirect tracking for ${url}, maxRedirects=${maxRedirects}`);
+    
     const redirectChain = [];
     const statusChain = [];
     let currentUrl = url;

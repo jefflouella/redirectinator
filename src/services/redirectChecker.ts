@@ -318,6 +318,10 @@ export class RedirectChecker {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.settings.timeout);
 
+      // Determine if we should use Puppeteer for enhanced redirect detection
+      // Use Puppeteer for URLs that might have client-side redirects (meta refresh, JavaScript)
+      const shouldUsePuppeteer = this.shouldUsePuppeteer(url);
+
       // Try to connect to the backend server via proxy
       let proxyResponse = null;
       try {
@@ -331,11 +335,12 @@ export class RedirectChecker {
             url,
             method: 'GET',
             followRedirects: false,
-            maxRedirects: this.settings.maxRedirects
+            maxRedirects: this.settings.maxRedirects,
+            usePuppeteer: shouldUsePuppeteer
           }),
         });
 
-        console.log('Connected to backend server via proxy');
+        console.log(`Connected to backend server via proxy${shouldUsePuppeteer ? ' with Puppeteer' : ''}`);
       } catch (error) {
         console.error('Failed to connect to backend server via proxy:', error);
         throw error;
@@ -355,6 +360,30 @@ export class RedirectChecker {
       console.error(`Server-side redirect check failed for ${url}:`, error);
       throw error;
     }
+  }
+
+  private shouldUsePuppeteer(url: string): boolean {
+    // Use Puppeteer for URLs that might have client-side redirects
+    const urlLower = url.toLowerCase();
+    
+    // Always use Puppeteer for affiliate links
+    if (this.isAffiliateLink(url)) {
+      return true;
+    }
+    
+    // Use Puppeteer for URLs that might have meta refresh or JavaScript redirects
+    const clientSideRedirectPatterns = [
+      // Common domains that use client-side redirects
+      'tamethebots.com',
+      'redirect',
+      'meta',
+      'javascript',
+      'jsredirect',
+      'metaredirect',
+      // Add more patterns as needed
+    ];
+    
+    return clientSideRedirectPatterns.some(pattern => urlLower.includes(pattern));
   }
 
   private determineResult(checkResult: CheckResult, targetRedirect: string): 'direct' | 'redirect' | 'error' | 'loop' {
