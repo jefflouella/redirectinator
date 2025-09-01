@@ -300,12 +300,17 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
 
     const redirectChain = [];
     const statusChain = [];
+    const redirectTypes = [];
+    const redirectChainDetails = [];
     let redirectCount = 0;
     let currentUrl = url;
     let finalUrl = url;
     let finalStatusCode = 200;
+    let hasMetaRefresh = false;
+    let hasJavaScriptRedirect = false;
+    let stepCounter = 0;
 
-    // Track redirects
+    // Track HTTP redirects
     page.on('response', response => {
       const status = response.status();
       const responseUrl = response.url();
@@ -314,9 +319,60 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
         redirectCount++;
         redirectChain.push(currentUrl);
         statusChain.push(status.toString());
+        
+        // Add HTTP redirect to types
+        redirectTypes.push({
+          type: 'http',
+          statusCode: status,
+          url: currentUrl,
+          targetUrl: responseUrl
+        });
+        
+        // Add to detailed chain
+        redirectChainDetails.push({
+          step: ++stepCounter,
+          url: currentUrl,
+          type: 'http',
+          statusCode: status,
+          targetUrl: responseUrl,
+          method: 'HTTP'
+        });
+        
         currentUrl = responseUrl;
         finalUrl = responseUrl;
         finalStatusCode = status;
+      }
+    });
+
+    // Track JavaScript redirects and navigation
+    page.on('framenavigated', frame => {
+      if (frame === page.mainFrame()) {
+        const newUrl = frame.url();
+        if (newUrl !== currentUrl && newUrl !== 'about:blank') {
+          console.log(`JavaScript navigation detected: ${currentUrl} → ${newUrl}`);
+          hasJavaScriptRedirect = true;
+          redirectCount++;
+          redirectChain.push(currentUrl);
+          
+          // Add JavaScript redirect to types
+          redirectTypes.push({
+            type: 'javascript',
+            url: currentUrl,
+            targetUrl: newUrl
+          });
+          
+          // Add to detailed chain
+          redirectChainDetails.push({
+            step: ++stepCounter,
+            url: currentUrl,
+            type: 'javascript',
+            targetUrl: newUrl,
+            method: 'JavaScript'
+          });
+          
+          currentUrl = newUrl;
+          finalUrl = newUrl;
+        }
       }
     });
 
@@ -334,6 +390,102 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
         statusChain.push(finalStatusCode.toString());
       }
     }
+
+    // Check for meta refresh redirects
+    try {
+      const metaRefreshContent = await page.evaluate(() => {
+        const metaRefresh = document.querySelector('meta[http-equiv="refresh"]');
+        if (metaRefresh) {
+          const content = metaRefresh.getAttribute('content');
+          if (content) {
+            const parts = content.split(';');
+            const delay = parseInt(parts[0]) || 0;
+            const url = parts[1] ? parts[1].trim() : '';
+            return { delay, url };
+          }
+        }
+        return null;
+      });
+
+      if (metaRefreshContent && metaRefreshContent.url) {
+        console.log(`Meta refresh detected: ${metaRefreshContent.delay}s delay, target: ${metaRefreshContent.url}`);
+        hasMetaRefresh = true;
+        redirectCount++;
+        
+        // Add meta refresh to types
+        redirectTypes.push({
+          type: 'meta',
+          url: currentUrl,
+          targetUrl: metaRefreshContent.url,
+          delay: metaRefreshContent.delay
+        });
+        
+        // Add to detailed chain
+        redirectChainDetails.push({
+          step: ++stepCounter,
+          url: currentUrl,
+          type: 'meta',
+          targetUrl: metaRefreshContent.url,
+          delay: metaRefreshContent.delay,
+          method: 'Meta Refresh'
+        });
+      }
+    } catch (error) {
+      console.log('Error checking for meta refresh:', error.message);
+    }
+
+    // Check for JavaScript redirects in page content
+    try {
+      const jsRedirects = await page.evaluate(() => {
+        const scripts = document.querySelectorAll('script');
+        const redirectPatterns = [
+          /window\.location\s*=\s*['"]([^'"]+)['"]/g,
+          /window\.location\.href\s*=\s*['"]([^'"]+)['"]/g,
+          /window\.location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+          /location\.href\s*=\s*['"]([^'"]+)['"]/g,
+          /location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+        ];
+        
+        const foundRedirects = [];
+        scripts.forEach(script => {
+          const content = script.textContent || '';
+          redirectPatterns.forEach(pattern => {
+            let match;
+            while ((match = pattern.exec(content)) !== null) {
+              foundRedirects.push(match[1]);
+            }
+          });
+        });
+        
+        return foundRedirects;
+      });
+
+      if (jsRedirects.length > 0) {
+        console.log(`JavaScript redirect patterns found: ${jsRedirects.join(', ')}`);
+        hasJavaScriptRedirect = true;
+        
+        // Add JavaScript redirects to types (if not already added)
+        jsRedirects.forEach(targetUrl => {
+          if (!redirectTypes.some(rt => rt.type === 'javascript' && rt.targetUrl === targetUrl)) {
+            redirectTypes.push({
+              type: 'javascript',
+              url: currentUrl,
+              targetUrl: targetUrl
+            });
+          }
+        });
+      }
+    } catch (error) {
+      console.log('Error checking for JavaScript redirects:', error.message);
+    }
+
+    // Add final step to detailed chain
+    redirectChainDetails.push({
+      step: ++stepCounter,
+      url: finalUrl,
+      type: 'final',
+      method: 'Final Destination'
+    });
 
     await browser.close();
 
@@ -354,7 +506,11 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
         httpsUpgrade: false,
         method: 'PUPPETEER_BLOCKED',
         needsManualOverride: true,
-        suggestedFinalUrl: getSuggestedFinalUrl(url)
+        suggestedFinalUrl: getSuggestedFinalUrl(url),
+        redirectTypes: [],
+        redirectChainDetails: [],
+        hasMetaRefresh: false,
+        hasJavaScriptRedirect: false
       });
       return;
     }
@@ -378,7 +534,11 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
       hasMixedTypes: false,
       domainChanges,
       httpsUpgrade,
-      method: 'PUPPETEER'
+      method: 'PUPPETEER',
+      redirectTypes,
+      redirectChainDetails,
+      hasMetaRefresh,
+      hasJavaScriptRedirect
     });
 
   } catch (error) {
