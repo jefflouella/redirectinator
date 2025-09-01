@@ -391,98 +391,143 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
       }
     }
 
-    // Check for meta refresh redirects
-    try {
-      const metaRefreshContent = await page.evaluate(() => {
-        const metaRefresh = document.querySelector('meta[http-equiv="refresh"]');
-        if (metaRefresh) {
-          const content = metaRefresh.getAttribute('content');
-          if (content) {
-            const parts = content.split(';');
-            const delay = parseInt(parts[0]) || 0;
-            const url = parts[1] ? parts[1].trim() : '';
-            return { delay, url };
+    // Enhanced redirect detection and following
+    let maxRedirectAttempts = 5; // Prevent infinite loops
+    let redirectAttempts = 0;
+    
+    while (redirectAttempts < maxRedirectAttempts) {
+      redirectAttempts++;
+      console.log(`Redirect attempt ${redirectAttempts}: checking ${page.url()}`);
+      
+      // Check for meta refresh redirects
+      try {
+        const metaRefreshContent = await page.evaluate(() => {
+          const metaRefresh = document.querySelector('meta[http-equiv="refresh"]');
+          if (metaRefresh) {
+            const content = metaRefresh.getAttribute('content');
+            if (content) {
+              const parts = content.split(';');
+              const delay = parseInt(parts[0]) || 0;
+              const url = parts[1] ? parts[1].trim() : '';
+              return { delay, url };
+            }
+          }
+          return null;
+        });
+
+        if (metaRefreshContent && metaRefreshContent.url) {
+          console.log(`Meta refresh detected: ${metaRefreshContent.delay}s delay, target: ${metaRefreshContent.url}`);
+          hasMetaRefresh = true;
+          redirectCount++;
+          
+          // Add meta refresh to types
+          redirectTypes.push({
+            type: 'meta',
+            url: page.url(),
+            targetUrl: metaRefreshContent.url,
+            delay: metaRefreshContent.delay
+          });
+          
+          // Add to detailed chain
+          redirectChainDetails.push({
+            step: ++stepCounter,
+            url: page.url(),
+            type: 'meta',
+            targetUrl: metaRefreshContent.url,
+            delay: metaRefreshContent.delay,
+            method: 'Meta Refresh'
+          });
+          
+          // Follow the meta refresh redirect
+          const targetUrl = new URL(metaRefreshContent.url, page.url()).toString();
+          console.log(`Following meta refresh to: ${targetUrl}`);
+          
+          try {
+            await page.goto(targetUrl, { waitUntil: 'networkidle2', timeout: 10000 });
+            redirectChain.push(page.url());
+            continue; // Check for more redirects
+          } catch (error) {
+            console.log(`Failed to follow meta refresh: ${error.message}`);
+            break;
           }
         }
-        return null;
-      });
-
-      if (metaRefreshContent && metaRefreshContent.url) {
-        console.log(`Meta refresh detected: ${metaRefreshContent.delay}s delay, target: ${metaRefreshContent.url}`);
-        hasMetaRefresh = true;
-        redirectCount++;
-        
-        // Add meta refresh to types
-        redirectTypes.push({
-          type: 'meta',
-          url: currentUrl,
-          targetUrl: metaRefreshContent.url,
-          delay: metaRefreshContent.delay
-        });
-        
-        // Add to detailed chain
-        redirectChainDetails.push({
-          step: ++stepCounter,
-          url: currentUrl,
-          type: 'meta',
-          targetUrl: metaRefreshContent.url,
-          delay: metaRefreshContent.delay,
-          method: 'Meta Refresh'
-        });
+      } catch (error) {
+        console.log('Error checking for meta refresh:', error.message);
       }
-    } catch (error) {
-      console.log('Error checking for meta refresh:', error.message);
-    }
 
-    // Check for JavaScript redirects in page content
-    try {
-      const jsRedirects = await page.evaluate(() => {
-        const scripts = document.querySelectorAll('script');
-        const redirectPatterns = [
-          /window\.location\s*=\s*['"]([^'"]+)['"]/g,
-          /window\.location\.href\s*=\s*['"]([^'"]+)['"]/g,
-          /window\.location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
-          /location\.href\s*=\s*['"]([^'"]+)['"]/g,
-          /location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g
-        ];
-        
-        const foundRedirects = [];
-        scripts.forEach(script => {
-          const content = script.textContent || '';
-          redirectPatterns.forEach(pattern => {
-            let match;
-            while ((match = pattern.exec(content)) !== null) {
-              foundRedirects.push(match[1]);
+      // Check for JavaScript redirects in page content
+      try {
+        const jsRedirects = await page.evaluate(() => {
+          const scripts = document.querySelectorAll('script');
+          const redirectPatterns = [
+            /window\.location\s*=\s*['"]([^'"]+)['"]/g,
+            /window\.location\.href\s*=\s*['"]([^'"]+)['"]/g,
+            /window\.location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+            /location\.href\s*=\s*['"]([^'"]+)['"]/g,
+            /location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+          ];
+          
+          const foundRedirects = [];
+          scripts.forEach(script => {
+            const content = script.textContent || '';
+            redirectPatterns.forEach(pattern => {
+              let match;
+              while ((match = pattern.exec(content)) !== null) {
+                foundRedirects.push(match[1]);
+              }
+            });
+          });
+          
+          return foundRedirects;
+        });
+
+        if (jsRedirects.length > 0) {
+          console.log(`JavaScript redirect patterns found: ${jsRedirects.join(', ')}`);
+          hasJavaScriptRedirect = true;
+          
+          // Add JavaScript redirects to types (if not already added)
+          jsRedirects.forEach(targetUrl => {
+            if (!redirectTypes.some(rt => rt.type === 'javascript' && rt.targetUrl === targetUrl)) {
+              redirectTypes.push({
+                type: 'javascript',
+                url: page.url(),
+                targetUrl: targetUrl
+              });
             }
           });
-        });
-        
-        return foundRedirects;
-      });
-
-      if (jsRedirects.length > 0) {
-        console.log(`JavaScript redirect patterns found: ${jsRedirects.join(', ')}`);
-        hasJavaScriptRedirect = true;
-        
-        // Add JavaScript redirects to types (if not already added)
-        jsRedirects.forEach(targetUrl => {
-          if (!redirectTypes.some(rt => rt.type === 'javascript' && rt.targetUrl === targetUrl)) {
-            redirectTypes.push({
-              type: 'javascript',
-              url: currentUrl,
-              targetUrl: targetUrl
-            });
+          
+          // Try to execute the JavaScript redirect
+          try {
+            const targetUrl = new URL(jsRedirects[0], page.url()).toString();
+            console.log(`Attempting to follow JavaScript redirect to: ${targetUrl}`);
+            
+            // Wait a bit for any JavaScript to execute
+            await page.waitForTimeout(2000);
+            
+            // Check if the page URL changed due to JavaScript
+            const newUrl = page.url();
+            if (newUrl !== page.url()) {
+              console.log(`JavaScript redirect executed: ${page.url()} → ${newUrl}`);
+              redirectCount++;
+              redirectChain.push(page.url());
+              continue; // Check for more redirects
+            }
+          } catch (error) {
+            console.log(`Failed to follow JavaScript redirect: ${error.message}`);
           }
-        });
+        }
+      } catch (error) {
+        console.log('Error checking for JavaScript redirects:', error.message);
       }
-    } catch (error) {
-      console.log('Error checking for JavaScript redirects:', error.message);
+
+      // If we get here, no more redirects were detected
+      break;
     }
 
     // Add final step to detailed chain
     redirectChainDetails.push({
       step: ++stepCounter,
-      url: finalUrl,
+      url: page.url(),
       type: 'final',
       method: 'Final Destination'
     });
