@@ -54,14 +54,22 @@ export class WaybackService {
         proxyParams.append('filters', 'htmlOnly');
       }
 
+      const apiUrl = `${this.PROXY_API_BASE}/discover?${proxyParams.toString()}`;
+      console.log(`Making request to: ${apiUrl}`);
+
       // Make API request to our proxy
-      const response = await fetch(`${this.PROXY_API_BASE}/discover?${proxyParams.toString()}`);
+      const response = await fetch(apiUrl);
+      
+      console.log(`Response status: ${response.status} ${response.statusText}`);
       
       if (!response.ok) {
-        throw new Error(`Wayback proxy request failed: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('Error response body:', errorText);
+        throw new Error(`Wayback proxy request failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log(`Wayback proxy returned data:`, data);
       console.log(`Wayback proxy returned ${data.totalFound} results for ${params.domain}`);
 
       // Apply additional filters as safety net
