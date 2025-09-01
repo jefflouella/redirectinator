@@ -1,21 +1,27 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Project } from '@/types';
+import { useUrlPersistence } from '@/hooks/useUrlPersistence';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import {
-  Upload,
-  Copy,
-  Plus,
-  Trash2,
   X,
-  CheckCircle,
-  Settings,
-  ArrowRight,
+  Plus,
+  Upload,
+  FileText,
+  Globe,
+  BarChart3,
   Search,
-  Info
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  Info,
+  Download,
+  Calendar,
+  Filter,
+  ArrowRight
 } from 'lucide-react';
 import Papa from 'papaparse';
-import { useUrlPersistence } from '@/hooks/useUrlPersistence';
-import { WaybackDiscoveryTab } from './WaybackDiscoveryTab';
 import { SEMrushDiscoveryTab } from './SEMrushDiscoveryTab';
+import { WaybackDiscoveryTab } from './WaybackDiscoveryTab';
 
 interface UrlInputOverlayProps {
   isOpen: boolean;
@@ -50,6 +56,9 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
     currentProject, 
     onProjectUpdate 
   });
+
+  // Analytics tracking
+  const { trackFeatureUsage, trackUrlDiscovery } = useAnalytics();
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -140,15 +149,19 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
-          const parsedUrls = results.data
-            .filter((row: Record<string, unknown>) => row['Starting URL']) // Only require starting URL
-            .map((row: Record<string, unknown>) => ({
+          const parsedUrls = (results.data as any[])
+            .filter((row: any) => row['Starting URL']) // Only require starting URL
+            .map((row: any) => ({
               startingUrl: String(row['Starting URL']).trim(),
               targetRedirect: String(row['Target Redirect'] || '').trim(), // Make target optional
             }));
 
           setAllUrls(parsedUrls);
           setInputMethod('bulk');
+          
+          // Track CSV upload
+          trackFeatureUsage('csv_upload', { url_count: parsedUrls.length });
+          
           // Notify parent that URLs were added
           onUrlsAdded?.();
         },
@@ -172,6 +185,10 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
 
           setAllUrls(parsedUrls);
           setInputMethod('bulk');
+          
+          // Track XML sitemap upload
+          trackFeatureUsage('xml_sitemap_upload', { url_count: parsedUrls.length });
+          
           // Notify parent that URLs were added
           onUrlsAdded?.();
         } catch (error) {
@@ -261,7 +278,10 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
             <div className="space-y-2">
               <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
                 <button
-                  onClick={() => setInputMethod('single')}
+                  onClick={() => {
+                    setInputMethod('single');
+                    trackFeatureUsage('input_method_selected', { method: 'single' });
+                  }}
                   className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
                     inputMethod === 'single'
                       ? 'bg-white text-blue-600 shadow-sm'
@@ -273,7 +293,10 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                 </button>
                 
                 <button
-                  onClick={() => setInputMethod('bulk')}
+                  onClick={() => {
+                    setInputMethod('bulk');
+                    trackFeatureUsage('input_method_selected', { method: 'bulk' });
+                  }}
                   className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
                     inputMethod === 'bulk'
                       ? 'bg-white text-blue-600 shadow-sm'
@@ -285,38 +308,47 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                 </button>
                 
                 <button
-                  onClick={() => setInputMethod('paste')}
+                  onClick={() => {
+                    setInputMethod('paste');
+                    trackFeatureUsage('input_method_selected', { method: 'paste' });
+                  }}
                   className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
                     inputMethod === 'paste'
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
-                  <Copy className="w-4 h-4" />
+                  <FileText className="w-4 h-4" />
                   <span>Copy/Paste</span>
                 </button>
                 
                 <button
-                  onClick={() => setInputMethod('wayback')}
+                  onClick={() => {
+                    setInputMethod('wayback');
+                    trackFeatureUsage('input_method_selected', { method: 'wayback' });
+                  }}
                   className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
                     inputMethod === 'wayback'
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
-                  <img src="/wayback-icon.png" alt="Wayback Machine" className="w-4 h-4" />
+                  <Globe className="w-4 h-4" />
                   <span>Wayback</span>
                 </button>
                 
                 <button
-                  onClick={() => setInputMethod('semrush')}
+                  onClick={() => {
+                    setInputMethod('semrush');
+                    trackFeatureUsage('input_method_selected', { method: 'semrush' });
+                  }}
                   className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
                     inputMethod === 'semrush'
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
-                  <img src="/SEMrush-Icon.png" alt="SEMrush" className="w-5 h-3" />
+                  <BarChart3 className="w-4 h-4" />
                   <span>SEMrush</span>
                 </button>
               </div>
@@ -461,7 +493,7 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                 )}
                 <div className="flex items-center">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <Copy className="w-5 h-5 mr-2" />
+                    <FileText className="w-5 h-5 mr-2" />
                     Copy/Paste Input
                     <button
                       onClick={() => setShowPasteInfo(!showPasteInfo)}
@@ -498,6 +530,10 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                       targetRedirect: '', // Empty for discovery URLs
                     });
                   });
+                  
+                  // Track Wayback discovery
+                  trackUrlDiscovery('wayback', urls.length);
+                  
                   // Notify parent that URLs were added
                   onUrlsAdded?.();
                 }}
@@ -516,6 +552,10 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                       targetRedirect: '', // Empty for discovery URLs
                     });
                   });
+                  
+                  // Track SEMrush discovery
+                  trackUrlDiscovery('semrush', urls.length);
+                  
                   // Notify parent that URLs were added
                   onUrlsAdded?.();
                 }}
@@ -529,7 +569,7 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                 onClick={() => setShowAdvanced(!showAdvanced)}
                 className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900"
               >
-                <Settings className="w-4 h-4" />
+                <Filter className="w-4 h-4" />
                 <span>Advanced Options</span>
               </button>
               
@@ -578,14 +618,14 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                       onClick={copyToClipboard}
                       className="flex items-center space-x-2 px-3 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
                     >
-                      <Copy className="w-4 h-4" />
+                      <Download className="w-4 h-4" />
                       <span>Copy</span>
                     </button>
                     <button
                       onClick={clearAll}
                       className="flex items-center space-x-2 px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <AlertCircle className="w-4 h-4" />
                       <span>Clear All</span>
                     </button>
                   </div>
@@ -615,7 +655,7 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                         onClick={() => removeUrl(index)}
                         className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <AlertCircle className="w-4 h-4" />
                       </button>
                     </div>
                   ))}
@@ -626,7 +666,7 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
             {/* Loading State */}
             {urlsLoading && (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <Loader2 className="animate-spin h-8 w-8 text-blue-600" />
                 <span className="ml-3 text-gray-600">Loading URLs from project...</span>
               </div>
             )}

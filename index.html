@@ -8,6 +8,27 @@
     <meta name="keywords" content="seo, redirect, url-checker, website-monitor, tech-seo" />
     <meta name="author" content="Tech SEO" />
     
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-WL1D9YFCH9"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      
+      // Privacy-focused configuration
+      gtag('config', 'G-WL1D9YFCH9', {
+        anonymize_ip: true,
+        allow_google_signals: false,
+        allow_ad_personalization_signals: false,
+        page_title: 'Redirectinator',
+        custom_map: {
+          'custom_parameter_1': 'feature_used',
+          'custom_parameter_2': 'url_count',
+          'custom_parameter_3': 'project_count'
+        }
+      });
+    </script>
+    
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://redirectinator.com/" />

@@ -19,6 +19,7 @@ import { useResultsPersistence } from './hooks/useResultsPersistence';
 import { useSummaryStats } from './hooks/useSummaryStats';
 import { useAppSettings } from './hooks/useAppSettings';
 import { useRouting } from './hooks/useRouting';
+import { useAnalytics } from './hooks/useAnalytics';
 
 function App() {
   const { activeTab, navigateTo } = useRouting();
@@ -52,12 +53,28 @@ function App() {
 
   // Get progress statistics - use actual URL count from project
   const progressStats = currentProject ? getProgressStats(currentProject.urls?.length || 0) : undefined;
-  
 
+  // Analytics tracking
+  const { 
+    trackFeatureUsage, 
+    trackUrlProcessing, 
+    trackProjectCreation, 
+    trackExport, 
+    trackError 
+  } = useAnalytics();
+
+  // Track tab navigation
+  useEffect(() => {
+    trackFeatureUsage('tab_navigation', { tab: activeTab });
+  }, [activeTab, trackFeatureUsage]);
 
   // Processing functions
   const handleRunAllUrls = async () => {
     if (!currentProject) return;
+    
+    // Track URL processing
+    const urlCount = currentProject.urls?.length || 0;
+    trackUrlProcessing(urlCount, 'run_all');
     
     // Clear existing results and process all URLs
     await clearResults();
@@ -73,6 +90,9 @@ function App() {
     const unprocessedUrls = getUnprocessedUrls(projectUrls);
     
     if (unprocessedUrls.length > 0) {
+      // Track URL processing
+      trackUrlProcessing(unprocessedUrls.length, 'run_new');
+      
       // Process only unprocessed URLs
       await processUrls(unprocessedUrls);
     }
@@ -81,24 +101,48 @@ function App() {
   const handleContinueProcessing = async () => {
     if (!currentProject) return;
     
-    // Get URLs from the project and find unprocessed ones
+    // Track URL processing
+    const remainingCount = progressStats?.remaining || 0;
+    trackUrlProcessing(remainingCount, 'continue');
+    
     const projectUrls = currentProject.urls || [];
     const unprocessedUrls = getUnprocessedUrls(projectUrls);
-    
-    if (unprocessedUrls.length > 0) {
-      // Continue processing unprocessed URLs
-      await processUrls(unprocessedUrls);
-    }
-  };
-
-  const handleClearResults = async () => {
-    // Clear both persistent and in-memory results
-    await clearResults();
-    clearUrlProcessingResults();
+    await processUrls(unprocessedUrls);
   };
 
   const handleStopProcessing = () => {
+    trackFeatureUsage('processing_stopped');
     stopProcessing();
+  };
+
+  const handleClearResults = async () => {
+    trackFeatureUsage('results_cleared');
+    await clearResults();
+  };
+
+  const exportResults = async (format: 'csv' | 'json' | 'excel' | 'report') => {
+    try {
+      const exportService = new ExportService();
+      await exportService.exportResults(finalResults, format);
+      
+      // Track export usage
+      trackExport(format, finalResults.length);
+    } catch (error) {
+      console.error('Export failed:', error);
+      trackError('export_failed', format);
+    }
+  };
+
+  // Enhanced project creation with analytics
+  const handleCreateProject = async (name: string, description?: string) => {
+    try {
+      const newProject = await createNewProject(name, description);
+      trackProjectCreation();
+      return newProject;
+    } catch (error) {
+      trackError('project_creation_failed');
+      throw error;
+    }
   };
 
   // Auto-save functionality
@@ -112,29 +156,6 @@ function App() {
   }, [currentProject, settings.autoSave, settings.autoSaveInterval]);
 
 
-
-  const exportResults = async (format: 'csv' | 'json' | 'excel' | 'report') => {
-    if (!currentProject) return;
-
-    try {
-      switch (format) {
-        case 'csv':
-          ExportService.exportToCSV(finalResults, { format: 'csv', includeHeaders: true });
-          break;
-        case 'json':
-          ExportService.exportToJSON(finalResults, { format: 'json', includeHeaders: true });
-          break;
-        case 'excel':
-          ExportService.exportToExcel(finalResults, { format: 'excel', includeHeaders: true });
-          break;
-        case 'report':
-          ExportService.exportReport(finalResults);
-          break;
-      }
-    } catch (error) {
-      console.error('Export failed:', error);
-    }
-  };
 
   return (
     <NotificationProvider>
@@ -198,7 +219,7 @@ function App() {
               <ProjectManager 
                 projects={projects}
                 currentProject={currentProject}
-                onCreateProject={createNewProject}
+                onCreateProject={handleCreateProject}
                 onLoadProject={loadProject}
                 onDeleteProject={deleteProject}
                 onUpdateProject={updateProject}

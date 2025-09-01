@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AppSettings } from '@/types';
 import { SEMrushService } from '@/services/semrushService';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import {
   Settings as SettingsIcon,
   Database,
@@ -26,6 +27,9 @@ export const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings }
   const [semrushApiKey, setSemrushApiKey] = useState('');
   const [isTestingSemrushKey, setIsTestingSemrushKey] = useState(false);
   const [hasSemrushKey, setHasSemrushKey] = useState(false);
+  
+  // Analytics tracking
+  const { trackFeatureUsage } = useAnalytics();
 
   // Refs for info tooltips
   const batchSizeInfoRef = useRef<HTMLDivElement>(null);
@@ -84,11 +88,20 @@ export const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings }
         await semrushService.storeApiKey(semrushApiKey.trim());
         setHasSemrushKey(true);
         setSemrushApiKey('');
+        
+        // Track successful API key addition
+        trackFeatureUsage('semrush_api_key_added');
       } else {
         alert(validation.error || 'Invalid API key format. Please check your key and try again.');
+        
+        // Track failed API key validation
+        trackFeatureUsage('semrush_api_key_validation_failed', { error: validation.error });
       }
     } catch (error) {
       alert('Failed to validate API key. Please try again.');
+      
+      // Track API key validation error
+      trackFeatureUsage('semrush_api_key_error', { error: 'validation_failed' });
     } finally {
       setIsTestingSemrushKey(false);
     }
@@ -98,13 +111,22 @@ export const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings }
     try {
       localStorage.removeItem('semrush_api_key');
       setHasSemrushKey(false);
+      
+      // Track API key removal
+      trackFeatureUsage('semrush_api_key_removed');
     } catch (error) {
       console.error('Failed to remove SEMrush API key:', error);
+      
+      // Track API key removal error
+      trackFeatureUsage('semrush_api_key_removal_error');
     }
   };
 
   const handleSettingChange = async (key: keyof AppSettings, value: string | boolean | number) => {
     await onUpdateSettings({ [key]: value });
+    
+    // Track settings changes
+    trackFeatureUsage('setting_changed', { setting: key, value: value });
   };
 
   return (
