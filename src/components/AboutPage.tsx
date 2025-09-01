@@ -1,5 +1,93 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ExternalLink, ArrowLeft, Code, Zap, Shield, Users, Award, Github, Linkedin, Globe } from 'lucide-react';
+
+// ProjectCard component for displaying other projects
+interface ProjectCardProps {
+  url: string;
+  title: string;
+  description: string;
+  icon: string;
+}
+
+const ProjectCard: React.FC<ProjectCardProps> = ({ url, title, description, icon }) => {
+  const [projectData, setProjectData] = useState<{
+    favicon?: string;
+    metaTitle?: string;
+    metaDescription?: string;
+  }>({});
+
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      try {
+        // Use a CORS proxy to fetch the project data
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
+        
+        if (data.contents) {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(data.contents, 'text/html');
+          
+          const favicon = doc.querySelector('link[rel="icon"], link[rel="shortcut icon"]')?.getAttribute('href');
+          const metaTitle = doc.querySelector('title')?.textContent;
+          const metaDescription = doc.querySelector('meta[name="description"]')?.getAttribute('content');
+          
+          setProjectData({
+            favicon: favicon ? new URL(favicon, url).href : undefined,
+            metaTitle: metaTitle || title,
+            metaDescription: metaDescription || description
+          });
+        }
+      } catch (error) {
+        console.log(`Could not fetch data for ${url}:`, error);
+        // Fallback to provided data
+        setProjectData({
+          metaTitle: title,
+          metaDescription: description
+        });
+      }
+    };
+
+    fetchProjectData();
+  }, [url, title, description]);
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+      <div className="flex items-center mb-4">
+        <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center mr-4">
+          {projectData.favicon ? (
+            <img 
+              src={projectData.favicon} 
+              alt={`${title} favicon`}
+              className="w-6 h-6"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <span className={`text-2xl ${projectData.favicon ? 'hidden' : ''}`}>{icon}</span>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">{projectData.metaTitle || title}</h3>
+          <p className="text-sm text-gray-600">Chrome Extension</p>
+        </div>
+      </div>
+      <p className="text-gray-600 mb-4">
+        {projectData.metaDescription || description}
+      </p>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors text-sm font-medium"
+      >
+        Visit Project
+        <ExternalLink className="w-3 h-3 ml-1" />
+      </a>
+    </div>
+  );
+};
 
 interface AboutPageProps {
   onBack: () => void;
@@ -212,6 +300,37 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
             </div>
           </div>
         </div>
+
+        {/* Other Projects */}
+        <section className="mb-16">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Other Projects</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <ProjectCard 
+              url="https://www.quickclickseo.us/"
+              title="Quick Click Website Audit"
+              description="Transform your SEO workflow with one-click access to 25+ professional tools. Analyze any website instantly with comprehensive on-page analysis and real-time scoring."
+              icon="🔍"
+            />
+            <ProjectCard 
+              url="https://www.lazyspy.us/"
+              title="Lazy Spy"
+              description="Visually analyze image loading strategies on any webpage with color-coded overlays. Detect lazy loading libraries, identify performance issues, and get actionable optimization recommendations."
+              icon="🕵️"
+            />
+            <ProjectCard 
+              url="https://www.gshoplens.com/"
+              title="GShop Lens"
+              description="Master Google Shopping SERPs with AI-powered insights, pricing analysis, and competitive intelligence. Perfect for e-commerce managers and marketers."
+              icon="🛒"
+            />
+            <ProjectCard 
+              url="https://www.titletune.com/"
+              title="Title Tune"
+              description="Unleash AI-powered title perfection! Craft click-worthy, SEO-optimized page titles using live SERP analysis and multiple AI models (GPT, Claude, Gemini)."
+              icon="🎵"
+            />
+          </div>
+        </section>
 
         {/* Technology Stack */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
