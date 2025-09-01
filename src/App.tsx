@@ -195,11 +195,18 @@ function App() {
                 isProcessing={processingStatus.isProcessing}
                 onEditUrls={() => setIsUrlOverlayOpen(true)}
                 onNavigateToProjects={() => navigateTo('projects')}
-                onProjectUpdate={(updatedProject) => {
-                  // Update the current project state
-                  setCurrentProject(updatedProject);
-                  // Force a re-render
-                  setRefreshCounter(prev => prev + 1);
+                onProjectUpdate={async (updatedProject) => {
+                  try {
+                    // Save the updated project to the database
+                    await updateProject(updatedProject.id, updatedProject);
+                    // Update the current project state
+                    setCurrentProject(updatedProject);
+                    // Force a re-render
+                    setRefreshCounter(prev => prev + 1);
+                  } catch (error) {
+                    console.error('Failed to save updated project:', error);
+                    // Could add error notification here
+                  }
                 }}
               />
               
