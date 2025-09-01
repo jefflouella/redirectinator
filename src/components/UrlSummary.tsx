@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Project } from '@/types';
 import {
   Plus,
@@ -8,10 +8,12 @@ import {
   Edit,
   ArrowRight,
   AlertTriangle,
-  Sparkles
+  Sparkles,
+  Filter
 } from 'lucide-react';
 import { useUrlPersistence } from '@/hooks/useUrlPersistence';
 import { useNotifications } from './NotificationProvider';
+import { UrlCleaner } from './UrlCleaner';
 
 interface UrlSummaryProps {
   currentProject: Project | null;
@@ -30,6 +32,7 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
   onNavigateToProjects,
   onProjectUpdate
 }) => {
+  const [isCleanerOpen, setIsCleanerOpen] = useState(false);
   const { urls, isLoading: urlsLoading, clearUrls, refreshUrls, detectDuplicates, cleanDuplicates } = useUrlPersistence({ 
     currentProject, 
     onProjectUpdate 
@@ -215,8 +218,15 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
             onClick={onEditUrls}
             className="btn-secondary flex items-center space-x-2"
           >
-            <Edit className="w-4 h-4" />
-            <span>Edit URLs</span>
+            <Plus className="w-4 h-4" />
+            <span>Add More URLs</span>
+          </button>
+          <button
+            onClick={() => setIsCleanerOpen(true)}
+            className="btn-secondary flex items-center space-x-2"
+          >
+            <Filter className="w-4 h-4" />
+            <span>Clean URLs</span>
           </button>
           <button
             onClick={clearUrls}
@@ -302,6 +312,30 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
           </span>
         </button>
       </div>
+
+      {/* URL Cleaner Modal */}
+      {isCleanerOpen && (
+        <UrlCleaner
+          urls={urls}
+          onClose={() => setIsCleanerOpen(false)}
+          onUrlsUpdated={(updatedUrls) => {
+            // Update the URLs in the project
+            if (currentProject) {
+              const updatedProject = {
+                ...currentProject,
+                updatedAt: Date.now(),
+                urls: updatedUrls.map((url, index) => ({
+                  id: `url_${index}_${Date.now()}`,
+                  startingUrl: url.startingUrl,
+                  targetRedirect: url.targetRedirect,
+                })),
+              };
+              onProjectUpdate(updatedProject);
+            }
+            setIsCleanerOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };
