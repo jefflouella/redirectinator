@@ -20,6 +20,7 @@ import { useSummaryStats } from './hooks/useSummaryStats';
 import { useAppSettings } from './hooks/useAppSettings';
 import { useRouting } from './hooks/useRouting';
 import { useAnalytics } from './hooks/useAnalytics';
+import { useSchema } from './hooks/useSchema';
 
 function App() {
   const { activeTab, navigateTo } = useRouting();
@@ -62,6 +63,9 @@ function App() {
     trackExport, 
     trackError 
   } = useAnalytics();
+
+  // Schema management
+  useSchema(activeTab === 'about' ? 'about' : 'home');
 
   // Track tab navigation
   useEffect(() => {
