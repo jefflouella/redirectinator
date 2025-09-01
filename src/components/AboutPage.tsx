@@ -174,64 +174,60 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Jeff Louella</h3>
-              <p className="text-gray-600 mb-4">
-                Technical SEO & Digital Problem Solver with a unique blend of developer fluency and strategic insight. 
-                Jeff has transformed complex technical challenges into organic traffic growth by aligning website architecture, 
-                site performance, and business strategy.
-              </p>
-              
-              <p className="text-gray-600 mb-6">
-                With over 25 years of experience in web design, front-end development, and search optimization, 
-                Jeff uncovers and resolves technical SEO barriers that limit visibility and growth. His approach 
-                integrates analytics, code-level problem-solving, and cross-functional collaboration to engineer 
-                scalable, high-impact solutions.
-              </p>
+          <div className="text-center max-w-4xl mx-auto">
+            <h3 className="text-2xl font-semibold text-gray-900 mb-4">Jeff Louella</h3>
+            <p className="text-gray-600 mb-4">
+              Technical SEO & Digital Problem Solver with a unique blend of developer fluency and strategic insight. 
+              Jeff has transformed complex technical challenges into organic traffic growth by aligning website architecture, 
+              site performance, and business strategy.
+            </p>
+            
+            <p className="text-gray-600 mb-6">
+              With over 25 years of experience in web design, front-end development, and search optimization, 
+              Jeff uncovers and resolves technical SEO barriers that limit visibility and growth. His approach 
+              integrates analytics, code-level problem-solving, and cross-functional collaboration to engineer 
+              scalable, high-impact solutions.
+            </p>
 
-              <div className="flex space-x-4">
-                <a
-                  href="https://www.jefflouella.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  <Globe className="w-4 h-4 mr-2" />
-                  Website
-                  <ExternalLink className="w-3 h-3 ml-1" />
-                </a>
-                <a
-                  href="https://github.com/jefflouella"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center text-gray-600 hover:text-gray-700 transition-colors"
-                >
-                  <Github className="w-4 h-4 mr-2" />
-                  GitHub
-                  <ExternalLink className="w-3 h-3 ml-1" />
-                </a>
-                <a
-                  href="https://linkedin.com/in/jefflouella"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  <Linkedin className="w-4 h-4 mr-2" />
-                  LinkedIn
-                  <ExternalLink className="w-3 h-3 ml-1" />
-                </a>
-              </div>
+            <div className="flex justify-center space-x-4">
+              <a
+                href="https://www.jefflouella.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                <Globe className="w-4 h-4 mr-2" />
+                Website
+                <ExternalLink className="w-3 h-3 ml-1" />
+              </a>
+              <a
+                href="https://github.com/jefflouella"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-gray-600 hover:text-gray-700 transition-colors"
+              >
+                <Github className="w-4 h-4 mr-2" />
+                GitHub
+                <ExternalLink className="w-3 h-3 ml-1" />
+              </a>
+              <a
+                href="https://linkedin.com/in/jefflouella"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                <Linkedin className="w-4 h-4 mr-2" />
+                LinkedIn
+                <ExternalLink className="w-3 h-3 ml-1" />
+              </a>
             </div>
-
-
           </div>
         </div>
 
         {/* Other Projects */}
         <section className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Other Projects</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <ProjectCard 
               url="https://www.quickclickseo.us/"
               title="Quick Click Website Audit"
