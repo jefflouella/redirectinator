@@ -260,10 +260,8 @@ function App() {
           )}
         </main>
 
-        {/* Footer - only show on main pages */}
-        {['dashboard', 'projects', 'settings'].includes(activeTab) && (
-          <Footer />
-        )}
+        {/* Footer - show on all pages */}
+        <Footer />
         
         {/* URL Input Overlay */}
         <UrlInputOverlay
