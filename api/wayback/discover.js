@@ -55,6 +55,9 @@ export default async function handler(req, res) {
 
     params.append('url', urlPattern);
 
+    // Add filter for HTML content only
+    params.append('filter', 'mime:text/html');
+
     // Add date range if specified
     if (fromDate && toDate) {
       params.append('from', fromDate);
@@ -143,6 +146,14 @@ export default async function handler(req, res) {
                !original.includes('model.json') &&
                !original.includes('tcfb/') &&
                !original.includes('magellan/') &&
+               // Filter out WordPress JSON API endpoints
+               !original.includes('/wp-json/') &&
+               !original.includes('/wp-admin/') &&
+               !original.includes('/wp-content/') &&
+               !original.includes('/wp-includes/') &&
+               !original.includes('/wp-cron.php') &&
+               !original.includes('/wp-config.php') &&
+               !original.includes('/wp-login.php') &&
                // Filter out other common internal patterns
                !original.includes('/static/') &&
                !original.includes('/assets/') &&
@@ -150,9 +161,33 @@ export default async function handler(req, res) {
                !original.includes('/css/') &&
                !original.includes('/images/') &&
                !original.includes('/fonts/') &&
+               !original.includes('/media/') &&
+               !original.includes('/uploads/') &&
+               // Filter out file extensions that are not HTML
+               !original.endsWith('.js') &&
+               !original.endsWith('.css') &&
+               !original.endsWith('.json') &&
+               !original.endsWith('.xml') &&
+               !original.endsWith('.txt') &&
+               !original.endsWith('.pdf') &&
+               !original.endsWith('.jpg') &&
+               !original.endsWith('.jpeg') &&
+               !original.endsWith('.png') &&
+               !original.endsWith('.gif') &&
+               !original.endsWith('.svg') &&
+               !original.endsWith('.ico') &&
+               !original.endsWith('.woff') &&
+               !original.endsWith('.woff2') &&
+               !original.endsWith('.ttf') &&
+               !original.endsWith('.eot') &&
                // Filter out robots.txt and sitemaps
                !original.includes('/robots.txt') &&
-               !original.includes('/sitemap');
+               !original.includes('/sitemap') &&
+               // Only include URLs that look like actual pages (have path or end with /)
+               (original.includes('/') || original.endsWith('/')) &&
+               // Exclude URLs that are just query parameters
+               !original.includes('?') ||
+               (original.includes('?') && original.split('?')[0].includes('/'));
       });
 
       console.log(`Found ${waybackUrls.length} total URLs, ${filteredUrls.length} after filtering`);
