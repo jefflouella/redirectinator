@@ -160,9 +160,59 @@ export class WaybackService {
    * Validate a domain for Wayback Machine discovery
    */
   validateDomain(domain: string): boolean {
-    // Basic domain validation
+    // Enhanced validation to support subfolders
+    if (!domain || domain.trim().length === 0) {
+      return false;
+    }
+
+    const trimmedDomain = domain.trim();
+    
+    // Check if it's a simple domain
     const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-    return domainRegex.test(domain) && domain.length > 0;
+    
+    // Check if it's a domain with subfolder
+    const subfolderRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\/[a-zA-Z0-9\/\-_]+$/;
+    
+    return domainRegex.test(trimmedDomain) || subfolderRegex.test(trimmedDomain);
+  }
+
+  /**
+   * Format domain for display
+   */
+  formatDomainForDisplay(domain: string): string {
+    if (!domain) return '';
+    
+    const trimmedDomain = domain.trim();
+    
+    // If it's a subfolder, format it nicely
+    if (trimmedDomain.includes('/')) {
+      const parts = trimmedDomain.split('/');
+      const baseDomain = parts[0];
+      const path = parts.slice(1).join('/');
+      return `${baseDomain}/${path}`;
+    }
+    
+    return trimmedDomain;
+  }
+
+  /**
+   * Get domain type for UI display
+   */
+  getDomainType(domain: string): 'domain' | 'subfolder' {
+    if (!domain) return 'domain';
+    
+    const trimmedDomain = domain.trim();
+    return trimmedDomain.includes('/') ? 'subfolder' : 'domain';
+  }
+
+  /**
+   * Get examples for different domain types
+   */
+  getDomainExamples(): { domain: string; subfolder: string } {
+    return {
+      domain: 'example.com',
+      subfolder: 'example.com/electronics'
+    };
   }
 
   /**

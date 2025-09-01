@@ -29,6 +29,9 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
 
   const waybackService = new WaybackService();
 
+  // Get domain type for display
+  const domainType = waybackService.getDomainType(domain);
+
   const handleDiscover = async () => {
     if (!domain.trim()) {
       setError('Please enter a domain');
@@ -36,7 +39,7 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
     }
 
     if (!waybackService.validateDomain(domain)) {
-      setError('Please enter a valid domain (e.g., example.com)');
+      setError('Please enter a valid domain or subfolder (e.g., example.com or example.com/electronics)');
       return;
     }
 
@@ -101,16 +104,36 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
         {/* Domain Input */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Domain
+            Domain or Subfolder
           </label>
           <input
             type="text"
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
-            placeholder="example.com"
+            placeholder="example.com or example.com/electronics"
             className="input-field w-full"
             disabled={isDiscovering}
           />
+          <div className="mt-2 text-xs text-gray-600 space-y-1">
+            <p>💡 <strong>Examples:</strong></p>
+            <ul className="ml-4 space-y-1">
+              <li><code className="bg-gray-100 px-1 rounded">example.com</code> - All pages from the domain</li>
+              <li><code className="bg-gray-100 px-1 rounded">example.com/electronics</code> - Only electronics section</li>
+              <li><code className="bg-gray-100 px-1 rounded">example.com/blog/2023</code> - Blog posts from 2023</li>
+            </ul>
+            {domain && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-blue-800">
+                  <strong>Type:</strong> {domainType === 'subfolder' ? 'Subfolder' : 'Domain'} 
+                  {domainType === 'subfolder' && (
+                    <span className="ml-2 text-blue-600">
+                      (Will search only within this specific section)
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Date Range Selection */}

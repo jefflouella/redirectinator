@@ -28,13 +28,32 @@ export default async function handler(req, res) {
 
     console.log(`Discovering URLs for ${domain} from ${fromDate} to ${toDate}`);
 
-    // Build Wayback Machine CDX API URL - simplified query
+    // Build Wayback Machine CDX API URL - support subfolders
     const cdxUrl = 'https://web.archive.org/cdx/search/cdx';
     const params = new URLSearchParams({
-      url: domain,  // Simplified - just use the domain directly
       output: 'json',
       limit: '10000'
     });
+
+    // Handle domain with potential subfolder
+    let urlPattern = domain;
+    
+    // If domain contains a path (subfolder), format it properly
+    if (domain.includes('/')) {
+      // Extract domain and path
+      const urlParts = domain.split('/');
+      const baseDomain = urlParts[0];
+      const path = urlParts.slice(1).join('/');
+      
+      // Format for CDX API: domain.com/path/*
+      urlPattern = `${baseDomain}/${path}/*`;
+      console.log(`Subfolder detected: ${baseDomain}/${path}`);
+    } else {
+      // Just a domain, use standard pattern
+      urlPattern = `${domain}/*`;
+    }
+
+    params.append('url', urlPattern);
 
     // Add date range if specified
     if (fromDate && toDate) {
