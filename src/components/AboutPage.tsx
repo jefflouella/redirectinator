@@ -34,7 +34,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ url, title, description, logo
         rel="noopener noreferrer"
         className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors text-sm font-medium"
       >
-        Visit Project
+        Visit {title}
         <ExternalLink className="w-3 h-3 ml-1" />
       </a>
     </div>
