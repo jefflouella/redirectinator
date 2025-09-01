@@ -806,13 +806,13 @@ app.post('/api/check-redirect', async (req, res) => {
                 hasMetaRefresh = true;
                 redirectCount++;
                 
-                                 // Add meta refresh to types
-                 redirectTypeDetails.push({
-                   type: 'meta',
-                   url: currentUrl,
-                   targetUrl: targetUrl,
-                   delay: delay
-                 });
+                // Add meta refresh to types
+                redirectTypeDetails.push({
+                  type: 'meta',
+                  url: currentUrl,
+                  targetUrl: targetUrl,
+                  delay: delay
+                });
                 
                 // Add to detailed chain
                 redirectChainDetails.push({
@@ -848,12 +848,12 @@ app.post('/api/check-redirect', async (req, res) => {
                 hasJavaScriptRedirect = true;
                 jsRedirectFound = true;
                 
-                                 // Add JavaScript redirect to types
-                 redirectTypeDetails.push({
-                   type: 'javascript',
-                   url: currentUrl,
-                   targetUrl: match[1]
-                 });
+                // Add JavaScript redirect to types
+                redirectTypeDetails.push({
+                  type: 'javascript',
+                  url: currentUrl,
+                  targetUrl: match[1]
+                });
                 
                 // Add to detailed chain
                 redirectChainDetails.push({
@@ -887,13 +887,13 @@ app.post('/api/check-redirect', async (req, res) => {
             throw new Error('Redirect response missing Location header');
           }
 
-                     // Add HTTP redirect to types
-           redirectTypeDetails.push({
-             type: 'http',
-             statusCode: status,
-             url: currentUrl,
-             targetUrl: location
-           });
+          // Add HTTP redirect to types
+          redirectTypeDetails.push({
+            type: 'http',
+            statusCode: status,
+            url: currentUrl,
+            targetUrl: location
+          });
           
           // Add to detailed chain
           redirectChainDetails.push({
@@ -971,13 +971,13 @@ app.post('/api/check-redirect', async (req, res) => {
                     hasMetaRefresh = true;
                     redirectCount++;
                     
-                                         // Add meta refresh to types
-                     redirectTypeDetails.push({
-                       type: 'meta',
-                       url: currentUrl,
-                       targetUrl: targetUrl,
-                       delay: delay
-                     });
+                    // Add meta refresh to types
+                    redirectTypeDetails.push({
+                      type: 'meta',
+                      url: currentUrl,
+                      targetUrl: targetUrl,
+                      delay: delay
+                    });
                     
                     // Add to detailed chain
                     redirectChainDetails.push({
@@ -1013,12 +1013,12 @@ app.post('/api/check-redirect', async (req, res) => {
                     hasJavaScriptRedirect = true;
                     jsRedirectFound = true;
                     
-                                         // Add JavaScript redirect to types
-                     redirectTypeDetails.push({
-                       type: 'javascript',
-                       url: currentUrl,
-                       targetUrl: match[1]
-                     });
+                    // Add JavaScript redirect to types
+                    redirectTypeDetails.push({
+                      type: 'javascript',
+                      url: currentUrl,
+                      targetUrl: match[1]
+                    });
                     
                     // Add to detailed chain
                     redirectChainDetails.push({
@@ -1048,13 +1048,13 @@ app.post('/api/check-redirect', async (req, res) => {
 
               const location = getResponse.headers.get('location');
               if (location) {
-                                 // Add HTTP redirect to types
-                 redirectTypeDetails.push({
-                   type: 'http',
-                   statusCode: status,
-                   url: currentUrl,
-                   targetUrl: location
-                 });
+                // Add HTTP redirect to types
+                redirectTypeDetails.push({
+                  type: 'http',
+                  statusCode: status,
+                  url: currentUrl,
+                  targetUrl: location
+                });
                 
                 // Add to detailed chain
                 redirectChainDetails.push({
