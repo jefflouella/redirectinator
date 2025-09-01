@@ -32,7 +32,7 @@ export interface WaybackDiscoveryResult {
 }
 
 export class WaybackService {
-  private readonly PROXY_API_BASE = 'http://localhost:3001/api/wayback';
+  private readonly PROXY_API_BASE = '/api/wayback';
 
   /**
    * Discover URLs from Wayback Machine for a given domain and timeframe
