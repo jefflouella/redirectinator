@@ -86,6 +86,18 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
                   </p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">SEMrush Integration</h4>
+                  <p className="text-sm text-gray-600">
+                    Discover URLs using SEMrush data and analyze competitor redirect patterns.
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">File Uploads</h4>
+                  <p className="text-sm text-gray-600">
+                    Import URLs from CSV and XML files for bulk processing and analysis.
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
                   <h4 className="font-semibold text-gray-900 mb-2">Export Capabilities</h4>
                   <p className="text-sm text-gray-600">
                     Export results in multiple formats including CSV, JSON, Excel, and detailed reports.
@@ -262,6 +274,20 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
                 </div>
                 <div className="flex items-start">
                   <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                  <div>
+                    <p className="font-medium text-gray-900">SEMrush API</p>
+                    <p className="text-sm text-gray-600">For URL discovery and SEO analysis (requires valid API key)</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                  <div>
+                    <p className="font-medium text-gray-900">Google Analytics</p>
+                    <p className="text-sm text-gray-600">For privacy-focused usage analytics and feature tracking</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                   <div>
                     <p className="font-medium text-gray-900">Hosting Services</p>
                     <p className="text-sm text-gray-600">For reliable application hosting and availability</p>

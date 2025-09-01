@@ -65,7 +65,19 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h4 className="font-semibold text-gray-900 mb-2">Usage Analytics</h4>
                   <p className="text-sm text-gray-600">
-                    Basic usage statistics to improve application performance and user experience.
+                    Privacy-focused Google Analytics to track feature usage without collecting personal information.
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">External API Data</h4>
+                  <p className="text-sm text-gray-600">
+                    SEMrush and Wayback Machine data is processed through our secure proxy servers.
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">File Uploads</h4>
+                  <p className="text-sm text-gray-600">
+                    CSV and XML files are processed locally and never stored on our servers.
                   </p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
@@ -140,10 +152,17 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
                   </p>
                 </div>
                 <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-900 mb-2">Analytics Services</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">SEMrush API</h4>
                   <p className="text-sm text-gray-600 mb-2">
-                    We may use analytics services to understand usage patterns and improve the application. 
-                    These services collect anonymous usage data only.
+                    Used for URL discovery and SEO analysis. SEMrush data is processed through our secure proxy servers 
+                    and we do not store your SEMrush API credentials or data permanently.
+                  </p>
+                </div>
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">Google Analytics</h4>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Privacy-focused analytics to understand feature usage patterns. We use anonymized data collection 
+                    and do not track personal information or individual user behavior.
                   </p>
                 </div>
                 <div className="border border-gray-200 rounded-lg p-4">

@@ -93,6 +93,36 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
               Discover historical URLs and analyze redirect patterns over time.
             </p>
           </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center mb-4">
+              <ExternalLink className="w-8 h-8 text-red-600 mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900">SEMrush Integration</h3>
+            </div>
+            <p className="text-gray-600">
+              Discover URLs using SEMrush data and analyze competitor redirect patterns.
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center mb-4">
+              <Code className="w-8 h-8 text-emerald-600 mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900">File Uploads</h3>
+            </div>
+            <p className="text-gray-600">
+              Import URLs from CSV and XML files for bulk processing and analysis.
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center mb-4">
+              <Shield className="w-8 h-8 text-blue-600 mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900">Privacy First</h3>
+            </div>
+            <p className="text-gray-600">
+              Client-side processing with privacy-focused analytics and secure API handling.
+            </p>
+          </div>
         </div>
 
         {/* Creator Section */}
