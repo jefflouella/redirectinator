@@ -6,7 +6,7 @@ import fetch from 'node-fetch';
 import puppeteer from 'puppeteer';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 // Global browser instance
 let browser = null;
@@ -48,6 +48,8 @@ function isAffiliateLink(url) {
   const lowerUrl = url.toLowerCase();
   return affiliateDomains.some(domain => lowerUrl.includes(domain));
 }
+
+
 
 // Use Puppeteer for affiliate links
 async function checkRedirectWithPuppeteer(url, maxRedirects = 10) {
@@ -125,8 +127,102 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files from the dist directory (built frontend)
+app.use(express.static('dist'));
+
+// Serve public assets
+app.use('/public', express.static('public'));
+
 // Import comprehensive affiliate database
 import { getAffiliateInfo } from './affiliate-database.js';
+
+// SEMrush API proxy endpoint
+app.get('/api/semrush', async (req, res) => {
+  try {
+    const { key, type, display_limit, export_columns, database, display_date, domain } = req.query;
+    
+    // Validate required parameters
+    if (!key || !type || !domain) {
+      return res.status(400).json({ 
+        error: 'Missing required parameters: key, type, and domain are required' 
+      });
+    }
+    
+    // Build SEMrush API URL - using the correct endpoint from documentation
+    const semrushUrl = 'https://api.semrush.com/';
+    
+    // Enforce SEMrush API limits
+    const limit = Math.min(parseInt(display_limit) || 1000, 10000);
+    
+    const params = new URLSearchParams({
+      key,
+      // Respect requested report type; default to domain_organic
+      type: (typeof type === 'string' && type.trim()) ? type : 'domain_organic',
+      display_limit: limit.toString(),
+      export_columns: (typeof export_columns === 'string' && export_columns.trim()) ? export_columns : 'Ph,Po,Nq,Cp,Ur,Tr,Tc,Co,Nr,Td',
+      database: (typeof database === 'string' && database.trim()) ? database : 'us',
+      domain
+    });
+    if (display_date && typeof display_date === 'string' && display_date.trim()) {
+      params.append('display_date', display_date);
+    }
+    
+    console.log(`Proxying SEMrush request for domain: ${domain}`);
+    
+    // Make request to SEMrush API
+    const response = await fetch(`${semrushUrl}?${params.toString()}`);
+    
+    if (!response.ok) {
+      console.error(`SEMrush API error: ${response.status} ${response.statusText}`);
+      return res.status(response.status).json({ 
+        error: `SEMrush API error: ${response.status} ${response.statusText}` 
+      });
+    }
+    
+    const data = await response.text();
+    
+    // Set CORS headers for the frontend
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    res.send(data);
+    
+  } catch (error) {
+    console.error('SEMrush proxy error:', error);
+    res.status(500).json({ 
+      error: 'Failed to proxy SEMrush API request',
+      details: error.message 
+    });
+  }
+});
+
+// SEMrush remaining units endpoint
+app.get('/api/semrush/units', async (req, res) => {
+  try {
+    const { key } = req.query;
+    if (!key) {
+      return res.status(400).json({ error: 'Missing required parameter: key' });
+    }
+    const semrushUrl = 'https://api.semrush.com/';
+    const params = new URLSearchParams({
+      key,
+      type: 'units'
+    });
+    const response = await fetch(`${semrushUrl}?${params.toString()}`);
+    if (!response.ok) {
+      return res.status(response.status).json({ error: `SEMrush API error: ${response.status} ${response.statusText}` });
+    }
+    const data = await response.text();
+    // Response is plain text number; return JSON
+    const remaining = parseInt((data || '').trim(), 10);
+    res.json({ remaining: isNaN(remaining) ? null : remaining, raw: data });
+  } catch (error) {
+    console.error('SEMrush units proxy error:', error);
+    res.status(500).json({ error: 'Failed to retrieve SEMrush units', details: error.message });
+  }
+});
 
 // Puppeteer redirect check function
 async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
@@ -809,10 +905,13 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Note: For development, run 'npm run dev' to serve the frontend
+// For production, the catch-all route would be added here
+
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Redirect Checker Proxy Server running on port ${PORT}`);
-  console.log(`📡 Accepting requests from: http://localhost:3000`);
+  console.log(`🚀 Redirect Checker Server running on port ${PORT}`);
+  console.log(`🌐 Frontend and API available at: http://localhost:${PORT}`);
 });
 
 export default app;

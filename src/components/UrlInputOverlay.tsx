@@ -9,11 +9,13 @@ import {
   CheckCircle,
   Settings,
   ArrowRight,
-  Search
+  Search,
+  Info
 } from 'lucide-react';
 import Papa from 'papaparse';
 import { useUrlPersistence } from '@/hooks/useUrlPersistence';
 import { WaybackDiscoveryTab } from './WaybackDiscoveryTab';
+import { SEMrushDiscoveryTab } from './SEMrushDiscoveryTab';
 
 interface UrlInputOverlayProps {
   isOpen: boolean;
@@ -28,13 +30,16 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
   currentProject,
   onUrlsAdded
 }) => {
-  const [inputMethod, setInputMethod] = useState<'single' | 'bulk' | 'paste' | 'wayback'>('single');
+  const [inputMethod, setInputMethod] = useState<'single' | 'bulk' | 'paste' | 'wayback' | 'semrush'>('single');
   const [singleStartingUrl, setSingleStartingUrl] = useState('');
   const [singleTargetUrl, setSingleTargetUrl] = useState('');
   const [bulkText, setBulkText] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [authentication, setAuthentication] = useState({ username: '', password: '' });
   const [isClosing, setIsClosing] = useState(false);
+  const [showSingleUrlInfo, setShowSingleUrlInfo] = useState(false);
+  const [showBulkInfo, setShowBulkInfo] = useState(false);
+  const [showPasteInfo, setShowPasteInfo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -94,36 +99,85 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
       addUrl(newUrl);
       setSingleStartingUrl('');
       setSingleTargetUrl('');
-      // Notify parent that URLs were added
+      onUrlsAdded?.(); // Notify parent that URLs were added
       onUrlsAdded?.();
     }
+  };
+
+  const parseXmlSitemap = (xmlText: string): Array<{ startingUrl: string; targetRedirect: string }> => {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+    const urls = xmlDoc.querySelectorAll('url');
+    const parsedUrls: Array<{ startingUrl: string; targetRedirect: string }> = [];
+
+    urls.forEach((urlElement) => {
+      const locElement = urlElement.querySelector('loc');
+      if (locElement && locElement.textContent) {
+        parsedUrls.push({
+          startingUrl: locElement.textContent.trim(),
+          targetRedirect: '', // XML sitemaps don't have target URLs
+        });
+      }
+    });
+
+    return parsedUrls;
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const parsedUrls = results.data
-          .filter((row: Record<string, unknown>) => row['Starting URL']) // Only require starting URL
-          .map((row: Record<string, unknown>) => ({
-            startingUrl: String(row['Starting URL']).trim(),
-            targetRedirect: String(row['Target Redirect'] || '').trim(), // Make target optional
-          }));
+    const fileExtension = file.name.toLowerCase().split('.').pop();
+    
+    if (fileExtension === 'csv') {
+      // Handle CSV files
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          const parsedUrls = results.data
+            .filter((row: Record<string, unknown>) => row['Starting URL']) // Only require starting URL
+            .map((row: Record<string, unknown>) => ({
+              startingUrl: String(row['Starting URL']).trim(),
+              targetRedirect: String(row['Target Redirect'] || '').trim(), // Make target optional
+            }));
 
-        setAllUrls(parsedUrls);
-        setInputMethod('bulk');
-        // Notify parent that URLs were added
-        onUrlsAdded?.();
-      },
-      error: (error) => {
-        console.error('CSV parsing error:', error);
-        alert('Error parsing CSV file. Please check the format.');
-      }
-    });
+          setAllUrls(parsedUrls);
+          setInputMethod('bulk');
+          // Notify parent that URLs were added
+          onUrlsAdded?.();
+        },
+        error: (error) => {
+          console.error('CSV parsing error:', error);
+          alert('Error parsing CSV file. Please check the format.');
+        }
+      });
+    } else if (fileExtension === 'xml') {
+      // Handle XML sitemap files
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const xmlText = e.target?.result as string;
+          const parsedUrls = parseXmlSitemap(xmlText);
+          
+          if (parsedUrls.length === 0) {
+            alert('No URLs found in the XML sitemap. Please check the file format.');
+            return;
+          }
+
+          setAllUrls(parsedUrls);
+          setInputMethod('bulk');
+          // Notify parent that URLs were added
+          onUrlsAdded?.();
+        } catch (error) {
+          console.error('XML parsing error:', error);
+          alert('Error parsing XML sitemap. Please check the file format.');
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      alert('Please upload a CSV file or XML sitemap file.');
+    }
   };
 
   const handleBulkTextChange = (text: string) => {
@@ -199,59 +253,101 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
         <div className="p-6 max-h-[70vh] overflow-y-auto">
           <div className="space-y-6">
             {/* Input Method Tabs */}
-            <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setInputMethod('single')}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
-                  inputMethod === 'single'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <Plus className="w-4 h-4" />
-                <span>Single URL</span>
-              </button>
+            <div className="space-y-2">
+              <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setInputMethod('single')}
+                  className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
+                    inputMethod === 'single'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Single URL</span>
+                </button>
+                
+                <button
+                  onClick={() => setInputMethod('bulk')}
+                  className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
+                    inputMethod === 'bulk'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Bulk Upload</span>
+                </button>
+                
+                <button
+                  onClick={() => setInputMethod('paste')}
+                  className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
+                    inputMethod === 'paste'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <Copy className="w-4 h-4" />
+                  <span>Copy/Paste</span>
+                </button>
+                
+                <button
+                  onClick={() => setInputMethod('wayback')}
+                  className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
+                    inputMethod === 'wayback'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <img src="/wayback-icon.png" alt="Wayback Machine" className="w-4 h-4" />
+                  <span>Wayback</span>
+                </button>
+                
+                <button
+                  onClick={() => setInputMethod('semrush')}
+                  className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
+                    inputMethod === 'semrush'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <img src="/SEMrush-Icon.png" alt="SEMrush" className="w-5 h-3" />
+                  <span>SEMrush</span>
+                </button>
+              </div>
               
-              <button
-                onClick={() => setInputMethod('bulk')}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
-                  inputMethod === 'bulk'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <Upload className="w-4 h-4" />
-                <span>Bulk Upload</span>
-              </button>
-              
-              <button
-                onClick={() => setInputMethod('paste')}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
-                  inputMethod === 'paste'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <Copy className="w-4 h-4" />
-                <span>Copy/Paste</span>
-              </button>
-              
-              <button
-                onClick={() => setInputMethod('wayback')}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
-                  inputMethod === 'wayback'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <Search className="w-4 h-4" />
-                <span>Wayback</span>
-              </button>
+
             </div>
+
+
 
             {/* Single URL Input */}
             {inputMethod === 'single' && (
-              <div className="space-y-4">
+              <div className="space-y-4 relative">
+                {showSingleUrlInfo && (
+                  <div className="absolute top-0 left-0 mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3 shadow-lg z-50 max-w-md">
+                    <h4 className="text-sm font-semibold text-blue-900">Single URL Input</h4>
+                    <div className="text-sm text-blue-800 space-y-2">
+                      <p><strong>What it does:</strong> Add one URL at a time with optional target redirect.</p>
+                      <p><strong>Best for:</strong> Testing individual URLs or adding a few URLs quickly.</p>
+                      <p><strong>Target redirect:</strong> Optional - specify where the URL should redirect to for validation.</p>
+                      <p><strong>Keyboard shortcut:</strong> Press Enter in either field to add the URL.</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <Plus className="w-5 h-5 mr-2" />
+                    Single URL Input
+                    <button
+                      onClick={() => setShowSingleUrlInfo(!showSingleUrlInfo)}
+                      className="ml-2 p-1 text-gray-400 hover:text-blue-600 transition-colors rounded-full hover:bg-blue-50"
+                      title="Learn about single URL input"
+                    >
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </h3>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -293,16 +389,44 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
 
             {/* Bulk Upload */}
             {inputMethod === 'bulk' && (
-              <div className="space-y-4">
+              <div className="space-y-4 relative">
+                {showBulkInfo && (
+                  <div className="absolute top-0 left-0 mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3 shadow-lg z-50 max-w-md">
+                    <h4 className="text-sm font-semibold text-blue-900">Bulk Upload</h4>
+                    <div className="text-sm text-blue-800 space-y-2">
+                      <p><strong>What it does:</strong> Upload multiple URLs from CSV files or XML sitemaps.</p>
+                      <p><strong>CSV format:</strong> "Starting URL" and optional "Target Redirect" columns.</p>
+                      <p><strong>XML sitemaps:</strong> Standard sitemap format with &lt;loc&gt; elements.</p>
+                      <p><strong>Best for:</strong> Large datasets, existing URL lists, or sitemap imports.</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <Upload className="w-5 h-5 mr-2" />
+                    Bulk Upload
+                    <button
+                      onClick={() => setShowBulkInfo(!showBulkInfo)}
+                      className="ml-2 p-1 text-gray-400 hover:text-blue-600 transition-colors rounded-full hover:bg-blue-50"
+                      title="Learn about bulk upload"
+                    >
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </h3>
+                </div>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
                   <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-sm text-gray-600 mb-2">
-                    Upload a CSV file with "Starting URL" and "Target Redirect" columns (Target Redirect is optional)
+                    Upload a CSV file with "Starting URL" and "Target Redirect" columns, or an XML sitemap file
                   </p>
+                  <div className="text-xs text-gray-500 mb-4">
+                    <p>• CSV: Include "Starting URL" and optional "Target Redirect" columns</p>
+                    <p>• XML Sitemap: Standard sitemap format with &lt;loc&gt; elements</p>
+                  </div>
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.xml"
                     onChange={handleFileUpload}
                     className="hidden"
                   />
@@ -310,7 +434,7 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                     onClick={() => fileInputRef.current?.click()}
                     className="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors"
                   >
-                    Choose CSV File
+                    Choose File (CSV or XML)
                   </button>
                 </div>
               </div>
@@ -318,7 +442,31 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
 
             {/* Copy/Paste */}
             {inputMethod === 'paste' && (
-              <div className="space-y-4">
+              <div className="space-y-4 relative">
+                {showPasteInfo && (
+                  <div className="absolute top-0 left-0 mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3 shadow-lg z-50 max-w-md">
+                    <h4 className="text-sm font-semibold text-blue-900">Copy/Paste Input</h4>
+                    <div className="text-sm text-blue-800 space-y-2">
+                      <p><strong>What it does:</strong> Paste URLs directly from spreadsheets or text files.</p>
+                      <p><strong>Format:</strong> CSV format: Starting URL, Target Redirect (optional).</p>
+                      <p><strong>Auto-parse:</strong> Automatically detects and parses URLs as you type.</p>
+                      <p><strong>Best for:</strong> Quick imports from Excel, Google Sheets, or text files.</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <Copy className="w-5 h-5 mr-2" />
+                    Copy/Paste Input
+                    <button
+                      onClick={() => setShowPasteInfo(!showPasteInfo)}
+                      className="ml-2 p-1 text-gray-400 hover:text-blue-600 transition-colors rounded-full hover:bg-blue-50"
+                      title="Learn about copy/paste input"
+                    >
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </h3>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Paste URLs (CSV format: Starting URL, Target Redirect - Target is optional)
@@ -337,6 +485,24 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
             {/* Wayback Machine Discovery */}
             {inputMethod === 'wayback' && (
               <WaybackDiscoveryTab
+                onUrlsDiscovered={(urls) => {
+                  // Add discovered URLs to the project (no target URLs needed for discovery)
+                  urls.forEach(url => {
+                    addUrl({
+                      startingUrl: url,
+                      targetRedirect: '', // Empty for discovery URLs
+                    });
+                  });
+                  // Notify parent that URLs were added
+                  onUrlsAdded?.();
+                }}
+                onClose={handleClose}
+              />
+            )}
+
+            {/* SEMrush Discovery */}
+            {inputMethod === 'semrush' && (
+              <SEMrushDiscoveryTab
                 onUrlsDiscovered={(urls) => {
                   // Add discovered URLs to the project (no target URLs needed for discovery)
                   urls.forEach(url => {

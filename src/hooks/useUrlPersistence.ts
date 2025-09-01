@@ -31,7 +31,7 @@ export const useUrlPersistence = (currentProject: Project | null) => {
     } else {
       setUrls([]);
     }
-  }, [currentProject]);
+  }, [currentProject, currentProject?.urls?.length, currentProject?.updatedAt]); // Also depend on URLs length and updatedAt to refresh when URLs are added
 
   // Auto-save URLs to project
   const saveUrlsToProject = useCallback(async (newUrls: UrlData[]) => {
@@ -87,6 +87,25 @@ export const useUrlPersistence = (currentProject: Project | null) => {
     saveUrlsToProject([]);
   }, [saveUrlsToProject]);
 
+  // Refresh URLs from project (useful when URLs are added from other components)
+  const refreshUrls = useCallback(() => {
+    if (currentProject) {
+      setIsLoading(true);
+      try {
+        const projectUrls: UrlData[] = currentProject.urls.map(urlEntry => ({
+          startingUrl: urlEntry.startingUrl,
+          targetRedirect: urlEntry.targetRedirect,
+        }));
+        setUrls(projectUrls);
+      } catch (error) {
+        console.error('Failed to refresh project URLs:', error);
+        setUrls([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }, [currentProject]);
+
   return {
     urls,
     isLoading,
@@ -94,5 +113,6 @@ export const useUrlPersistence = (currentProject: Project | null) => {
     removeUrl,
     setAllUrls,
     clearUrls,
+    refreshUrls,
   };
 };

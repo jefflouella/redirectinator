@@ -230,6 +230,14 @@ Browser Storage Structure:
 4. **Beta Testing:** SEO community feedback and iteration
 5. **Launch Strategy:** Marketing and community outreach plan
 
----
 
-*This product brief serves as the foundation for building a professional-grade, scalable redirect checking tool that can compete with premium SEO software while operating at zero marginal cost.*
+## Styles
+Trusty Tech (cool blue with neon pop)
+- Primary: #2563EB (cobalt)
+- Primary-dark: #1E3A8A
+- Accent: #22D3EE (cyan)
+- Surface: #0B1020 (dark) / #F7FAFF (light)
+- Muted text: #64748B
+- Status: success #10B981, warning #F59E0B, error #EF4444
+- Logo ideas: solid cobalt stroke, cyan arrow tip.
+- Gradient: linear-gradient(135deg, #2563EB, #22D3EE)

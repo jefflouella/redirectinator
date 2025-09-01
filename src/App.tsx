@@ -23,8 +23,9 @@ import { useRouting } from './hooks/useRouting';
 function App() {
   const { activeTab, navigateTo } = useRouting();
   const [isUrlOverlayOpen, setIsUrlOverlayOpen] = useState(false);
+  const [refreshCounter, setRefreshCounter] = useState(0);
   const { settings, updateSettings } = useAppSettings();
-  const { currentProject, projects, loadProject, createNewProject, deleteProject } = useProjects(settings);
+  const { currentProject, projects, loadProject, createNewProject, deleteProject, updateProject } = useProjects(settings);
   const { results, processingStatus, processUrls, stopProcessing, clearResults: clearUrlProcessingResults } = useUrlProcessing(
     currentProject,
     (newResults) => {
@@ -155,10 +156,12 @@ function App() {
               />
               
               <UrlSummary 
+                key={`${currentProject?.id}-${currentProject?.updatedAt}-${currentProject?.urls?.length}-${refreshCounter}`}
                 currentProject={currentProject}
                 onProcessUrls={processUrls}
                 isProcessing={processingStatus.isProcessing}
                 onEditUrls={() => setIsUrlOverlayOpen(true)}
+                onNavigateToProjects={() => navigateTo('projects')}
               />
               
               <ProcessingOptions
@@ -185,14 +188,17 @@ function App() {
           )}
           
           {activeTab === 'projects' && (
-            <ProjectManager 
-              projects={projects}
-              currentProject={currentProject}
-              onCreateProject={createNewProject}
-              onLoadProject={loadProject}
-              onDeleteProject={deleteProject}
-              onGoToDashboard={() => navigateTo('dashboard')}
-            />
+            <div className="container mx-auto px-4 py-6 space-y-6">
+              <ProjectManager 
+                projects={projects}
+                currentProject={currentProject}
+                onCreateProject={createNewProject}
+                onLoadProject={loadProject}
+                onDeleteProject={deleteProject}
+                onUpdateProject={updateProject}
+                onGoToDashboard={() => navigateTo('dashboard')}
+              />
+            </div>
           )}
           
           {activeTab === 'settings' && (
@@ -227,8 +233,11 @@ function App() {
           currentProject={currentProject}
           onUrlsAdded={async () => {
             // Refresh the current project to get updated URL count
+            console.log('onUrlsAdded called, refreshing project:', currentProject?.id);
             if (currentProject) {
               await loadProject(currentProject.id);
+              setRefreshCounter(prev => prev + 1); // Force re-render
+              console.log('Project reloaded, new URL count:', currentProject.urls?.length);
             }
           }}
         />

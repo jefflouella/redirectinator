@@ -15,15 +15,24 @@ interface UrlSummaryProps {
   onProcessUrls: (urls: Array<{ startingUrl: string; targetRedirect: string }>) => void;
   isProcessing: boolean;
   onEditUrls: () => void;
+  onNavigateToProjects?: () => void;
 }
 
 export const UrlSummary: React.FC<UrlSummaryProps> = ({
   currentProject,
   onProcessUrls,
   isProcessing,
-  onEditUrls
+  onEditUrls,
+  onNavigateToProjects
 }) => {
-  const { urls, isLoading: urlsLoading, clearUrls } = useUrlPersistence(currentProject);
+  const { urls, isLoading: urlsLoading, clearUrls, refreshUrls } = useUrlPersistence(currentProject);
+
+  // Refresh URLs when component mounts or when current project changes
+  React.useEffect(() => {
+    if (currentProject) {
+      refreshUrls();
+    }
+  }, [currentProject, refreshUrls]);
 
   const validateUrls = () => {
     const errors: string[] = [];
@@ -70,15 +79,40 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
 
   // Show empty state when no URLs
   if (!urlsLoading && urls.length === 0) {
+    // If no current project, show create project message
+    if (!currentProject) {
+      return (
+        <div className="card">
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Plus className="w-8 h-8 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Start!</h3>
+            <p className="text-gray-600 mb-4">
+              First, let's create a project.
+            </p>
+            <button
+              onClick={onNavigateToProjects}
+              className="btn-primary flex items-center space-x-2 mx-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Project</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // If there's a current project but no URLs, show add URLs message
     return (
       <div className="card">
         <div className="text-center py-8">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Plus className="w-8 h-8 text-blue-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No URLs Added</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Start!</h3>
           <p className="text-gray-600 mb-4">
-            Add URLs to start processing redirects for your project
+            Add URLs to begin analyzing redirects for your project
           </p>
           <button
             onClick={onEditUrls}

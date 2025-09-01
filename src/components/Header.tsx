@@ -40,14 +40,23 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center space-x-4">
             {/* Current Project Info */}
             {currentProject && (
-              <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600">
-                <FolderOpen className="w-4 h-4" />
-                <span className="font-medium">{currentProject.name}</span>
-                {currentProject.results.length > 0 && (
-                  <span className="text-gray-400">
-                    ({currentProject.results.length} results)
-                  </span>
-                )}
+              <div className="hidden md:flex items-center space-x-2">
+                <div className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg shadow-sm">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <FolderOpen className="w-4 h-4 text-blue-600" />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-blue-900">{currentProject.name}</span>
+                    <div className="flex items-center space-x-2 text-xs text-blue-600">
+                      <span>{currentProject.urls?.length || 0} URLs</span>
+                      {currentProject.results.length > 0 && (
+                        <>
+                          <span>•</span>
+                          <span>{currentProject.results.length} results</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
