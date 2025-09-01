@@ -181,6 +181,9 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
+                #
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
                 Status
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
@@ -207,9 +210,14 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
             </tr>
           </thead>
           <tbody className="divide-y divide-tech-200">
-            {filteredResults.map((result) => (
+            {filteredResults.map((result, index) => (
               <React.Fragment key={result.id}>
                 <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="text-sm font-medium text-tech-600">
+                      {index + 1}
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center space-x-2">
                       {getStatusIcon(result)}
