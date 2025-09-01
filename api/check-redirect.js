@@ -63,51 +63,8 @@ export default async function handler(req, res) {
     const originalDomain = new URL(url).hostname;
     const originalProtocol = new URL(url).protocol;
 
-    // If not following redirects manually, use follow mode
-    if (!followRedirects) {
-      try {
-        const response = await fetch(url, { 
-          method: method.toUpperCase(),
-          redirect: 'follow',
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-          }
-        });
-
-        const finalUrl = response.url;
-        const finalStatusCode = response.status;
-
-        // Check for domain changes
-        const finalDomain = new URL(finalUrl).hostname;
-        const domainChanges = finalDomain !== originalDomain;
-
-        // Check for HTTPS upgrade
-        const finalProtocol = new URL(finalUrl).protocol;
-        const httpsUpgrade = originalProtocol === 'http:' && finalProtocol === 'https:';
-
-        return res.json({
-          finalUrl,
-          finalStatusCode,
-          statusChain: [finalStatusCode.toString()],
-          redirectCount: 0,
-          redirectChain: [],
-          hasLoop: false,
-          hasMixedTypes: false,
-          domainChanges,
-          httpsUpgrade,
-          method: method.toUpperCase()
-        });
-
-      } catch (error) {
-        console.error('Error checking redirect:', error);
-        return res.status(500).json({ 
-          error: 'Failed to check redirect',
-          details: error.message 
-        });
-      }
-    }
-
-    // Manual redirect following
+    // Always follow redirects manually to capture the full chain
+    // This gives us complete redirect information regardless of the followRedirects parameter
     for (let i = 0; i < maxRedirects; i++) {
       try {
         const response = await fetch(currentUrl, { 
@@ -186,6 +143,15 @@ export default async function handler(req, res) {
       httpsUpgrade,
       method: method.toUpperCase()
     });
+
+      } catch (error) {
+        console.error('Error following redirect:', error);
+        return res.status(500).json({ 
+          error: 'Failed to follow redirect',
+          details: error.message 
+        });
+      }
+    }
 
   } catch (error) {
     console.error('Redirect checker error:', error);
