@@ -25,7 +25,7 @@ function App() {
   const [isUrlOverlayOpen, setIsUrlOverlayOpen] = useState(false);
   const [refreshCounter, setRefreshCounter] = useState(0);
   const { settings, updateSettings } = useAppSettings();
-  const { currentProject, projects, loadProject, createNewProject, deleteProject, updateProject } = useProjects(settings);
+  const { currentProject, projects, loadProject, createNewProject, deleteProject, updateProject, setCurrentProject } = useProjects(settings);
   const { results, processingStatus, processUrls, stopProcessing, clearResults: clearUrlProcessingResults } = useUrlProcessing(
     currentProject,
     (newResults) => {
@@ -162,6 +162,12 @@ function App() {
                 isProcessing={processingStatus.isProcessing}
                 onEditUrls={() => setIsUrlOverlayOpen(true)}
                 onNavigateToProjects={() => navigateTo('projects')}
+                onProjectUpdate={(updatedProject) => {
+                  // Update the current project state
+                  setCurrentProject(updatedProject);
+                  // Force a re-render
+                  setRefreshCounter(prev => prev + 1);
+                }}
               />
               
               <ProcessingOptions
@@ -239,6 +245,12 @@ function App() {
               setRefreshCounter(prev => prev + 1); // Force re-render
               console.log('Project reloaded, new URL count:', currentProject.urls?.length);
             }
+          }}
+          onProjectUpdate={(updatedProject) => {
+            // Update the current project state
+            setCurrentProject(updatedProject);
+            // Force a re-render
+            setRefreshCounter(prev => prev + 1);
           }}
         />
       </div>

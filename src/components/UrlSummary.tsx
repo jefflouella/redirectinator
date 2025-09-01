@@ -19,6 +19,7 @@ interface UrlSummaryProps {
   isProcessing: boolean;
   onEditUrls: () => void;
   onNavigateToProjects?: () => void;
+  onProjectUpdate?: (updatedProject: Project) => void;
 }
 
 export const UrlSummary: React.FC<UrlSummaryProps> = ({
@@ -26,9 +27,13 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
   onProcessUrls,
   isProcessing,
   onEditUrls,
-  onNavigateToProjects
+  onNavigateToProjects,
+  onProjectUpdate
 }) => {
-  const { urls, isLoading: urlsLoading, clearUrls, refreshUrls, detectDuplicates, cleanDuplicates } = useUrlPersistence(currentProject);
+  const { urls, isLoading: urlsLoading, clearUrls, refreshUrls, detectDuplicates, cleanDuplicates } = useUrlPersistence({ 
+    currentProject, 
+    onProjectUpdate 
+  });
   const { addNotification } = useNotifications();
 
   // Detect duplicates

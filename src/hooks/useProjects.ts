@@ -174,5 +174,6 @@ export const useProjects = (settings: AppSettings) => {
     createNewProject,
     deleteProject,
     updateProject,
+    setCurrentProject,
   };
 };

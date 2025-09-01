@@ -14,7 +14,12 @@ interface DuplicateInfo {
   totalCount: number;
 }
 
-export const useUrlPersistence = (currentProject: Project | null) => {
+interface UseUrlPersistenceProps {
+  currentProject: Project | null;
+  onProjectUpdate?: (updatedProject: Project) => void;
+}
+
+export const useUrlPersistence = ({ currentProject, onProjectUpdate }: UseUrlPersistenceProps) => {
   const [urls, setUrls] = useState<UrlData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -57,10 +62,13 @@ export const useUrlPersistence = (currentProject: Project | null) => {
 
       await storageService.saveProject(updatedProject);
       console.log(`Auto-saved ${newUrls.length} URLs to project: ${currentProject.name}`);
+      
+      // Notify parent component about the project update
+      onProjectUpdate?.(updatedProject);
     } catch (error) {
       console.error('Failed to auto-save URLs:', error);
     }
-  }, [currentProject]);
+  }, [currentProject, onProjectUpdate]);
 
   // Detect duplicates
   const detectDuplicates = useCallback((urlList: UrlData[] = urls): DuplicateInfo => {

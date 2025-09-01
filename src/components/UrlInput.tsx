@@ -16,12 +16,14 @@ interface UrlInputProps {
   onProcessUrls: (urls: Array<{ startingUrl: string; targetRedirect: string }>) => void;
   isProcessing: boolean;
   currentProject: Project | null;
+  onProjectUpdate?: (updatedProject: Project) => void;
 }
 
 export const UrlInput: React.FC<UrlInputProps> = ({
   onProcessUrls,
   isProcessing,
-  currentProject
+  currentProject,
+  onProjectUpdate
 }) => {
   const [inputMethod, setInputMethod] = useState<'single' | 'bulk' | 'paste'>('single');
   const [singleStartingUrl, setSingleStartingUrl] = useState('');
@@ -32,7 +34,10 @@ export const UrlInput: React.FC<UrlInputProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Use persistent URL storage
-  const { urls, isLoading: urlsLoading, addUrl, removeUrl, setAllUrls, clearUrls } = useUrlPersistence(currentProject);
+  const { urls, isLoading: urlsLoading, addUrl, removeUrl, setAllUrls, clearUrls } = useUrlPersistence({ 
+    currentProject, 
+    onProjectUpdate 
+  });
 
   const addSingleUrl = () => {
     if (singleStartingUrl.trim()) {

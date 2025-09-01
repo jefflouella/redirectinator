@@ -22,13 +22,15 @@ interface UrlInputOverlayProps {
   onClose: () => void;
   currentProject: Project | null;
   onUrlsAdded?: () => void; // Callback to notify parent when URLs are added
+  onProjectUpdate?: (updatedProject: Project) => void;
 }
 
 export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
   isOpen,
   onClose,
   currentProject,
-  onUrlsAdded
+  onUrlsAdded,
+  onProjectUpdate
 }) => {
   const [inputMethod, setInputMethod] = useState<'single' | 'bulk' | 'paste' | 'wayback' | 'semrush'>('single');
   const [singleStartingUrl, setSingleStartingUrl] = useState('');
@@ -44,7 +46,10 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Use persistent URL storage
-  const { urls, isLoading: urlsLoading, addUrl, removeUrl, setAllUrls, clearUrls } = useUrlPersistence(currentProject);
+  const { urls, isLoading: urlsLoading, addUrl, removeUrl, setAllUrls, clearUrls } = useUrlPersistence({ 
+    currentProject, 
+    onProjectUpdate 
+  });
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
