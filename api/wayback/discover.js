@@ -25,6 +25,14 @@ export default async function handler(req, res) {
     // Set default date range if not provided
     const fromDate = from || '20200101';
     const toDate = to || '20241231';
+    
+    // Validate date format (CDX API expects YYYYMMDD)
+    const dateRegex = /^\d{8}$/;
+    if (!dateRegex.test(fromDate) || !dateRegex.test(toDate)) {
+      return res.status(400).json({ 
+        error: 'Invalid date format. Dates must be in YYYYMMDD format (e.g., 20230401)' 
+      });
+    }
 
     console.log(`Discovering URLs for ${domain} from ${fromDate} to ${toDate}`);
 
@@ -32,7 +40,7 @@ export default async function handler(req, res) {
     const cdxUrl = 'https://web.archive.org/cdx/search/cdx';
     const params = new URLSearchParams({
       output: 'json',
-      limit: '10000'
+      limit: '5000'  // Reduced limit to avoid potential API issues
     });
 
     // Handle domain with potential subfolder
@@ -55,8 +63,8 @@ export default async function handler(req, res) {
 
     params.append('url', urlPattern);
 
-    // Add filter for HTML content only
-    params.append('filter', 'mime:text/html');
+    // Note: CDX API doesn't support mime filtering in the same way
+    // We'll filter the results after fetching instead
 
     // Add date range if specified
     if (fromDate && toDate) {
@@ -77,7 +85,9 @@ export default async function handler(req, res) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`Wayback Machine API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('CDX API error response:', errorText);
+        throw new Error(`Wayback Machine API error: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.text();
