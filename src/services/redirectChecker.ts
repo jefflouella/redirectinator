@@ -340,23 +340,29 @@ export class RedirectChecker {
 
       // Use mode-based logic instead of automatic detection
       const usePuppeteer = this.mode === 'advanced';
+      
+      console.log(`DEBUG: Frontend mode=${this.mode}, usePuppeteer=${usePuppeteer}, type=${typeof usePuppeteer}`);
 
       // Try to connect to the backend server via proxy
       let proxyResponse = null;
       try {
+        const requestBody = {
+          url,
+          method: 'GET',
+          followRedirects: false,
+          maxRedirects: this.settings.maxRedirects,
+          usePuppeteer: usePuppeteer
+        };
+        
+        console.log(`DEBUG: Sending request body:`, requestBody);
+        
         proxyResponse = await fetch('/api/check-redirect', {
           method: 'POST',
           signal: controller.signal,
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            url,
-            method: 'GET',
-            followRedirects: false,
-            maxRedirects: this.settings.maxRedirects,
-            usePuppeteer: usePuppeteer
-          }),
+          body: JSON.stringify(requestBody),
         });
 
         console.log(`Connected to backend server via proxy${usePuppeteer ? ' with Advanced mode (Puppeteer)' : ' with Default mode'}`);

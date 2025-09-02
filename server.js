@@ -870,6 +870,9 @@ app.post('/api/check-redirect', async (req, res) => {
 
     // Check if we should use Puppeteer for enhanced redirect detection
     console.log(`DEBUG: usePuppeteer=${usePuppeteer}, type=${typeof usePuppeteer}, truthy=${Boolean(usePuppeteer)}`);
+    console.log(`DEBUG: usePuppeteer JSON: ${JSON.stringify(usePuppeteer)}`);
+    console.log(`DEBUG: usePuppeteer === true: ${usePuppeteer === true}`);
+    console.log(`DEBUG: usePuppeteer === "true": ${usePuppeteer === "true"}`);
     
     if (usePuppeteer) {
       console.log(`Using Puppeteer for enhanced redirect detection: ${url}`);
