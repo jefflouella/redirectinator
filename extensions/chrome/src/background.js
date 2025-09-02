@@ -248,28 +248,45 @@ async function performAnalysis(url, options = {}) {
       }
     };
 
-    // Add webRequest listener for redirects
-    chrome.webRequest.onBeforeRedirect.addListener(
-      webRequestListener,
-      { urls: ["<all_urls>"] },
-      ["responseHeaders"]
-    );
+    // Add webRequest listener for redirects with error handling
+    console.log('🔍 Adding webRequest listener...');
+    try {
+      chrome.webRequest.onBeforeRedirect.addListener(
+        webRequestListener,
+        { urls: ["<all_urls>"] },
+        ["responseHeaders"]
+      );
+      console.log('✅ WebRequest listener added successfully');
+    } catch (webRequestError) {
+      console.error('❌ Failed to add webRequest listener:', webRequestError);
+      // Continue without webRequest support
+    }
 
     console.log('🔍 Creating tab for:', url);
     // Create background tab for analysis
-    tab = await chrome.tabs.create({
-      url: url,
-      active: false
-    });
-
-    console.log('🔍 Tab created with ID:', tab.id);
+    try {
+      tab = await chrome.tabs.create({
+        url: url,
+        active: false
+      });
+      console.log('🔍 Tab created with ID:', tab.id);
+    } catch (tabError) {
+      console.error('❌ Failed to create tab:', tabError);
+      throw new Error(`Failed to create analysis tab: ${tabError.message}`);
+    }
     
     // Store analysis reference
     activeAnalyses.set(tab.id, results);
 
     // Wait for page to load and capture redirects during navigation
     console.log('🔍 Waiting for tab to load...');
-    await waitForTabLoad(tab.id, options.timeout || 15000);
+    try {
+      await waitForTabLoad(tab.id, options.timeout || 15000);
+      console.log('✅ Tab loaded successfully');
+    } catch (loadError) {
+      console.error('❌ Tab load failed:', loadError);
+      throw new Error(`Tab load timeout: ${loadError.message}`);
+    }
 
     console.log('🔍 Tab loaded, HTTP redirects captured:', httpRedirects.length);
     results.httpRedirects = httpRedirects;
@@ -281,40 +298,59 @@ async function performAnalysis(url, options = {}) {
 
     // Inject content script for client-side analysis
     console.log('🔍 Injecting content script...');
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ['src/content.js']
-    });
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['src/content.js']
+      });
+      console.log('✅ Content script injected successfully');
+    } catch (injectError) {
+      console.error('❌ Failed to inject content script:', injectError);
+      // Continue without content script analysis
+    }
 
     // Wait for content script to initialize and analyze
+    console.log('🔍 Waiting for content script to initialize...');
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Get analysis results from content script
     console.log('🔍 Requesting analysis from content script...');
-    const analysisResults = await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.warn('⏰ Content script analysis timeout');
-        reject(new Error('Content script analysis timeout'));
-      }, 8000);
+    let analysisResults = {};
+    try {
+      analysisResults = await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          console.warn('⏰ Content script analysis timeout');
+          resolve({}); // Resolve with empty results instead of rejecting
+        }, 8000);
 
-      function messageHandler(message) {
-        if (message.type === 'CONTENT_ANALYSIS_COMPLETE' && message.tabId === tab.id) {
-          console.log('✅ Content script analysis complete:', message.data);
-          clearTimeout(timeout);
-          chrome.runtime.onMessage.removeListener(messageHandler);
-          resolve(message.data);
+        function messageHandler(message) {
+          if (message.type === 'CONTENT_ANALYSIS_COMPLETE' && message.tabId === tab.id) {
+            console.log('✅ Content script analysis complete:', message.data);
+            clearTimeout(timeout);
+            chrome.runtime.onMessage.removeListener(messageHandler);
+            resolve(message.data);
+          }
         }
-      }
 
-      chrome.runtime.onMessage.addListener(messageHandler);
+        chrome.runtime.onMessage.addListener(messageHandler);
 
-      // Request analysis from content script
-      chrome.tabs.sendMessage(tab.id, {
-        type: 'START_ANALYSIS',
-        tabId: tab.id,
-        originalUrl: url
+        // Request analysis from content script
+        try {
+          chrome.tabs.sendMessage(tab.id, {
+            type: 'START_ANALYSIS',
+            tabId: tab.id,
+            originalUrl: url
+          });
+        } catch (sendError) {
+          console.error('❌ Failed to send message to content script:', sendError);
+          clearTimeout(timeout);
+          resolve({}); // Continue with empty analysis results
+        }
       });
-    });
+    } catch (analysisError) {
+      console.error('❌ Content script analysis failed:', analysisError);
+      analysisResults = {}; // Continue with empty analysis results
+    }
 
     // Build comprehensive redirect chain
     console.log('🔍 Building comprehensive redirect chain...');

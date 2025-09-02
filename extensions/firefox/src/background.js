@@ -236,12 +236,19 @@ async function performAnalysis(url, options = {}) {
       }
     };
 
-    // Add webRequest listener for redirects
-    browserAPI.webRequest.onBeforeRedirect.addListener(
-      webRequestListener,
-      { urls: ["<all_urls>"] },
-      ["responseHeaders"]
-    );
+    // Add webRequest listener for redirects with error handling
+    console.log('🔍 Adding webRequest listener...');
+    try {
+      browserAPI.webRequest.onBeforeRedirect.addListener(
+        webRequestListener,
+        { urls: ["<all_urls>"] },
+        ["responseHeaders"]
+      );
+      console.log('✅ WebRequest listener added successfully');
+    } catch (webRequestError) {
+      console.error('❌ Failed to add webRequest listener:', webRequestError);
+      // Continue without webRequest support
+    }
 
     console.log('🔍 Creating tab for:', url);
     // Create background tab for analysis
