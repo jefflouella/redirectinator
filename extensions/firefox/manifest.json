@@ -8,6 +8,7 @@
     "activeTab",
     "scripting",
     "webNavigation",
+    "webRequest",
     "<all_urls>",
     "http://localhost/*",
     "https://localhost/*",
