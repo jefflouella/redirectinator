@@ -133,6 +133,9 @@ class RedirectDetector {
 
       // Enhanced Meta Refresh monitoring
       self.monitorMetaRefreshChanges();
+      
+      // Aggressive Meta Refresh detection
+      self.aggressiveMetaRefreshDetection();
 
       console.log('Redirectinator Advanced: JavaScript redirect monitoring initialized (event-based)');
 
@@ -273,6 +276,123 @@ class RedirectDetector {
       console.warn('Error parsing URLs for meta refresh detection:', error);
       return false;
     }
+  }
+
+  /**
+   * Aggressive Meta Refresh detection - try to catch it before it executes
+   */
+  aggressiveMetaRefreshDetection() {
+    const self = this;
+    
+    // Check for meta refresh tags more aggressively
+    const checkForMetaRefresh = () => {
+      const metaRefreshTags = document.querySelectorAll('meta[http-equiv="refresh"]');
+      if (metaRefreshTags.length > 0) {
+        console.log('🔍 Found', metaRefreshTags.length, 'meta refresh tags');
+        
+        metaRefreshTags.forEach((tag, index) => {
+          const content = tag.getAttribute('content');
+          if (content) {
+            console.log(`🔍 Meta refresh ${index + 1} content:`, content);
+            
+            // Parse the content
+            const parts = content.split(';');
+            const delay = parseInt(parts[0]) || 0;
+            const urlPart = parts.find(part => part.toLowerCase().startsWith('url='));
+            
+            if (urlPart) {
+              const targetUrl = urlPart.substring(4);
+              console.log(`🔍 Meta refresh ${index + 1} target:`, targetUrl, 'delay:', delay);
+              
+              // Store this meta refresh for later verification
+              if (!self.detectedMetaRefreshes) {
+                self.detectedMetaRefreshes = [];
+              }
+              
+              const metaRefreshInfo = {
+                delay: delay,
+                targetUrl: targetUrl,
+                detectedAt: Date.now(),
+                tag: tag
+              };
+              
+              self.detectedMetaRefreshes.push(metaRefreshInfo);
+              console.log('🔍 Meta refresh stored for verification:', metaRefreshInfo);
+              
+              // If immediate redirect (no delay), set up immediate monitoring
+              if (delay === 0) {
+                console.log('🔍 Immediate meta refresh detected, setting up aggressive monitoring');
+                self.setupImmediateMetaRefreshMonitoring(targetUrl);
+              }
+            }
+          }
+        });
+      }
+    };
+    
+    // Check immediately
+    checkForMetaRefresh();
+    
+    // Check after DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', checkForMetaRefresh);
+    }
+    
+    // Check after window load
+    if (document.readyState !== 'complete') {
+      window.addEventListener('load', checkForMetaRefresh);
+    }
+    
+    // Check periodically
+    setInterval(checkForMetaRefresh, 1000);
+    
+    console.log('🔍 Aggressive meta refresh detection initialized');
+  }
+
+  /**
+   * Set up monitoring for immediate meta refresh redirects
+   */
+  setupImmediateMetaRefreshMonitoring(targetUrl) {
+    const self = this;
+    let currentUrl = window.location.href;
+    
+    // Monitor for immediate redirects
+    const immediateCheck = setInterval(() => {
+      const newUrl = window.location.href;
+      if (newUrl !== currentUrl) {
+        console.log('🔍 Immediate redirect detected:', { from: currentUrl, to: newUrl, expected: targetUrl });
+        
+        // Check if this matches our expected meta refresh target
+        if (newUrl === targetUrl || newUrl.includes(targetUrl.split('/').pop())) {
+          console.log('✅ Immediate meta refresh redirect confirmed!');
+          
+          // Add this as a meta refresh redirect
+          const redirect = {
+            type: 'meta_refresh',
+            method: 'immediate_meta_refresh',
+            from: currentUrl,
+            to: newUrl,
+            targetUrl: targetUrl,
+            delay: 0,
+            timestamp: Date.now(),
+            userAgent: navigator.userAgent
+          };
+          
+          self.metaRefreshRedirects = self.metaRefreshRedirects || [];
+          self.metaRefreshRedirects.push(redirect);
+          
+          // Stop monitoring
+          clearInterval(immediateCheck);
+        }
+        
+        currentUrl = newUrl;
+      }
+    }, 50); // Check very frequently for immediate redirects
+    
+    // Stop monitoring after 10 seconds to avoid memory leaks
+    setTimeout(() => {
+      clearInterval(immediateCheck);
+    }, 10000);
   }
 
   /**
