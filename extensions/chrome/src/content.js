@@ -1164,12 +1164,17 @@ window.addEventListener('message', (event) => {
       console.log('🔍 Received URL analysis request from web app:', event.data);
       
       try {
+        // Check if redirectDetector is available
+        if (typeof redirectDetector === 'undefined') {
+          throw new Error('RedirectDetector not initialized');
+        }
+        
         // Perform comprehensive analysis directly in content script
         console.log('🔍 Starting comprehensive analysis...');
-        this.performComprehensiveAnalysis();
+        redirectDetector.performComprehensiveAnalysis();
         
         // Get the analysis results
-        const analysisResults = this.getAnalysisResults();
+        const analysisResults = redirectDetector.getAnalysisResults();
         console.log('🔍 Comprehensive analysis results:', analysisResults);
         
         // Send results back to the web app
