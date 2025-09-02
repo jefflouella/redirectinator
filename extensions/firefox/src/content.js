@@ -1189,7 +1189,20 @@ window.addEventListener('message', (event) => {
       if (event.data?.type === 'REDIRECTINATOR_REQUEST') {
       console.log('🔍 Received URL analysis request from web app:', event.data);
       
+      // Check if browser runtime is available
+      if (typeof browser === 'undefined' || !browser.runtime || !browser.runtime.sendMessage) {
+        console.error('❌ Browser runtime not available for background communication');
+        window.postMessage({
+          type: 'REDIRECTINATOR_RESPONSE',
+          requestId: event.data.requestId,
+          success: false,
+          error: 'Browser runtime not available'
+        }, '*');
+        return;
+      }
+      
       // Forward this request to the background script for proper tab navigation
+      console.log('🔍 Sending ANALYZE_URL_REQUEST to background script...');
       try {
         browser.runtime.sendMessage({
           type: 'ANALYZE_URL_REQUEST',
@@ -1197,6 +1210,8 @@ window.addEventListener('message', (event) => {
           options: event.data.options,
           requestId: event.data.requestId
         }, (response) => {
+          console.log('🔍 Background script response received:', response);
+          
           if (browser.runtime.lastError) {
             console.error('❌ Background script communication failed:', browser.runtime.lastError);
             // Send error response to web app
@@ -1204,9 +1219,10 @@ window.addEventListener('message', (event) => {
               type: 'REDIRECTINATOR_RESPONSE',
               requestId: event.data.requestId,
               success: false,
-              error: 'Background script communication failed'
+              error: `Background script error: ${browser.runtime.lastError.message}`
             }, '*');
           } else if (response && response.success) {
+            console.log('✅ Forwarding successful response to web app');
             // Forward successful response to web app
             window.postMessage({
               type: 'REDIRECTINATOR_RESPONSE',
@@ -1216,6 +1232,7 @@ window.addEventListener('message', (event) => {
               error: undefined
             }, '*');
           } else {
+            console.log('❌ Background script returned error:', response?.error);
             // Send error response to web app
             window.postMessage({
               type: 'REDIRECTINATOR_RESPONSE',
@@ -1225,6 +1242,8 @@ window.addEventListener('message', (event) => {
             }, '*');
           }
         });
+        
+        console.log('🔍 Message sent to background script, waiting for response...');
       } catch (error) {
         console.error('❌ Failed to communicate with background script:', error);
         window.postMessage({
