@@ -887,6 +887,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Return true to indicate we'll send a response asynchronously
     return true;
   }
+  
+  if (message.type === 'ANALYZE_URL_REQUEST') {
+    console.log('🔍 Runtime: Received ANALYZE_URL_REQUEST from content script:', message.url);
+    
+    // Handle the analysis asynchronously using the proper tab-based method
+    performAnalysis(message.url, message.options || {})
+      .then(result => {
+        console.log('🔍 Runtime: Tab analysis completed, sending response');
+        sendResponse({
+          success: true,
+          result: result
+        });
+      })
+      .catch(error => {
+        console.error('❌ Runtime: Tab analysis failed:', error);
+        sendResponse({
+          success: false,
+          error: error.message
+        });
+      });
+    
+    // Return true to indicate we'll send a response asynchronously
+    return true;
+  }
 });
 
 // Clean up on extension unload

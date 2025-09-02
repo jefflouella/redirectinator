@@ -1163,41 +1163,87 @@ window.addEventListener('message', (event) => {
     if (event.data?.type === 'REDIRECTINATOR_REQUEST') {
       console.log('🔍 Received URL analysis request from web app:', event.data);
       
+      // Forward this request to the background script for proper tab navigation
+      try {
+        chrome.runtime.sendMessage({
+          type: 'ANALYZE_URL_REQUEST',
+          url: event.data.url,
+          options: event.data.options,
+          requestId: event.data.requestId
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.error('❌ Background script communication failed:', chrome.runtime.lastError);
+            // Send error response to web app
+            window.postMessage({
+              type: 'REDIRECTINATOR_RESPONSE',
+              requestId: event.data.requestId,
+              success: false,
+              error: 'Background script communication failed'
+            }, '*');
+          } else if (response && response.success) {
+            // Forward successful response to web app
+            window.postMessage({
+              type: 'REDIRECTINATOR_RESPONSE',
+              requestId: event.data.requestId,
+              success: true,
+              result: response.result,
+              error: undefined
+            }, '*');
+          } else {
+            // Send error response to web app
+            window.postMessage({
+              type: 'REDIRECTINATOR_RESPONSE',
+              requestId: event.data.requestId,
+              success: false,
+              error: response?.error || 'Analysis failed'
+            }, '*');
+          }
+        });
+      } catch (error) {
+        console.error('❌ Failed to communicate with background script:', error);
+        window.postMessage({
+          type: 'REDIRECTINATOR_RESPONSE',
+          requestId: event.data.requestId,
+          success: false,
+          error: error.message || 'Communication failed'
+        }, '*');
+      }
+    }
+
+    // Handle analysis requests from background script (for tab-based analysis)
+    if (event.data?.type === 'START_ANALYSIS') {
+      console.log('🔍 Received START_ANALYSIS request from background script');
+      
       try {
         // Check if redirectDetector is available
         if (typeof redirectDetector === 'undefined') {
           throw new Error('RedirectDetector not initialized');
         }
         
-        // Perform comprehensive analysis directly in content script
-        console.log('🔍 Starting comprehensive analysis...');
+        // Perform comprehensive analysis
+        console.log('🔍 Starting comprehensive analysis for tab...');
         redirectDetector.performComprehensiveAnalysis();
         
         // Get the analysis results
         const analysisResults = redirectDetector.getAnalysisResults();
-        console.log('🔍 Comprehensive analysis results:', analysisResults);
+        console.log('🔍 Tab analysis results:', analysisResults);
         
-        // Send results back to the web app
-        const responseMessage = {
-          type: 'REDIRECTINATOR_RESPONSE',
-          requestId: event.data.requestId,
-          success: true,
-          result: analysisResults,
-          error: undefined
-        };
+        // Send results back to background script
+        chrome.runtime.sendMessage({
+          type: 'CONTENT_ANALYSIS_COMPLETE',
+          data: analysisResults,
+          tabId: event.data.tabId
+        });
         
-        console.log('🔍 Sending analysis results to web app:', responseMessage);
-        window.postMessage(responseMessage, '*');
-        console.log('🔍 Analysis results sent to web app');
+        console.log('✅ Analysis complete, sent to background script');
         
       } catch (error) {
-        console.error('❌ Analysis failed:', error);
-        window.postMessage({
-          type: 'REDIRECTINATOR_RESPONSE',
-          requestId: event.data.requestId,
-          success: false,
-          error: error.message || 'Analysis failed'
-        }, '*');
+        console.error('❌ Tab analysis failed:', error);
+        chrome.runtime.sendMessage({
+          type: 'CONTENT_ANALYSIS_ERROR',
+          error: error.message,
+          tabId: event.data.tabId
+        });
       }
     }
 });
