@@ -131,11 +131,74 @@ class RedirectDetector {
         }
       });
 
+      // Enhanced Meta Refresh monitoring
+      self.monitorMetaRefreshChanges();
+
       console.log('Redirectinator Advanced: JavaScript redirect monitoring initialized (event-based)');
 
     } catch (error) {
       console.warn('Redirectinator Advanced: Error setting up JavaScript redirect monitoring:', error);
     }
+  }
+
+  /**
+   * Monitor for Meta Refresh changes and execution
+   */
+  monitorMetaRefreshChanges() {
+    const self = this;
+    
+    // Monitor DOM changes for dynamically added meta refresh tags
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList') {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              // Check if a meta refresh tag was added
+              if (node.tagName === 'META' && node.getAttribute('http-equiv') === 'refresh') {
+                console.log('🔍 Meta refresh tag dynamically added:', node);
+                self.detectMetaRefresh();
+              }
+              // Check children of added nodes
+              const metaRefresh = node.querySelector && node.querySelector('meta[http-equiv="refresh"]');
+              if (metaRefresh) {
+                console.log('🔍 Meta refresh tag found in added content:', metaRefresh);
+                self.detectMetaRefresh();
+              }
+            }
+          });
+        }
+      });
+    });
+
+    // Start observing
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+
+    // Also monitor for location changes that might indicate meta refresh execution
+    let lastUrl = window.location.href;
+    const checkForMetaRefreshRedirect = () => {
+      if (window.location.href !== lastUrl) {
+        console.log('🔍 Location changed, checking for meta refresh execution');
+        // Re-detect meta refresh in case it was added after initial load
+        self.detectMetaRefresh();
+        lastUrl = window.location.href;
+      }
+    };
+
+    // Check periodically for location changes
+    setInterval(checkForMetaRefreshRedirect, 1000);
+    
+    // Also check when page becomes visible (in case of background redirects)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        console.log('🔍 Page became visible, checking for meta refresh');
+        self.detectMetaRefresh();
+      }
+    });
+
+    console.log('🔍 Meta refresh monitoring initialized');
   }
 
   /**

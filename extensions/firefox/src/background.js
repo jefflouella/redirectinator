@@ -652,7 +652,7 @@ async function performAdvancedUrlAnalysis(url, options = {}) {
 /**
  * Content script function to analyze page for redirects with enhanced JavaScript detection
  */
-function analyzePageForRedirects(originalUrl) {
+async function analyzePageForRedirects(originalUrl) {
   console.log('🔍 Analyzing page for redirects:', originalUrl);
   
   const results = {
@@ -666,26 +666,66 @@ function analyzePageForRedirects(originalUrl) {
     javascriptRedirects: []
   };
   
-  // Check for Meta Refresh redirects
+  // Enhanced Meta Refresh detection with execution monitoring
   const metaRefresh = document.querySelector('meta[http-equiv="refresh"]');
   if (metaRefresh) {
     const content = metaRefresh.getAttribute('content');
     if (content) {
       const parts = content.split(';');
       if (parts.length > 1) {
-        const url = parts[1].trim();
-        if (url && url !== originalUrl) {
-          results.hasMetaRefresh = true;
-          results.redirectCount++;
-          results.redirectChain.push({
-            step: 1,
-            url: originalUrl,
-            type: 'meta_refresh',
-            targetUrl: url,
-            method: 'meta_refresh',
-            timestamp: Date.now()
-          });
-          results.finalUrl = url;
+        const delay = parseInt(parts[0]) || 0;
+        const urlPart = parts.find(part => part.toLowerCase().startsWith('url='));
+        
+        if (urlPart) {
+          const targetUrl = urlPart.substring(4); // Remove "url=" prefix
+          
+          console.log('🔍 Meta refresh detected:', { delay, targetUrl, originalUrl });
+          
+          // Wait for the meta refresh to potentially execute
+          if (delay > 0) {
+            // If there's a delay, wait for it plus some buffer time
+            await new Promise(resolve => setTimeout(resolve, (delay * 1000) + 2000));
+          } else {
+            // If no delay, wait a bit for immediate redirects
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          }
+          
+          // Check if the location changed due to meta refresh
+          const currentLocation = window.location.href;
+          console.log('🔍 Location after meta refresh wait:', currentLocation);
+          
+          if (currentLocation !== originalUrl) {
+            results.hasMetaRefresh = true;
+            results.redirectCount++;
+            results.redirectChain.push({
+              step: 1,
+              url: originalUrl,
+              type: 'meta_refresh',
+              targetUrl: currentLocation,
+              method: 'meta_refresh',
+              delay: delay,
+              timestamp: Date.now()
+            });
+            results.finalUrl = currentLocation;
+            
+            console.log('✅ Meta refresh redirect confirmed:', currentLocation);
+          } else {
+            // Meta refresh was detected but didn't execute yet
+            results.hasMetaRefresh = true;
+            results.redirectCount++;
+            results.redirectChain.push({
+              step: 1,
+              url: originalUrl,
+              type: 'meta_refresh',
+              targetUrl: targetUrl,
+              method: 'meta_refresh',
+              delay: delay,
+              timestamp: Date.now()
+            });
+            results.finalUrl = targetUrl;
+            
+            console.log('⚠️ Meta refresh detected but not yet executed:', targetUrl);
+          }
         }
       }
     }
