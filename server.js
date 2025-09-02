@@ -568,6 +568,22 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
     const httpsUpgrade = originalProtocol === 'http:' && finalUrl.startsWith('https:');
 
     console.log(`Puppeteer completed for ${url}: ${redirectCount} redirects, final URL: ${finalUrl}`);
+    console.log(`DEBUG: Final response data:`, {
+      finalUrl,
+      finalStatusCode,
+      statusChain,
+      redirectCount,
+      redirectChain,
+      hasLoop: false,
+      hasMixedTypes: false,
+      domainChanges,
+      httpsUpgrade,
+      method: 'PUPPETEER',
+      redirectTypes,
+      redirectChainDetails,
+      hasMetaRefresh,
+      hasJavaScriptRedirect
+    });
 
     res.json({
       finalUrl,
