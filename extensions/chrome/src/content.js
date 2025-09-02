@@ -1161,135 +1161,40 @@ window.addEventListener('message', (event) => {
   }
 
     if (event.data?.type === 'REDIRECTINATOR_REQUEST') {
-    console.log('🔍 Received URL analysis request from web app:', event.data);
-    
-    // Try multiple communication methods with robust fallbacks
-    const tryCommunication = async () => {
+      console.log('🔍 Received URL analysis request from web app:', event.data);
+      
       try {
-        // Method 1: Check if extension context is valid
-        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id) {
-          throw new Error('Extension context invalid - please reload the extension');
-        }
+        // Perform comprehensive analysis directly in content script
+        console.log('🔍 Starting comprehensive analysis...');
+        this.performComprehensiveAnalysis();
         
-        // Method 2: Try port communication first
-        console.log('🔍 Attempting port communication...');
-        try {
-          const port = chrome.runtime.connect({ name: 'CONTENT_SCRIPT_ANALYZE' });
-          
-          // Set up response listener
-          port.onMessage.addListener((response) => {
-            console.log('🔍 Port message received:', response);
-            
-            if (response.type === 'ANALYSIS_RESPONSE') {
-              console.log('🔍 Analysis response received:', response);
-              
-              // Send the response back to the web app
-              console.log('🔍 Sending response to web app...');
-              const responseMessage = {
-                type: 'REDIRECTINATOR_RESPONSE',
-                requestId: event.data.requestId,
-                success: response.success,
-                result: response.result,
-                error: response.error
-              };
-              console.log('🔍 Response message:', responseMessage);
-              window.postMessage(responseMessage, '*');
-              console.log('🔍 Response sent to web app');
-              
-              // Close the port
-              port.disconnect();
-            }
-          });
-          
-          // Send the analysis request
-          console.log('🔍 Sending analysis request via port...');
-          port.postMessage({
-            type: 'CONTENT_SCRIPT_ANALYZE_URL',
-            url: event.data.url,
-            options: event.data.options,
-            requestId: event.data.requestId
-          });
-          
-          // Handle port errors
-          port.onDisconnect.addListener(() => {
-            console.log('🔍 Port disconnected');
-            if (chrome.runtime.lastError) {
-              console.error('❌ Port error:', chrome.runtime.lastError);
-              // Try fallback method
-              tryFallbackCommunication();
-            }
-          });
-          
-          // Set timeout for port communication
-          setTimeout(() => {
-            if (port) {
-              console.log('⏰ Port communication timeout, trying fallback...');
-              port.disconnect();
-              tryFallbackCommunication();
-            }
-          }, 10000); // 10 second timeout
-          
-          return; // Success, exit early
-          
-        } catch (portError) {
-          console.log('⚠️ Port communication failed, trying fallback...');
-          tryFallbackCommunication();
-        }
+        // Get the analysis results
+        const analysisResults = this.getAnalysisResults();
+        console.log('🔍 Comprehensive analysis results:', analysisResults);
         
-      } catch (error) {
-        console.error('❌ All communication methods failed:', error);
-        window.postMessage({
-          type: 'REDIRECTINATOR_RESPONSE',
-          requestId: event.data.requestId,
-          success: false,
-          error: error.message || 'All communication methods failed'
-        }, '*');
-      }
-    };
-    
-    // Fallback communication method
-    const tryFallbackCommunication = async () => {
-      console.log('🔄 Trying fallback communication method...');
-      try {
-        // Method 3: Try direct runtime message
-        const response = await new Promise((resolve, reject) => {
-          chrome.runtime.sendMessage({
-            type: 'CONTENT_SCRIPT_ANALYZE_URL',
-            url: event.data.url,
-            options: event.data.options,
-            requestId: event.data.requestId
-          }, (response) => {
-            if (chrome.runtime.lastError) {
-              reject(new Error(chrome.runtime.lastError.message));
-            } else {
-              resolve(response);
-            }
-          });
-        });
-        
-        console.log('✅ Fallback communication successful:', response);
-        window.postMessage({
+        // Send results back to the web app
+        const responseMessage = {
           type: 'REDIRECTINATOR_RESPONSE',
           requestId: event.data.requestId,
           success: true,
-          result: response,
+          result: analysisResults,
           error: undefined
-        }, '*');
+        };
         
-      } catch (fallbackError) {
-        console.error('❌ Fallback communication also failed:', fallbackError);
+        console.log('🔍 Sending analysis results to web app:', responseMessage);
+        window.postMessage(responseMessage, '*');
+        console.log('🔍 Analysis results sent to web app');
+        
+      } catch (error) {
+        console.error('❌ Analysis failed:', error);
         window.postMessage({
           type: 'REDIRECTINATOR_RESPONSE',
           requestId: event.data.requestId,
           success: false,
-          error: `All communication methods failed: ${fallbackError.message}`
+          error: error.message || 'Analysis failed'
         }, '*');
       }
-    };
-    
-    // Start the communication process
-    tryCommunication();
-  }
+    }
 });
 
 /**
