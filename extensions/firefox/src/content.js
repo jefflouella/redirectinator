@@ -528,6 +528,9 @@ class RedirectDetector {
    * Get comprehensive redirect analysis results
    */
   getAnalysisResults() {
+    // Perform comprehensive page analysis to catch missed redirects
+    this.performComprehensiveAnalysis();
+    
     return {
       originalUrl: this.originalUrl,
       finalUrl: window.location.href,
@@ -541,6 +544,201 @@ class RedirectDetector {
       analysisTime: Date.now() - this.startTime,
       detectedAt: new Date().toISOString()
     };
+  }
+
+  /**
+   * Perform comprehensive analysis to catch missed redirects
+   */
+  performComprehensiveAnalysis() {
+    console.log('🔍 Performing comprehensive page analysis...');
+    
+    // Check for any remaining meta refresh tags
+    const remainingMetaRefresh = document.querySelector('meta[http-equiv="refresh"]');
+    if (remainingMetaRefresh) {
+      console.log('🔍 Found remaining meta refresh tag:', remainingMetaRefresh);
+      this.detectMetaRefresh();
+    }
+    
+    // Analyze the current page for clues about what happened
+    this.analyzePageForRedirectClues();
+    
+    // Check if we're on a different page than expected
+    this.checkForUnexpectedNavigation();
+  }
+
+  /**
+   * Analyze page content for clues about redirects that happened
+   */
+  analyzePageForRedirectClues() {
+    console.log('🔍 Analyzing page for redirect clues...');
+    
+    // Check if we're on a different page than the original
+    if (window.location.href !== this.originalUrl) {
+      console.log('🔍 Page URL changed from', this.originalUrl, 'to', window.location.href);
+      
+      // Check if this looks like it could be a meta refresh target
+      const currentPage = window.location.href;
+      const originalPage = this.originalUrl;
+      
+      // Look for evidence of meta refresh execution
+      this.lookForMetaRefreshEvidence(currentPage, originalPage);
+    }
+    
+    // Check page title and content for clues
+    const pageTitle = document.title;
+    const pageContent = document.body ? document.body.textContent : '';
+    
+    console.log('🔍 Current page title:', pageTitle);
+    console.log('🔍 Page content preview:', pageContent.substring(0, 200) + '...');
+    
+    // Check if this looks like a different page than expected
+    if (this.metaRefresh && this.metaRefresh.targetUrl) {
+      const expectedTarget = this.metaRefresh.targetUrl;
+      const currentUrl = window.location.href;
+      
+      console.log('🔍 Checking if current page matches expected meta refresh target');
+      console.log('🔍 Expected:', expectedTarget);
+      console.log('🔍 Current:', currentUrl);
+      
+      // If we're on the expected target page, this suggests meta refresh executed
+      if (currentUrl === expectedTarget || currentUrl.includes(expectedTarget.split('/').pop())) {
+        console.log('✅ Current page matches expected meta refresh target!');
+        
+        // Add this as a meta refresh redirect
+        const redirect = {
+          type: 'meta_refresh',
+          method: 'page_analysis_confirmation',
+          from: this.originalUrl,
+          to: currentUrl,
+          targetUrl: expectedTarget,
+          delay: this.metaRefresh.delay || 0,
+          timestamp: Date.now(),
+          userAgent: navigator.userAgent
+        };
+        
+        this.metaRefreshRedirects = this.metaRefreshRedirects || [];
+        this.metaRefreshRedirects.push(redirect);
+        
+        console.log('✅ Meta refresh redirect confirmed via page analysis');
+      }
+    }
+  }
+
+  /**
+   * Look for evidence that a meta refresh redirect occurred
+   */
+  lookForMetaRefreshEvidence(currentPage, originalPage) {
+    try {
+      const currentUrl = new URL(currentPage);
+      const originalUrl = new URL(originalPage);
+      
+      // Check if we're on a completely different page
+      if (currentUrl.origin !== originalUrl.origin || currentUrl.pathname !== originalUrl.pathname) {
+        console.log('🔍 Significant page change detected - possible meta refresh execution');
+        
+        // Check if we have a stored meta refresh target
+        if (this.metaRefresh && this.metaRefresh.targetUrl) {
+          const targetUrl = new URL(this.metaRefresh.targetUrl);
+          
+          // Check if current page matches the meta refresh target
+          if (currentUrl.origin === targetUrl.origin && currentUrl.pathname === targetUrl.pathname) {
+            console.log('✅ Current page matches stored meta refresh target!');
+            
+            // This is strong evidence that meta refresh executed
+            const redirect = {
+              type: 'meta_refresh',
+              method: 'evidence_analysis',
+              from: originalPage,
+              to: currentPage,
+              targetUrl: this.metaRefresh.targetUrl,
+              delay: this.metaRefresh.delay || 0,
+              timestamp: Date.now(),
+              userAgent: navigator.userAgent
+            };
+            
+            this.metaRefreshRedirects = this.metaRefreshRedirects || [];
+            this.metaRefreshRedirects.push(redirect);
+            
+            console.log('✅ Meta refresh redirect confirmed via evidence analysis');
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Error analyzing URL evidence:', error);
+    }
+  }
+
+  /**
+   * Check for unexpected navigation that might indicate missed redirects
+   */
+  checkForUnexpectedNavigation() {
+    // If we're on a completely different page than expected, this might be a missed redirect
+    if (window.location.href !== this.originalUrl) {
+      console.log('🔍 Unexpected navigation detected');
+      
+      // Check if this could be the result of a meta refresh we missed
+      if (this.metaRefresh && this.metaRefresh.targetUrl) {
+        const currentUrl = window.location.href;
+        const targetUrl = this.metaRefresh.targetUrl;
+        
+        console.log('🔍 Current URL:', currentUrl);
+        console.log('🔍 Meta refresh target:', targetUrl);
+        
+        // If they're similar, this might be the meta refresh execution
+        if (this.urlsAreSimilar(currentUrl, targetUrl)) {
+          console.log('✅ URLs are similar - possible meta refresh execution');
+          
+          const redirect = {
+            type: 'meta_refresh',
+            method: 'similarity_analysis',
+            from: this.originalUrl,
+            to: currentUrl,
+            targetUrl: targetUrl,
+            delay: this.metaRefresh.delay || 0,
+            timestamp: Date.now(),
+            userAgent: navigator.userAgent
+          };
+          
+          this.metaRefreshRedirects = this.metaRefreshRedirects || [];
+          this.metaRefreshRedirects.push(redirect);
+          
+          console.log('✅ Meta refresh redirect confirmed via similarity analysis');
+        }
+      }
+    }
+  }
+
+  /**
+   * Check if two URLs are similar (same domain, similar path)
+   */
+  urlsAreSimilar(url1, url2) {
+    try {
+      const u1 = new URL(url1);
+      const u2 = new URL(url2);
+      
+      // Same domain
+      if (u1.origin !== u2.origin) return false;
+      
+      // Similar path (allow for minor differences)
+      const path1 = u1.pathname;
+      const path2 = u2.pathname;
+      
+      // Exact match
+      if (path1 === path2) return true;
+      
+      // One is a subdirectory of the other
+      if (path1.startsWith(path2) || path2.startsWith(path1)) return true;
+      
+      // Similar filenames
+      const file1 = path1.split('/').pop();
+      const file2 = path2.split('/').pop();
+      
+      if (file1 && file2 && (file1.includes(file2) || file2.includes(file1))) return true;
+      
+      return false;
+    } catch (error) {
+      return false;
+    }
   }
 
   /**
