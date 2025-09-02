@@ -539,7 +539,7 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
       console.log(`Blocked by affiliate service (${finalStatusCode}), returning manual override suggestion`);
       
       // Return a special response indicating manual override is needed
-      res.json({
+      return {
         finalUrl: url, // Keep original URL
         finalStatusCode,
         statusChain: [finalStatusCode.toString()],
@@ -556,8 +556,7 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
         redirectChainDetails: [],
         hasMetaRefresh: false,
         hasJavaScriptRedirect: false
-      });
-      return;
+      };
     }
 
     // Check for domain changes and HTTPS upgrades
@@ -585,7 +584,7 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
       hasJavaScriptRedirect
     });
 
-    res.json({
+    return {
       finalUrl,
       finalStatusCode,
       statusChain,
@@ -600,7 +599,7 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
       redirectChainDetails,
       hasMetaRefresh,
       hasJavaScriptRedirect
-    });
+    };
 
   } catch (error) {
     console.error(`Puppeteer error for ${url}:`, error);
@@ -609,11 +608,11 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
       await browser.close();
     }
 
-    res.status(500).json({
+    return {
       error: 'Puppeteer request failed',
       message: error.message,
       method: 'PUPPETEER'
-    });
+    };
   }
 }
 
@@ -896,7 +895,15 @@ app.post('/api/check-redirect', async (req, res) => {
     
     if (shouldUsePuppeteer) {
       console.log(`Using Puppeteer for enhanced redirect detection: ${url}`);
-      return await performPuppeteerRedirectCheck(url, maxRedirects, res);
+      const puppeteerResult = await performPuppeteerRedirectCheck(url, maxRedirects, res);
+      if (puppeteerResult.error) {
+        return res.status(500).json({
+          error: puppeteerResult.error,
+          message: puppeteerResult.message,
+          method: 'PUPPETEER'
+        });
+      }
+      return res.json(puppeteerResult);
     } else {
       console.log(`NOT using Puppeteer, usePuppeteer=${usePuppeteer}, type=${typeof usePuppeteer}`);
     }
