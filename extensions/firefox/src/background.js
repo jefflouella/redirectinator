@@ -508,6 +508,9 @@ browserAPI.runtime.onMessage.addListener(async (request, sender, sendResponse) =
   if (request.type === 'CONTENT_SCRIPT_ANALYZE_URL') {
     console.log('🔍 Received URL analysis request from content script:', request.url);
     
+    // Use the old function for backward compatibility
+    console.log('⚠️ Using legacy performAdvancedUrlAnalysis function');
+    
     // Implement actual URL analysis logic
     try {
       const result = await performAdvancedUrlAnalysis(request.url, request.options || {});
@@ -522,6 +525,30 @@ browserAPI.runtime.onMessage.addListener(async (request, sender, sendResponse) =
         error: error.message
       });
     }
+    return true;
+  }
+
+  if (request.type === 'ANALYZE_URL_REQUEST') {
+    console.log('🔍 Runtime: Received ANALYZE_URL_REQUEST from content script:', request.url);
+    
+    // Handle the analysis asynchronously using the NEW tab-based method with webRequest
+    performAnalysis(request.url, request.options || {})
+      .then(result => {
+        console.log('🔍 Runtime: Tab analysis completed, sending response');
+        sendResponse({
+          success: true,
+          result: result
+        });
+      })
+      .catch(error => {
+        console.error('❌ Runtime: Tab analysis failed:', error);
+        sendResponse({
+          success: false,
+          error: error.message
+        });
+      });
+    
+    // Return true to indicate we'll send a response asynchronously
     return true;
   }
 
@@ -918,58 +945,7 @@ async function analyzePageForRedirects(originalUrl) {
   return results;
 }
 
-/**
- * Handle direct runtime messages (fallback communication method)
- */
-browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'CONTENT_SCRIPT_ANALYZE_URL') {
-    console.log('🔍 Runtime: Received URL analysis request:', message.url);
-    
-    // Handle the analysis asynchronously
-    performAdvancedUrlAnalysis(message.url, message.options || {})
-      .then(result => {
-        console.log('🔍 Runtime: Analysis completed, sending response');
-        sendResponse({
-          success: true,
-          result: result
-        });
-      })
-      .catch(error => {
-        console.error('❌ Runtime: Analysis failed:', error);
-        sendResponse({
-          success: false,
-          error: error.message
-        });
-      });
-    
-    // Return true to indicate we'll send a response asynchronously
-    return true;
-  }
-  
-  if (message.type === 'ANALYZE_URL_REQUEST') {
-    console.log('🔍 Runtime: Received ANALYZE_URL_REQUEST from content script:', message.url);
-    
-    // Handle the analysis asynchronously using the proper tab-based method
-    performAnalysis(message.url, message.options || {})
-      .then(result => {
-        console.log('🔍 Runtime: Tab analysis completed, sending response');
-        sendResponse({
-          success: true,
-          result: result
-        });
-      })
-      .catch(error => {
-        console.error('❌ Runtime: Tab analysis failed:', error);
-        sendResponse({
-          success: false,
-          error: error.message
-        });
-      });
-    
-    // Return true to indicate we'll send a response asynchronously
-    return true;
-  }
-});
+
 
 // Clean up on extension unload (Firefox compatible)
 browserAPI.runtime.onSuspend?.addListener(() => {
