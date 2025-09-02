@@ -176,6 +176,140 @@ class RedirectDetector {
       subtree: true
     });
 
+    // Enhanced Meta Refresh execution monitoring
+    let lastUrl = window.location.href;
+    let metaRefreshDetected = false;
+    let metaRefreshTarget = null;
+    
+    const checkForMetaRefreshRedirect = () => {
+      const currentUrl = window.location.href;
+      if (currentUrl !== lastUrl) {
+        console.log('🔍 Location changed from', lastUrl, 'to', currentUrl);
+        
+        // If we detected a meta refresh and the location changed, this might be the meta refresh executing
+        if (metaRefreshDetected && metaRefreshTarget) {
+          console.log('🔍 Potential meta refresh execution detected');
+          
+          // Check if this looks like a meta refresh redirect
+          const isMetaRefreshRedirect = self.isMetaRefreshRedirect(lastUrl, currentUrl);
+          
+          if (isMetaRefreshRedirect) {
+            console.log('✅ Meta refresh redirect confirmed:', { from: lastUrl, to: currentUrl, target: metaRefreshTarget });
+            
+            // Add this as a meta refresh redirect
+            const redirect = {
+              type: 'meta_refresh',
+              method: 'meta_refresh_execution',
+              from: lastUrl,
+              to: currentUrl,
+              targetUrl: metaRefreshTarget,
+              timestamp: Date.now(),
+              userAgent: navigator.userAgent
+            };
+            
+            self.metaRefreshRedirects = self.metaRefreshRedirects || [];
+            self.metaRefreshRedirects.push(redirect);
+            
+            // Reset for next detection
+            metaRefreshDetected = false;
+            metaRefreshTarget = null;
+          }
+        }
+        
+        lastUrl = currentUrl;
+      }
+    };
+
+    // Check more frequently for meta refresh execution
+    setInterval(checkForMetaRefreshRedirect, 500);
+    
+    // Also check when page becomes visible (in case of background redirects)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        console.log('🔍 Page became visible, checking for meta refresh');
+        self.detectMetaRefresh();
+      }
+    });
+
+    // Override the detectMetaRefresh method to track targets
+    const originalDetectMetaRefresh = self.detectMetaRefresh;
+    self.detectMetaRefresh = function() {
+      const result = originalDetectMetaRefresh.call(this);
+      if (this.metaRefresh && this.metaRefresh.targetUrl) {
+        metaRefreshDetected = true;
+        metaRefreshTarget = this.metaRefresh.targetUrl;
+        console.log('🔍 Meta refresh target tracked:', metaRefreshTarget);
+      }
+      return result;
+    };
+
+    console.log('🔍 Enhanced meta refresh monitoring initialized');
+  }
+
+  /**
+   * Check if a location change looks like a meta refresh redirect
+   */
+  isMetaRefreshRedirect(fromUrl, toUrl) {
+    // Meta refresh redirects typically:
+    // 1. Change the full URL (not just hash)
+    // 2. Don't trigger beforeunload events
+    // 3. Happen after a delay or immediately
+    
+    try {
+      const fromUrlObj = new URL(fromUrl);
+      const toUrlObj = new URL(toUrl);
+      
+      // Check if it's a full URL change (not just hash)
+      const isFullUrlChange = fromUrlObj.origin + fromUrlObj.pathname !== toUrlObj.origin + toUrlObj.pathname;
+      
+      // Check if it's not a hash change
+      const isNotHashChange = fromUrlObj.hash !== toUrlObj.hash;
+      
+      // Check if it's not a search param change only
+      const isNotSearchOnly = fromUrlObj.search !== toUrlObj.search;
+      
+      return isFullUrlChange && isNotHashChange && isNotSearchOnly;
+    } catch (error) {
+      console.warn('Error parsing URLs for meta refresh detection:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Monitor for Meta Refresh changes and execution
+   */
+  monitorMetaRefreshChanges() {
+    const self = this;
+    
+    // Monitor DOM changes for dynamically added meta refresh tags
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList') {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              // Check if a meta refresh tag was added
+              if (node.tagName === 'META' && node.getAttribute('http-equiv') === 'refresh') {
+                console.log('🔍 Meta refresh tag dynamically added:', node);
+                self.detectMetaRefresh();
+              }
+              // Check children of added nodes
+              const metaRefresh = node.querySelector && node.querySelector('meta[http-equiv="refresh"]');
+              if (metaRefresh) {
+                console.log('🔍 Meta refresh tag found in added content:', metaRefresh);
+                self.detectMetaRefresh();
+              }
+            }
+          });
+        }
+      });
+    });
+
+    // Start observing
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+
     // Also monitor for location changes that might indicate meta refresh execution
     let lastUrl = window.location.href;
     const checkForMetaRefreshRedirect = () => {
@@ -280,7 +414,8 @@ class RedirectDetector {
       statusCode: null, // Will be determined by background script
       metaRefresh: this.metaRefresh,
       javascriptRedirects: this.javascriptRedirects,
-      hasMetaRefresh: !!this.metaRefresh,
+      metaRefreshRedirects: this.metaRefreshRedirects || [],
+      hasMetaRefresh: !!this.metaRefresh || (this.metaRefreshRedirects && this.metaRefreshRedirects.length > 0),
       hasJavaScriptRedirect: this.javascriptRedirects.length > 0,
       redirectChain: this.buildRedirectChain(),
       analysisTime: Date.now() - this.startTime,
@@ -302,11 +437,24 @@ class RedirectDetector {
       timestamp: this.startTime
     });
 
-    // Add meta refresh if detected
-    if (this.metaRefresh) {
+    // Add meta refresh redirects (executed redirects)
+    if (this.metaRefreshRedirects && this.metaRefreshRedirects.length > 0) {
+      this.metaRefreshRedirects.forEach((redirect, index) => {
+        chain.push({
+          step: chain.length,
+          url: redirect.from,
+          type: 'meta_refresh',
+          method: redirect.method,
+          targetUrl: redirect.targetUrl,
+          timestamp: redirect.timestamp
+        });
+      });
+    }
+    // Fallback to static meta refresh detection
+    else if (this.metaRefresh) {
       chain.push({
         step: 1,
-        url: this.metaRefresh.targetUrl,
+        url: this.originalUrl,
         type: 'meta_refresh',
         method: 'meta_tag',
         delay: this.metaRefresh.delay,
