@@ -1,4 +1,5 @@
 import { RedirectResult, ProjectSettings } from '@/types';
+import { extensionService } from './extensionService';
 
 interface CheckResult {
   finalUrl: string;
@@ -109,16 +110,199 @@ export class RedirectChecker {
   private async performRedirectCheck(url: string) {
     // Check if this is an affiliate link that needs server-side processing
     const isAffiliateLink = this.isAffiliateLink(url);
-    
+
     if (isAffiliateLink) {
       console.log(`Affiliate link detected: ${url}, using server-side processing`);
       return await this.performServerSideCheck(url);
     }
 
-    // For now, use server-side for all URLs due to CORS restrictions
-    // In the future, we can enable client-side for same-origin requests
-    console.log(`URL detected: ${url}, using server-side processing (CORS bypass)`);
+    // Try advanced mode with extension if available and selected
+    if (this.mode === 'advanced' && extensionService.isAvailable()) {
+      try {
+        console.log(`Advanced mode enabled and extension available, analyzing: ${url}`);
+        const extensionResult = await extensionService.analyzeUrl(url, {
+          timeout: 15000,
+          followRedirects: true,
+          maxRedirects: 10
+        });
+
+        // Convert extension result to our format
+        return this.convertExtensionResult(extensionResult);
+      } catch (error) {
+        console.warn('Extension analysis failed, falling back to server-side:', error);
+        // Fall through to server-side processing
+      }
+    }
+
+    // Use server-side processing (default mode or fallback)
+    console.log(`Using server-side processing for: ${url}`);
     return await this.performServerSideCheck(url);
+  }
+
+  /**
+   * Convert extension analysis result to internal format
+   */
+  private convertExtensionResult(extensionResult: any) {
+    const statusChain = extensionResult.redirectChain?.map((step: any) =>
+      step.statusCode || 200
+    ) || [extensionResult.finalStatusCode || 200];
+
+    // Build complete redirect chain including HTTP redirects and client-side redirects
+    const redirectChain: string[] = [];
+    
+    // Start with original URL
+    redirectChain.push(extensionResult.originalUrl);
+    
+    // Add HTTP redirects from the chain
+    if (extensionResult.redirectChain?.length > 0) {
+      extensionResult.redirectChain.forEach((step: any) => {
+        if (step.targetUrl && !redirectChain.includes(step.targetUrl)) {
+          redirectChain.push(step.targetUrl);
+        }
+      });
+    }
+    
+    // Add final URL if different and not already included
+    if (extensionResult.finalUrl && !redirectChain.includes(extensionResult.finalUrl)) {
+      redirectChain.push(extensionResult.finalUrl);
+    }
+    
+    console.log('🔍 Built redirect chain:', redirectChain);
+
+    // Calculate redirect count based on detected redirect types and HTTP redirects
+    let redirectCount = 0;
+    
+    // Count HTTP redirects from the chain
+    if (extensionResult.redirectChain?.length > 0) {
+      redirectCount += extensionResult.redirectChain.length;
+    }
+    
+    // Add client-side redirects
+    if (extensionResult.hasMetaRefresh) redirectCount++;
+    if (extensionResult.hasJavaScriptRedirect) redirectCount++;
+    
+    console.log('🔍 Extension redirect count calculation:', {
+      httpRedirects: extensionResult.redirectChain?.length || 0,
+      hasMetaRefresh: extensionResult.hasMetaRefresh,
+      hasJavaScriptRedirect: extensionResult.hasJavaScriptRedirect,
+      totalCount: redirectCount
+    });
+
+    return {
+      finalUrl: extensionResult.finalUrl || extensionResult.originalUrl,
+      finalStatusCode: extensionResult.finalStatusCode || 200,
+      statusChain,
+      redirectCount: redirectCount,
+      redirectChain,
+      hasLoop: this.detectLoop(redirectChain),
+      hasMixedTypes: this.detectMixedTypes(extensionResult.redirectChain || []),
+      domainChanges: this.detectDomainChanges(redirectChain),
+      httpsUpgrade: this.detectHttpsUpgrade(redirectChain),
+      redirectTypes: this.buildRedirectTypes(extensionResult),
+      redirectChainDetails: extensionResult.redirectChain || [],
+      hasMetaRefresh: extensionResult.hasMetaRefresh || false,
+      hasJavaScriptRedirect: extensionResult.hasJavaScriptRedirect || false,
+      detectionMode: 'advanced',
+      extensionVersion: extensionResult.extensionVersion,
+      analysisTime: extensionResult.analysisTime || 0
+    };
+  }
+
+  /**
+   * Detect redirect loops in chain
+   */
+  private detectLoop(chain: string[]): boolean {
+    const seen = new Set();
+    for (const url of chain) {
+      if (seen.has(url)) {
+        return true;
+      }
+      seen.add(url);
+    }
+    return false;
+  }
+
+  /**
+   * Detect mixed redirect types
+   */
+  private detectMixedTypes(chain: any[]): boolean {
+    const types = chain.map(step => step.type).filter(Boolean);
+    return new Set(types).size > 1;
+  }
+
+  /**
+   * Build redirect types array from extension result
+   */
+  private buildRedirectTypes(extensionResult: any) {
+    const types = [];
+    
+    // Add Meta Refresh redirect if detected
+    if (extensionResult.hasMetaRefresh) {
+      types.push({
+        type: 'meta_refresh',
+        statusCode: 200,
+        url: extensionResult.originalUrl,
+        targetUrl: extensionResult.finalUrl,
+        delay: 0,
+        method: 'meta_refresh'
+      });
+    }
+    
+    // Add JavaScript redirect if detected
+    if (extensionResult.hasJavaScriptRedirect) {
+      types.push({
+        type: 'javascript',
+        statusCode: 200,
+        url: extensionResult.originalUrl,
+        targetUrl: extensionResult.finalUrl,
+        delay: 0,
+        method: 'javascript'
+      });
+    }
+    
+    // Add any additional redirects from the chain
+    if (extensionResult.redirectChain?.length > 0) {
+      types.push(...extensionResult.redirectChain.map((step: any) => ({
+        type: step.type || 'unknown',
+        statusCode: step.statusCode || 200,
+        url: step.url,
+        targetUrl: step.targetUrl,
+        delay: step.delay || 0,
+        method: step.method || 'unknown'
+      })));
+    }
+    
+    return types;
+  }
+
+  /**
+   * Detect domain changes
+   */
+  private detectDomainChanges(chain: string[]): boolean {
+    if (chain.length < 2) return false;
+
+    try {
+      const firstDomain = new URL(chain[0]).hostname;
+      const lastDomain = new URL(chain[chain.length - 1]).hostname;
+      return firstDomain !== lastDomain;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Detect HTTPS upgrades
+   */
+  private detectHttpsUpgrade(chain: string[]): boolean {
+    if (chain.length < 2) return false;
+
+    try {
+      const firstProtocol = new URL(chain[0]).protocol;
+      const lastProtocol = new URL(chain[chain.length - 1]).protocol;
+      return firstProtocol === 'http:' && lastProtocol === 'https:';
+    } catch {
+      return false;
+    }
   }
 
   private isAffiliateLink(url: string): boolean {

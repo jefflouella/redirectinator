@@ -10,6 +10,7 @@ const defaultSettings: AppSettings = {
   defaultDelay: 100,
   defaultTimeout: 10000,
   showAdvancedOptions: false,
+  redirectMode: 'default', // Add default redirect mode
 };
 
 export const useAppSettings = () => {

@@ -128,13 +128,14 @@ export interface AppState {
 }
 
 export interface AppSettings {
-  theme: 'light' | 'dark' | 'auto';
+  theme: 'light';
   autoSave: boolean;
   autoSaveInterval: number;
   defaultBatchSize: number;
   defaultDelay: number;
   defaultTimeout: number;
   showAdvancedOptions: boolean;
+  redirectMode?: 'default' | 'advanced'; // Add redirect mode to app settings
 }
 
 export type StatusType = 'success' | 'warning' | 'error' | 'info';

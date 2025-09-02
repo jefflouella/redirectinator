@@ -26,17 +26,15 @@ function App() {
   const { activeTab, navigateTo } = useRouting();
   const [isUrlOverlayOpen, setIsUrlOverlayOpen] = useState(false);
   const [refreshCounter, setRefreshCounter] = useState(0);
-  // Always use default mode for now
-  const [mode, setMode] = useState<'default' | 'advanced'>('default');
-  
-  // Disable mode switching until Advanced mode is ready
-  const handleModeChange = (newMode: 'default' | 'advanced') => {
-    // Only allow default mode for now
-    if (newMode === 'default') {
-      setMode(newMode);
-    }
-  };
+  // Use persisted mode from settings instead of local state
   const { settings, updateSettings } = useAppSettings();
+  const mode = settings.redirectMode || 'default';
+  
+  // Allow mode switching now that Advanced mode is ready
+  const handleModeChange = async (newMode: 'default' | 'advanced') => {
+    console.log('🔄 App: Mode change requested from', mode, 'to', newMode);
+    await updateSettings({ redirectMode: newMode });
+  };
   const { currentProject, projects, loadProject, createNewProject, deleteProject, updateProject, setCurrentProject } = useProjects(settings);
   const { results, processingStatus, processUrls, stopProcessing } = useUrlProcessing(
     currentProject,
