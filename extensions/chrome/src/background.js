@@ -619,7 +619,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 /**
- * Follow HTTP redirects using tab navigation to build the complete redirect chain
+ * Follow HTTP redirects using fetch requests to build the complete redirect chain
  */
 async function followHttpRedirects(url, maxRedirects = 10) {
   console.log('🔍 Following HTTP redirects for:', url);
@@ -627,69 +627,73 @@ async function followHttpRedirects(url, maxRedirects = 10) {
   const redirects = [];
   let currentUrl = url;
   let redirectCount = 0;
+  let finalUrl = url;
+  let finalStatusCode = 200;
   
   try {
+    // Follow redirects step by step
     while (redirectCount < maxRedirects) {
       console.log(`🔍 Checking redirect ${redirectCount + 1}: ${currentUrl}`);
       
-      // Create a temporary tab to check for redirects
-      const tab = await chrome.tabs.create({
-        url: currentUrl,
-        active: false
-      });
-      
-      // Wait for the page to load and check for redirects
-      await new Promise((resolve) => {
-        chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
-          if (tabId === tab.id && changeInfo.status === 'complete') {
-            chrome.tabs.onUpdated.removeListener(listener);
-            resolve();
+      try {
+        // Make a HEAD request to check for redirects
+        const response = await fetch(currentUrl, {
+          method: 'HEAD',
+          redirect: 'manual',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
           }
         });
-      });
-      
-      // Get the final URL after any redirects
-      const tabInfo = await chrome.tabs.get(tab.id);
-      const finalUrl = tabInfo.url;
-      
-      // Close the tab
-      await chrome.tabs.remove(tab.id);
-      
-      console.log(`🔍 Initial URL: ${currentUrl}`);
-      console.log(`🔍 Final URL: ${finalUrl}`);
-      
-      // Check if there was a redirect
-      if (finalUrl !== currentUrl) {
-        // Determine redirect type based on URL changes
-        let redirectType = 'temporary';
-        let statusCode = 302; // Default to temporary redirect
         
-        // Check for HTTP to HTTPS upgrade
-        if (currentUrl.startsWith('http:') && finalUrl.startsWith('https:')) {
-          redirectType = 'upgrade';
-          statusCode = 307;
+        const status = response.status;
+        console.log(`🔍 Response status: ${status} for ${currentUrl}`);
+        
+        if (status >= 300 && status < 400) {
+          // This is a redirect
+          const location = response.headers.get('location');
+          if (!location) {
+            console.log('⚠️ Redirect response missing Location header');
+            break;
+          }
+          
+          // Resolve relative URLs
+          const resolvedUrl = new URL(location, currentUrl).href;
+          console.log(`🔍 Redirect ${status} from ${currentUrl} to ${resolvedUrl}`);
+          
+          // Add to redirect chain
+          redirects.push({
+            step: redirectCount + 1,
+            url: currentUrl,
+            type: 'server_redirect',
+            targetUrl: resolvedUrl,
+            method: 'http',
+            statusCode: status,
+            redirectType: status === 301 ? 'permanent' : 'temporary',
+            timestamp: Date.now()
+          });
+          
+          // Update current URL and continue
+          currentUrl = resolvedUrl;
+          redirectCount++;
+          finalUrl = resolvedUrl;
+          finalStatusCode = status;
+          
+        } else if (status >= 200 && status < 300) {
+          // Success - no more redirects
+          console.log(`✅ Final page reached: ${currentUrl} with status ${status}`);
+          finalUrl = currentUrl;
+          finalStatusCode = status;
+          break;
+        } else {
+          // Error status
+          console.log(`❌ Error status ${status} for ${currentUrl}`);
+          finalUrl = currentUrl;
+          finalStatusCode = status;
+          break;
         }
         
-        // Add to redirect chain
-        redirects.push({
-          step: redirectCount + 1,
-          url: currentUrl,
-          type: 'server_redirect',
-          targetUrl: finalUrl,
-          method: 'http',
-          statusCode: statusCode,
-          redirectType: redirectType,
-          timestamp: Date.now()
-        });
-        
-        // Update current URL and continue
-        currentUrl = finalUrl;
-        redirectCount++;
-        
-        console.log(`🔍 Redirect ${redirectCount}: ${currentUrl}`);
-      } else {
-        // No redirect, this is the final page
-        console.log(`✅ Final page reached: ${currentUrl}`);
+      } catch (error) {
+        console.error(`❌ Error checking ${currentUrl}:`, error);
         break;
       }
     }
@@ -697,8 +701,8 @@ async function followHttpRedirects(url, maxRedirects = 10) {
     console.log(`🏁 HTTP redirect following complete. Found ${redirects.length} redirects`);
     return {
       redirects: redirects,
-      finalUrl: currentUrl,
-      finalStatusCode: 200
+      finalUrl: finalUrl,
+      finalStatusCode: finalStatusCode
     };
     
   } catch (error) {

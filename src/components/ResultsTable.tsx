@@ -504,7 +504,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                           )}
                           
                           {/* Redirect Type Summary */}
-                          {result.redirectTypes && result.redirectTypes.length > 0 && (
+                          {result.redirectTypes && Array.isArray(result.redirectTypes) && result.redirectTypes.length > 0 && (
                             <div className="mt-4">
                               <h4 className="text-sm font-medium text-tech-700 mb-2">Redirect Type Summary</h4>
                               <div className="flex flex-wrap gap-2">
@@ -517,8 +517,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                                         : redirectType.type === 'meta' 
                                         ? 'bg-green-100 text-green-800 border border-green-200' 
                                         : 'bg-purple-100 text-purple-800 border border-purple-200'
-                                    }`}
-                                  >
+                                    }`}>
                                     <span className="mr-2">
                                       {redirectType.type === 'http' ? '🌐' : 
                                        redirectType.type === 'meta' ? '⏰' : '⚡'}
