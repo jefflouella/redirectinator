@@ -192,109 +192,82 @@ async function analyzeUrlComprehensive(url, options = {}) {
  * Core analysis implementation
  */
 async function performAnalysis(url, options = {}) {
-  const cacheKey = `${url}_${JSON.stringify(options)}`;
-
-  // Check cache first
-  const cachedResult = analysisCache.get(cacheKey);
-  if (cachedResult) {
-    console.log('Returning cached result for:', url);
-    return cachedResult;
-  }
-
-  const startTime = Date.now();
-  const results = {
-    originalUrl: url,
-    startTime,
-    redirectChain: [],
-    httpRedirects: [],
-    metaRefresh: null,
-    javascriptRedirects: [],
-    finalUrl: url,
-    finalStatusCode: null,
-    analysisTime: 0,
-    status: 'pending',
-    detectionMode: 'advanced',
-    extensionVersion: '1.0.0'
-  };
-
-  let tab = null;
-  let webRequestListener = null;
-
+  console.log('🔍 performAnalysis called with:', url, options);
+  
   try {
-    console.log('🔍 Starting analysis for:', url);
+    const cacheKey = `${url}_${JSON.stringify(options)}`;
+    console.log('🔍 Cache key created:', cacheKey);
 
-    // Set up webRequest listener to capture HTTP redirects
-    const httpRedirects = [];
-    webRequestListener = (details) => {
-      if (details.tabId === tab?.id) {
-        console.log('🌐 HTTP redirect captured:', {
-          url: details.url,
-          redirectUrl: details.redirectUrl,
-          statusCode: details.statusCode,
-          method: details.method,
-          type: details.type
-        });
-        
-        if (details.redirectUrl) {
-          httpRedirects.push({
-            from: details.url,
-            to: details.redirectUrl,
-            statusCode: details.statusCode,
-            method: details.method || 'GET',
-            type: 'http_redirect',
-            timestamp: Date.now()
-          });
-        }
-      }
+    // Check cache first
+    const cachedResult = analysisCache.get(cacheKey);
+    if (cachedResult) {
+      console.log('Returning cached result for:', url);
+      return cachedResult;
+    }
+    console.log('🔍 No cached result found, proceeding with analysis');
+
+    const startTime = Date.now();
+    const results = {
+      originalUrl: url,
+      startTime,
+      redirectChain: [],
+      httpRedirects: [],
+      metaRefresh: null,
+      javascriptRedirects: [],
+      finalUrl: url,
+      finalStatusCode: null,
+      analysisTime: 0,
+      status: 'pending',
+      detectionMode: 'advanced',
+      extensionVersion: '1.0.0'
     };
+    console.log('🔍 Results object created');
 
-    // Add webRequest listener for redirects with error handling
-    console.log('🔍 Adding webRequest listener...');
+    let tab = null;
+    console.log('🔍 Variables initialized');
+
     try {
-      chrome.webRequest.onBeforeRedirect.addListener(
-        webRequestListener,
-        { urls: ["<all_urls>"] },
-        ["responseHeaders"]
-      );
-      console.log('✅ WebRequest listener added successfully');
-    } catch (webRequestError) {
-      console.error('❌ Failed to add webRequest listener:', webRequestError);
-      // Continue without webRequest support
-    }
+      console.log('🔍 Starting analysis for:', url);
 
-    console.log('🔍 Creating tab for:', url);
-    // Create background tab for analysis
-    try {
-      tab = await chrome.tabs.create({
-        url: url,
-        active: false
-      });
-      console.log('🔍 Tab created with ID:', tab.id);
-    } catch (tabError) {
-      console.error('❌ Failed to create tab:', tabError);
-      throw new Error(`Failed to create analysis tab: ${tabError.message}`);
-    }
-    
-    // Store analysis reference
-    activeAnalyses.set(tab.id, results);
+      // Step 1: Follow HTTP redirects first to get the full chain
+      console.log('🔍 Step 1: Following HTTP redirects...');
+      const httpRedirects = await followHttpRedirects(url, options.maxRedirects || 10);
+      console.log('🔍 HTTP redirects found:', httpRedirects);
 
-    // Wait for page to load and capture redirects during navigation
-    console.log('🔍 Waiting for tab to load...');
-    try {
-      await waitForTabLoad(tab.id, options.timeout || 15000);
-      console.log('✅ Tab loaded successfully');
-    } catch (loadError) {
-      console.error('❌ Tab load failed:', loadError);
-      throw new Error(`Tab load timeout: ${loadError.message}`);
-    }
+      // Step 2: Create tab to analyze the final page for client-side redirects
+      console.log('🔍 Step 2: Creating tab for client-side analysis...');
+      try {
+        tab = await chrome.tabs.create({
+          url: httpRedirects.finalUrl,
+          active: false
+        });
+        console.log('🔍 Tab created with ID:', tab.id);
+      } catch (tabError) {
+        console.error('❌ Failed to create tab:', tabError);
+        throw new Error(`Failed to create analysis tab: ${tabError.message}`);
+      }
+      
+      // Store analysis reference
+      activeAnalyses.set(tab.id, results);
 
-    console.log('🔍 Tab loaded, HTTP redirects captured:', httpRedirects.length);
-    results.httpRedirects = httpRedirects;
+      // Wait for page to load
+      console.log('🔍 Waiting for tab to load...');
+      try {
+        await waitForTabLoad(tab.id, options.timeout || 15000);
+        console.log('✅ Tab loaded successfully');
+      } catch (loadError) {
+        console.error('❌ Tab load failed:', loadError);
+        throw new Error(`Tab load timeout: ${loadError.message}`);
+      }
 
-    // Get final URL from tab
-    const tabInfo = await chrome.tabs.get(tab.id);
-    results.finalUrl = tabInfo.url;
-    console.log('🔍 Final URL after navigation:', results.finalUrl);
+      // Get final URL from tab
+      const tabInfo = await chrome.tabs.get(tab.id);
+      results.finalUrl = tabInfo.url;
+      console.log('🔍 Final URL after navigation:', results.finalUrl);
+
+      // Store HTTP redirects from the chain following
+      results.httpRedirects = httpRedirects.redirects || [];
+      console.log('🔍 HTTP redirects stored:', results.httpRedirects.length);
 
     // Inject content script for client-side analysis
     console.log('🔍 Injecting content script...');
@@ -365,18 +338,21 @@ async function performAnalysis(url, options = {}) {
       timestamp: startTime
     });
 
-    // Add HTTP redirects
-    httpRedirects.forEach((redirect, index) => {
-      redirectChain.push({
-        step: redirectChain.length,
-        url: redirect.to,
-        type: 'http_redirect',
-        statusCode: redirect.statusCode,
-        method: redirect.method,
-        from: redirect.from,
-        timestamp: redirect.timestamp
+    // Add HTTP redirects from the chain following
+    if (results.httpRedirects && results.httpRedirects.length > 0) {
+      results.httpRedirects.forEach((redirect, index) => {
+        redirectChain.push({
+          step: redirectChain.length,
+          url: redirect.url,
+          type: 'http_redirect',
+          statusCode: redirect.statusCode,
+          method: redirect.method || 'GET',
+          from: redirect.from || redirect.url,
+          targetUrl: redirect.targetUrl || redirect.to,
+          timestamp: redirect.timestamp || Date.now()
+        });
       });
-    });
+    }
 
     // Add meta refresh redirects from content script
     if (analysisResults.metaRefreshRedirects && analysisResults.metaRefreshRedirects.length > 0) {
@@ -436,16 +412,6 @@ async function performAnalysis(url, options = {}) {
     results.status = 'error';
     results.error = error.message;
   } finally {
-    // Remove webRequest listener
-    if (webRequestListener) {
-      try {
-        chrome.webRequest.onBeforeRedirect.removeListener(webRequestListener);
-        console.log('🔍 WebRequest listener removed');
-      } catch (e) {
-        console.warn('Could not remove webRequest listener:', e);
-      }
-    }
-
     // Clean up tab
     if (tab?.id) {
       try {
@@ -468,13 +434,35 @@ async function performAnalysis(url, options = {}) {
     }
   }
 
-  return results;
+    return results;
+  
+  } catch (outerError) {
+    console.error('❌ CRITICAL: Outer error in performAnalysis:', outerError);
+    console.error('❌ CRITICAL: Outer error stack:', outerError.stack);
+    
+    // Return a basic error result instead of throwing
+    return {
+      originalUrl: url,
+      startTime: Date.now(),
+      redirectChain: [],
+      httpRedirects: [],
+      metaRefresh: null,
+      javascriptRedirects: [],
+      finalUrl: url,
+      finalStatusCode: null,
+      analysisTime: 0,
+      status: 'error',
+      error: `Critical error: ${outerError.message}`,
+      detectionMode: 'advanced',
+      extensionVersion: '1.0.0'
+    };
+  }
 }
 
 /**
  * Handle messages from web app and content scripts
  */
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('Background script received message:', request.type, request);
 
   if (request.type === 'WEB_APP_ANALYZE_URL') {
@@ -537,54 +525,84 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     console.log('🔍 Received URL analysis request from content script:', request.url);
     console.log('🔍 Request details:', request);
     console.log('🔍 Sender:', sender);
-    
+
     // Use the old function for backward compatibility
     console.log('⚠️ Using legacy performAdvancedUrlAnalysis function');
-    
-    // Implement actual URL analysis logic
-    try {
-      console.log('🔍 Starting performAdvancedUrlAnalysis...');
-      const result = await performAdvancedUrlAnalysis(request.url, request.options || {});
-      console.log('🔍 Analysis completed successfully, sending response:', result);
-      sendResponse({
-        success: true,
-        result: result
+
+    console.log('🔍 Starting performAdvancedUrlAnalysis...');
+    performAdvancedUrlAnalysis(request.url, request.options || {})
+      .then((result) => {
+        console.log('🔍 Analysis completed successfully, sending response:', result);
+        sendResponse({ success: true, result });
+        console.log('🔍 Response sent successfully');
+      })
+      .catch((error) => {
+        console.error('❌ Advanced URL analysis failed:', error);
+        console.error('❌ Error details:', error.message, error.stack);
+        sendResponse({ success: false, error: error.message });
+        console.log('🔍 Error response sent');
       });
-      console.log('🔍 Response sent successfully');
-    } catch (error) {
-      console.error('❌ Advanced URL analysis failed:', error);
-      console.error('❌ Error details:', error.message, error.stack);
-      sendResponse({
-        success: false,
-        error: error.message
-      });
-      console.log('🔍 Error response sent');
-    }
+
+    // Keep the message channel open for async response
     return true;
   }
 
   if (request.type === 'ANALYZE_URL_REQUEST') {
     console.log('🔍 Runtime: Received ANALYZE_URL_REQUEST from content script:', request.url);
-    
-    // Handle the analysis asynchronously using the NEW tab-based method with webRequest
-    performAnalysis(request.url, request.options || {})
-      .then(result => {
-        console.log('🔍 Runtime: Tab analysis completed, sending response');
-        sendResponse({
-          success: true,
-          result: result
+    const responseTabId = sender?.tab?.id;
+    const requestId = request.requestId;
+
+    try {
+      console.log('🔍 Runtime: Starting performAnalysis...');
+
+      // Fire and forget analysis; immediately ACK to keep the sender free
+      sendResponse({ accepted: true });
+
+      performAnalysis(request.url, request.options || {})
+        .then(result => {
+          console.log('🔍 Runtime: Tab analysis completed successfully');
+          if (responseTabId != null) {
+            console.log('🔍 Runtime: Posting ANALYZE_URL_RESULT to tab', responseTabId);
+            chrome.tabs.sendMessage(responseTabId, {
+              type: 'ANALYZE_URL_RESULT',
+              requestId,
+              success: true,
+              result
+            });
+          } else {
+            console.warn('⚠️ No sender tab available to return results');
+          }
+        })
+        .catch(error => {
+          console.error('❌ Runtime: Tab analysis failed:', error);
+          if (responseTabId != null) {
+            chrome.tabs.sendMessage(responseTabId, {
+              type: 'ANALYZE_URL_RESULT',
+              requestId,
+              success: false,
+              error: error.message
+            });
+          }
         });
-      })
-      .catch(error => {
-        console.error('❌ Runtime: Tab analysis failed:', error);
-        sendResponse({
-          success: false,
-          error: error.message
-        });
-      });
-    
-    // Return true to indicate we'll send a response asynchronously
-    return true;
+
+      // Return true just in case, although we already ACKed
+      return true;
+    } catch (syncError) {
+      console.error('❌ Runtime: Synchronous error in ANALYZE_URL_REQUEST handler:', syncError);
+      try {
+        if (sender?.tab?.id != null) {
+          chrome.tabs.sendMessage(sender.tab.id, {
+            type: 'ANALYZE_URL_RESULT',
+            requestId,
+            success: false,
+            error: `Synchronous error: ${syncError.message}`
+          });
+        }
+      } catch (e) {
+        console.error('❌ Failed to send synchronous error to tab:', e);
+      }
+      return true;
+    }
   }
 
   if (request.type === 'TEST_CONNECTION') {
@@ -703,7 +721,7 @@ async function performAdvancedUrlAnalysis(url, options = {}) {
   const startTime = Date.now();
   
   try {
-    // Step 1: Follow HTTP redirects to get the full chain
+    // Step 1: Follow HTTP redirects to get the full server-side chain
     console.log('🔍 Step 1: Following HTTP redirects...');
     const httpRedirects = await followHttpRedirects(url, options.maxRedirects || 10);
     console.log('🔍 HTTP redirects found:', httpRedirects);
@@ -760,61 +778,126 @@ async function performAdvancedUrlAnalysis(url, options = {}) {
     // Close the analysis tab
     await chrome.tabs.remove(tab.id);
     
-    // Step 3: Combine HTTP redirects with client-side redirects
-    const combinedRedirects = [...httpRedirects.redirects];
+    // Step 3: Build comprehensive redirect chain
+    const comprehensiveChain = [];
+    let stepCounter = 0;
     
-    // Add client-side redirects if detected
-    if (analysisResult?.hasMetaRefresh) {
-      combinedRedirects.push({
-        step: combinedRedirects.length + 1,
-        url: httpRedirects.finalUrl,
-        type: 'meta_refresh',
-        targetUrl: analysisResult.finalUrl,
-        method: 'meta_refresh',
-        statusCode: 200,
-        timestamp: Date.now()
+    // Add all HTTP redirects first
+    httpRedirects.redirects.forEach((redirect) => {
+      comprehensiveChain.push({
+        step: ++stepCounter,
+        url: redirect.url,
+        type: 'server_redirect',
+        statusCode: redirect.statusCode,
+        targetUrl: redirect.targetUrl,
+        method: 'HTTP',
+        redirectType: redirect.redirectType,
+        timestamp: redirect.timestamp
       });
-    }
+    });
     
-    if (analysisResult?.hasJavaScriptRedirect) {
-      // Add the JavaScript redirect
-      combinedRedirects.push({
-        step: combinedRedirects.length + 1,
+    // Add meta refresh redirects
+    if (analysisResult?.hasMetaRefresh && analysisResult.metaRefresh) {
+      comprehensiveChain.push({
+        step: ++stepCounter,
         url: httpRedirects.finalUrl,
-        type: 'javascript',
-        targetUrl: analysisResult.finalUrl,
-        method: 'javascript',
+        type: 'client_redirect',
         statusCode: 200,
-        timestamp: Date.now()
+        targetUrl: analysisResult.metaRefresh.targetUrl,
+        method: 'Meta Refresh',
+        delay: analysisResult.metaRefresh.delay,
+        timestamp: analysisResult.metaRefresh.detectedAt || Date.now()
       });
       
-      // Check if the JavaScript redirect target has additional server redirects
-      console.log('🔍 Checking for additional redirects on JavaScript target:', analysisResult.finalUrl);
-      try {
-        const additionalRedirects = await followHttpRedirects(analysisResult.finalUrl, 5);
-        if (additionalRedirects.redirects.length > 0) {
-          console.log('🔍 Found additional redirects after JavaScript redirect:', additionalRedirects.redirects);
-          // Add the additional redirects to the chain
-          additionalRedirects.redirects.forEach((redirect, index) => {
-            combinedRedirects.push({
-              ...redirect,
-              step: combinedRedirects.length + 1
+      // If meta refresh target is different from current final URL, check for more redirects
+      if (analysisResult.metaRefresh.targetUrl !== analysisResult.finalUrl) {
+        console.log('🔍 Checking for additional redirects after meta refresh...');
+        try {
+          const metaTargetRedirects = await followHttpRedirects(analysisResult.metaRefresh.targetUrl, 5);
+          metaTargetRedirects.redirects.forEach((redirect) => {
+            comprehensiveChain.push({
+              step: ++stepCounter,
+              url: redirect.url,
+              type: 'server_redirect',
+              statusCode: redirect.statusCode,
+              targetUrl: redirect.targetUrl,
+              method: 'HTTP',
+              redirectType: redirect.redirectType,
+              timestamp: redirect.timestamp
             });
           });
+        } catch (error) {
+          console.error('❌ Error checking meta refresh target redirects:', error);
         }
-      } catch (error) {
-        console.error('❌ Error checking additional redirects:', error);
       }
     }
+    
+    // Add JavaScript redirects
+    if (analysisResult?.hasJavaScriptRedirect && analysisResult.javascriptRedirects) {
+      analysisResult.javascriptRedirects.forEach((jsRedirect) => {
+        comprehensiveChain.push({
+          step: ++stepCounter,
+          url: jsRedirect.from,
+          type: 'javascript_redirect',
+          statusCode: 200,
+          targetUrl: jsRedirect.to,
+          method: 'JavaScript',
+          timestamp: jsRedirect.timestamp
+        });
+      });
+    }
+    
+    // Determine final URL and status
+    let finalUrl = httpRedirects.finalUrl;
+    let finalStatusCode = httpRedirects.finalStatusCode;
+    
+    if (analysisResult?.finalUrl && analysisResult.finalUrl !== httpRedirects.finalUrl) {
+      finalUrl = analysisResult.finalUrl;
+      finalStatusCode = 200; // Client-side redirects typically result in 200
+    }
+    
+    // Build redirect types summary
+    const redirectTypes = [];
+    const statusCodes = new Set();
+    
+    comprehensiveChain.forEach(step => {
+      if (step.statusCode) {
+        statusCodes.add(step.statusCode);
+      }
+      
+      if (step.type === 'server_redirect') {
+        redirectTypes.push({
+          type: 'http',
+          statusCode: step.statusCode,
+          url: step.url,
+          targetUrl: step.targetUrl
+        });
+      } else if (step.type === 'client_redirect') {
+        redirectTypes.push({
+          type: 'meta',
+          url: step.url,
+          targetUrl: step.targetUrl,
+          delay: step.delay
+        });
+      } else if (step.type === 'javascript_redirect') {
+        redirectTypes.push({
+          type: 'javascript',
+          url: step.url,
+          targetUrl: step.targetUrl
+        });
+      }
+    });
     
     const analysisTime = Date.now() - startTime;
     
     return {
       originalUrl: url,
-      finalUrl: analysisResult?.finalUrl || httpRedirects.finalUrl,
-      finalStatusCode: httpRedirects.finalStatusCode,
-      redirectCount: combinedRedirects.length,
-      redirectChain: combinedRedirects,
+      finalUrl: finalUrl,
+      finalStatusCode: finalStatusCode,
+      redirectCount: comprehensiveChain.length,
+      redirectChain: comprehensiveChain,
+      redirectChainDetails: comprehensiveChain,
+      redirectTypes: redirectTypes,
       hasMetaRefresh: analysisResult?.hasMetaRefresh || false,
       hasJavaScriptRedirect: analysisResult?.hasJavaScriptRedirect || false,
       javascriptRedirects: analysisResult?.javascriptRedirects || [],

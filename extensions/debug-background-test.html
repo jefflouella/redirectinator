@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Background Script Test</title>
+</head>
+<body>
+    <h1>Background Script Debug Test</h1>
+    <button id="testBtn">Test Background Script</button>
+    <div id="results"></div>
+
+    <script>
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            console.log('Testing background script...');
+            
+            try {
+                // Test basic ping first
+                console.log('1. Testing PING...');
+                const pingResponse = await chrome.runtime.sendMessage({
+                    type: 'PING'
+                });
+                console.log('PING response:', pingResponse);
+                document.getElementById('results').innerHTML += '<p>✅ PING: ' + JSON.stringify(pingResponse) + '</p>';
+                
+                // Test ANALYZE_URL_REQUEST
+                console.log('2. Testing ANALYZE_URL_REQUEST...');
+                const analyzeResponse = await chrome.runtime.sendMessage({
+                    type: 'ANALYZE_URL_REQUEST',
+                    url: 'http://testing.tamethebots.com/metaredirect.html',
+                    options: {},
+                    requestId: 'test_' + Date.now()
+                });
+                console.log('ANALYZE_URL_REQUEST response:', analyzeResponse);
+                document.getElementById('results').innerHTML += '<p>✅ ANALYZE: ' + JSON.stringify(analyzeResponse) + '</p>';
+                
+            } catch (error) {
+                console.error('Test failed:', error);
+                document.getElementById('results').innerHTML += '<p>❌ Error: ' + error.message + '</p>';
+            }
+        });
+    </script>
+</body>
+</html>
+

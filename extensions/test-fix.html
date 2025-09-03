@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extension Context Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .logs {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Extension Context Fix Test</h1>
+        
+        <div class="info">
+            <strong>Test Instructions:</strong>
+            <ol>
+                <li>Load the updated extension (the one with context validation)</li>
+                <li>Click "Test Extension" below</li>
+                <li>If you get a context error, reload the extension AND refresh this page</li>
+                <li>Test again - you should see proper error handling or success</li>
+            </ol>
+        </div>
+
+        <div id="extensionStatus" class="status info">
+            Extension status: Checking...
+        </div>
+
+        <button id="testBtn" onclick="testExtension()">Test Extension</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+        
+        <h3>Console Logs:</h3>
+        <div id="logs" class="logs">Ready for testing...\n</div>
+
+        <h3>Expected Results:</h3>
+        <div class="info">
+            <strong>✅ Success Case:</strong> Extension responds with redirect analysis results<br>
+            <strong>❌ Context Error:</strong> "Extension context invalidated - please refresh this page after reloading the extension"<br>
+            <strong>⚠️ Connection Error:</strong> Helpful message about refreshing or checking extension
+        </div>
+    </div>
+
+    <script>
+        let logDiv = document.getElementById('logs');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            logDiv.textContent += logMessage;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLogs() {
+            logDiv.textContent = 'Logs cleared...\n';
+        }
+
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('extensionStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        // Check extension availability on load
+        function checkExtensionStatus() {
+            log('Checking extension availability...');
+            
+            // Send a test message to see if extension responds
+            window.postMessage({
+                type: 'REDIRECTINATOR_REQUEST',
+                requestId: 'status_check',
+                url: 'https://httpbin.org/redirect/1',
+                options: {}
+            }, '*');
+
+            // Set timeout for response
+            setTimeout(() => {
+                updateStatus('Extension not responding - may need to be loaded or page refreshed', 'warning');
+                log('Extension availability check timed out', 'warning');
+            }, 3000);
+        }
+
+        function testExtension() {
+            log('Starting extension test...');
+            updateStatus('Testing extension...', 'info');
+            
+            const testUrl = 'http://testing.tamethebots.com/metaredirect.html';
+            const requestId = `test_${Date.now()}`;
+            
+            log(`Testing URL: ${testUrl}`);
+            
+            window.postMessage({
+                type: 'REDIRECTINATOR_REQUEST',
+                requestId: requestId,
+                url: testUrl,
+                options: { timeout: 10000 }
+            }, '*');
+
+            // Set timeout for test
+            setTimeout(() => {
+                log('Test timed out - no response from extension', 'error');
+                updateStatus('Test failed - extension not responding', 'error');
+            }, 15000);
+        }
+
+        // Listen for extension responses
+        window.addEventListener('message', (event) => {
+            if (event.data?.type === 'REDIRECTINATOR_RESPONSE') {
+                const response = event.data;
+                
+                if (response.requestId === 'status_check') {
+                    if (response.success) {
+                        updateStatus('Extension is available and responding', 'success');
+                        log('Extension status check: SUCCESS', 'success');
+                    } else {
+                        updateStatus(`Extension error: ${response.error}`, 'error');
+                        log(`Extension status check failed: ${response.error}`, 'error');
+                    }
+                    return;
+                }
+
+                log(`Received response for ${response.requestId}:`);
+                
+                if (response.success) {
+                    log('✅ SUCCESS: Extension analysis completed', 'success');
+                    log(`Result: ${JSON.stringify(response.result, null, 2)}`);
+                    updateStatus('Extension test successful!', 'success');
+                    
+                    // Log redirect chain details
+                    if (response.result?.redirectChain) {
+                        log(`Found ${response.result.redirectChain.length} redirects in chain`);
+                        response.result.redirectChain.forEach((redirect, index) => {
+                            log(`  ${index + 1}. ${redirect.url} (${redirect.type})`);
+                        });
+                    }
+                } else {
+                    log(`❌ ERROR: ${response.error}`, 'error');
+                    updateStatus(`Extension test failed: ${response.error}`, 'error');
+                    
+                    // Provide specific guidance based on error type
+                    if (response.error.includes('context invalidated')) {
+                        log('💡 FIX: Reload the extension in chrome://extensions and refresh this page', 'warning');
+                    } else if (response.error.includes('refresh this page')) {
+                        log('💡 FIX: Refresh this page after reloading the extension', 'warning');
+                    }
+                }
+            }
+        });
+
+        // Check extension status on page load
+        window.addEventListener('load', () => {
+            log('Page loaded, checking extension status...');
+            setTimeout(checkExtensionStatus, 1000);
+        });
+    </script>
+</body>
+</html>
+

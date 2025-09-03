@@ -153,11 +153,12 @@ export class RedirectChecker {
     // Start with original URL
     redirectChain.push(extensionResult.originalUrl);
     
-    // Add HTTP redirects from the chain
+    // Add redirects from the chain (support different step shapes)
     if (extensionResult.redirectChain?.length > 0) {
       extensionResult.redirectChain.forEach((step: any) => {
-        if (step.targetUrl && !redirectChain.includes(step.targetUrl)) {
-          redirectChain.push(step.targetUrl);
+        const target = step.targetUrl || step.to || step.url;
+        if (target && !redirectChain.includes(target)) {
+          redirectChain.push(target);
         }
       });
     }
@@ -189,22 +190,33 @@ export class RedirectChecker {
     });
 
     return {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      startingUrl: extensionResult.originalUrl,
+      targetRedirect: '', // Not applicable for extension results
       finalUrl: extensionResult.finalUrl || extensionResult.originalUrl,
+      result: redirectCount > 0 ? 'redirect' : 'direct',
+      httpStatus: extensionResult.finalStatusCode?.toString() || '200',
       finalStatusCode: extensionResult.finalStatusCode || 200,
+      numberOfRedirects: redirectCount,
+      responseTime: extensionResult.analysisTime || 0,
+      hasRedirectLoop: this.detectLoop(redirectChain),
+      mixedRedirectTypes: this.detectMixedTypes((extensionResult.redirectChain || []).map((s: any) => ({
+        ...s,
+        type: s.type === 'http_redirect' ? 'http' : s.type === 'meta_refresh' ? 'meta' : s.type
+      }))),
+      fullRedirectChain: redirectChain,
       statusChain,
-      redirectCount: redirectCount,
-      redirectChain,
-      hasLoop: this.detectLoop(redirectChain),
-      hasMixedTypes: this.detectMixedTypes(extensionResult.redirectChain || []),
       domainChanges: this.detectDomainChanges(redirectChain),
       httpsUpgrade: this.detectHttpsUpgrade(redirectChain),
       redirectTypes: this.buildRedirectTypes(extensionResult),
-      redirectChainDetails: extensionResult.redirectChain || [],
+      redirectChainDetails: (extensionResult.redirectChain || []).map((s: any) => ({
+        ...s,
+        type: s.type === 'http_redirect' ? 'http' : s.type === 'meta_refresh' ? 'meta' : s.type
+      })),
       hasMetaRefresh: extensionResult.hasMetaRefresh || false,
       hasJavaScriptRedirect: extensionResult.hasJavaScriptRedirect || false,
-      detectionMode: 'advanced',
-      extensionVersion: extensionResult.extensionVersion,
-      analysisTime: extensionResult.analysisTime || 0
+      timestamp: Date.now(),
+      source: 'manual' as const
     };
   }
 

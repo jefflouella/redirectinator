@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Extension Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .logs {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .redirect-chain {
+            background: #e7f3ff;
+            border: 1px solid #b3d7ff;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .redirect-step {
+            margin: 5px 0;
+            padding: 5px;
+            background: white;
+            border-radius: 3px;
+            border-left: 3px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Complete Extension Fix Test</h1>
+        
+        <div class="info">
+            <strong>This test should now show the complete 4-step redirect chain!</strong>
+            <br>Expected chain: HTTP 307 → Meta Refresh → JavaScript → HTTP 301 → Final URL
+        </div>
+
+        <div id="extensionStatus" class="status info">
+            Extension status: Checking...
+        </div>
+
+        <button id="testBtn" onclick="testCompleteRedirectChain()">Test Complete Redirect Chain</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+        
+        <div id="redirectChain" class="redirect-chain" style="display: none;">
+            <h3>🔗 Redirect Chain Results:</h3>
+            <div id="chainSteps"></div>
+        </div>
+
+        <h3>Console Logs:</h3>
+        <div id="logs" class="logs">Ready for complete testing...\n</div>
+
+        <div class="info">
+            <h3>What to Expect:</h3>
+            <ul>
+                <li><strong>✅ Success:</strong> Complete 4+ step redirect chain displayed</li>
+                <li><strong>🔗 Chain Details:</strong> Each redirect step with type and URL</li>
+                <li><strong>📊 Analysis Time:</strong> Should be 2-5 seconds for complete analysis</li>
+                <li><strong>🌐 HTTP Redirects:</strong> Server-side redirects captured in real-time</li>
+                <li><strong>🔄 Meta Refresh:</strong> Client-side meta refresh detected</li>
+                <li><strong>⚡ JavaScript:</strong> JavaScript redirects captured</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let logDiv = document.getElementById('logs');
+        let chainDiv = document.getElementById('redirectChain');
+        let stepsDiv = document.getElementById('chainSteps');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            logDiv.textContent += logMessage;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLogs() {
+            logDiv.textContent = 'Logs cleared...\n';
+            chainDiv.style.display = 'none';
+            stepsDiv.innerHTML = '';
+        }
+
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('extensionStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        function displayRedirectChain(redirectChain) {
+            if (!redirectChain || redirectChain.length === 0) {
+                log('No redirect chain data received', 'warning');
+                return;
+            }
+
+            chainDiv.style.display = 'block';
+            stepsDiv.innerHTML = '';
+
+            log(`Displaying redirect chain with ${redirectChain.length} steps`);
+
+            redirectChain.forEach((step, index) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'redirect-step';
+                
+                let stepType = step.type || 'unknown';
+                let statusCode = step.statusCode ? ` (${step.statusCode})` : '';
+                let method = step.method ? ` [${step.method.toUpperCase()}]` : '';
+                
+                stepDiv.innerHTML = `
+                    <strong>Step ${step.step || index + 1}:</strong> 
+                    <span style="color: #007bff;">${stepType.toUpperCase()}</span>${statusCode}${method}
+                    <br>
+                    <code>${step.url}</code>
+                    ${step.from ? `<br><small>From: ${step.from}</small>` : ''}
+                `;
+                
+                stepsDiv.appendChild(stepDiv);
+            });
+        }
+
+        function testCompleteRedirectChain() {
+            log('🚀 Starting complete redirect chain test...');
+            updateStatus('Testing complete redirect chain...', 'info');
+            
+            const testUrl = 'http://testing.tamethebots.com/metaredirect.html';
+            const requestId = `complete_test_${Date.now()}`;
+            
+            log(`Testing URL: ${testUrl}`);
+            log('This should capture: HTTP redirects + Meta Refresh + JavaScript redirects');
+            
+            const startTime = Date.now();
+            
+            window.postMessage({
+                type: 'REDIRECTINATOR_REQUEST',
+                requestId: requestId,
+                url: testUrl,
+                options: { 
+                    timeout: 15000,
+                    followRedirects: true,
+                    maxRedirects: 10
+                }
+            }, '*');
+
+            // Set timeout for test
+            setTimeout(() => {
+                const elapsed = Date.now() - startTime;
+                log(`Test timed out after ${elapsed}ms - no response from extension`, 'error');
+                updateStatus('Test failed - extension not responding', 'error');
+            }, 20000);
+        }
+
+        // Listen for extension responses
+        window.addEventListener('message', (event) => {
+            if (event.data?.type === 'REDIRECTINATOR_RESPONSE') {
+                const response = event.data;
+                const endTime = Date.now();
+                
+                log(`Received response for ${response.requestId}`);
+                
+                if (response.success) {
+                    const result = response.result;
+                    log('🎉 SUCCESS: Complete redirect chain analysis completed!', 'success');
+                    updateStatus('Complete redirect chain test successful!', 'success');
+                    
+                    // Log summary
+                    log(`Analysis completed in ${result.analysisTime || 'unknown'}ms`);
+                    log(`Final URL: ${result.finalUrl}`);
+                    log(`Redirect chain length: ${result.redirectChain?.length || 0}`);
+                    log(`HTTP redirects: ${result.httpRedirects?.length || 0}`);
+                    log(`Has Meta Refresh: ${result.hasMetaRefresh ? 'YES' : 'NO'}`);
+                    log(`Has JavaScript Redirect: ${result.hasJavaScriptRedirect ? 'YES' : 'NO'}`);
+                    
+                    // Display the redirect chain
+                    if (result.redirectChain) {
+                        displayRedirectChain(result.redirectChain);
+                        
+                        // Log each step
+                        result.redirectChain.forEach((step, index) => {
+                            log(`  Step ${index + 1}: ${step.type} → ${step.url}`);
+                        });
+                    }
+                    
+                    // Check if we got the expected chain
+                    const chainLength = result.redirectChain?.length || 0;
+                    if (chainLength >= 4) {
+                        log('✅ SUCCESS: Got expected 4+ step redirect chain!', 'success');
+                    } else {
+                        log(`⚠️ WARNING: Expected 4+ steps, got ${chainLength}`, 'warning');
+                    }
+                    
+                } else {
+                    log(`❌ ERROR: ${response.error}`, 'error');
+                    updateStatus(`Test failed: ${response.error}`, 'error');
+                    
+                    // Provide specific guidance
+                    if (response.error.includes('context invalidated')) {
+                        log('💡 FIX: Reload the extension and refresh this page', 'warning');
+                    } else if (response.error.includes('timeout')) {
+                        log('💡 FIX: The analysis took too long - this is normal for complex redirect chains', 'info');
+                    }
+                }
+            }
+        });
+
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            log('Page loaded, extension should be ready for complete testing...');
+            updateStatus('Ready for complete redirect chain test', 'info');
+        });
+    </script>
+</body>
+</html>
+

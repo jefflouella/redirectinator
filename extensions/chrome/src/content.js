@@ -126,10 +126,36 @@ class RedirectDetector {
           };
 
           self.javascriptRedirects.push(redirect);
+          self.redirects.push(redirect);
           self.currentUrl = window.location.href;
           console.log('JavaScript redirect detected (popstate):', redirect);
         }
       });
+
+      // Monitor for location changes over time
+      let lastLocation = window.location.href;
+      const locationCheckInterval = setInterval(() => {
+        const currentLocation = window.location.href;
+        if (currentLocation !== lastLocation && currentLocation !== self.originalUrl) {
+          const redirect = {
+            type: 'javascript',
+            method: 'location_change',
+            from: lastLocation,
+            to: currentLocation,
+            timestamp: Date.now(),
+            userAgent: navigator.userAgent
+          };
+
+          self.javascriptRedirects.push(redirect);
+          self.redirects.push(redirect);
+          self.currentUrl = currentLocation;
+          lastLocation = currentLocation;
+          console.log('JavaScript redirect detected (location change):', redirect);
+        }
+      }, 1000);
+
+      // Override common redirect methods
+      this.overrideRedirectMethods();
 
       // Enhanced Meta Refresh monitoring
       self.monitorMetaRefreshChanges();
@@ -1175,49 +1201,94 @@ window.addEventListener('message', (event) => {
         return;
       }
       
+      // Check if extension context is still valid before communicating
+      try {
+        // This will throw if context is invalidated
+        chrome.runtime.getManifest();
+        console.log('✅ Extension context is valid');
+      } catch (contextError) {
+        console.error('❌ Extension context invalidated:', contextError);
+        window.postMessage({
+          type: 'REDIRECTINATOR_RESPONSE',
+          requestId: event.data.requestId,
+          success: false,
+          error: 'Extension context invalidated - please refresh this page after reloading the extension'
+        }, '*');
+        return;
+      }
+
       // Forward this request to the background script for proper tab navigation
       console.log('🔍 Sending ANALYZE_URL_REQUEST to background script...');
       try {
-        chrome.runtime.sendMessage({
-          type: 'ANALYZE_URL_REQUEST',
-          url: event.data.url,
-          options: event.data.options,
-          requestId: event.data.requestId
-        }, (response) => {
-          console.log('🔍 Background script response received:', response);
-          
-          if (chrome.runtime.lastError) {
-            console.error('❌ Background script communication failed:', chrome.runtime.lastError);
-            // Send error response to web app
-            window.postMessage({
-              type: 'REDIRECTINATOR_RESPONSE',
-              requestId: event.data.requestId,
-              success: false,
-              error: `Background script error: ${chrome.runtime.lastError.message}`
-            }, '*');
-          } else if (response && response.success) {
-            console.log('✅ Forwarding successful response to web app');
-            // Forward successful response to web app
-            window.postMessage({
-              type: 'REDIRECTINATOR_RESPONSE',
-              requestId: event.data.requestId,
-              success: true,
-              result: response.result,
-              error: undefined
-            }, '*');
-          } else {
-            console.log('❌ Background script returned error:', response?.error);
-            // Send error response to web app
-            window.postMessage({
-              type: 'REDIRECTINATOR_RESPONSE',
-              requestId: event.data.requestId,
-              success: false,
-              error: response?.error || 'Analysis failed'
-            }, '*');
+        // Promise resolves when background posts the result event back
+        const sendMessagePromise = new Promise((resolve, reject) => {
+          function resultListener(message) {
+            if (message && message.type === 'ANALYZE_URL_RESULT' && message.requestId === event.data.requestId) {
+              chrome.runtime.onMessage.removeListener(resultListener);
+              resolve(message);
+            }
           }
+          chrome.runtime.onMessage.addListener(resultListener);
+
+          chrome.runtime.sendMessage({
+            type: 'ANALYZE_URL_REQUEST',
+            url: event.data.url,
+            options: event.data.options,
+            requestId: event.data.requestId
+          }, (response) => {
+            console.log('🔍 Background script response received:', response);
+            if (chrome.runtime.lastError) {
+              console.error('❌ Chrome runtime error:', chrome.runtime.lastError);
+              chrome.runtime.onMessage.removeListener(resultListener);
+              reject(new Error(chrome.runtime.lastError.message));
+            }
+          });
         });
-        
-        console.log('🔍 Message sent to background script, waiting for response...');
+
+        // Handle the result message
+        sendMessagePromise
+          .then((response) => {
+            if (response && response.success) {
+              console.log('✅ Forwarding successful response to web app');
+              console.log('🔗 Redirect chain length:', response.result?.redirectChain?.length || 0);
+              window.postMessage({
+                type: 'REDIRECTINATOR_RESPONSE',
+                requestId: event.data.requestId,
+                success: true,
+                result: response.result,
+                error: undefined
+              }, '*');
+            } else {
+              console.log('❌ Background script returned error:', response?.error);
+              window.postMessage({
+                type: 'REDIRECTINATOR_RESPONSE',
+                requestId: event.data.requestId,
+                success: false,
+                error: response?.error || 'Analysis failed'
+              }, '*');
+            }
+          })
+          .catch((error) => {
+            console.error('❌ Background script communication failed:', error);
+            let userFriendlyError = error.message;
+            if (userFriendlyError.includes('Extension context invalidated')) {
+              userFriendlyError = 'Extension was reloaded - please refresh this page';
+            } else if (userFriendlyError.includes('Could not establish connection')) {
+              userFriendlyError = 'Could not connect to extension - please check if extension is enabled';
+            } else if (userFriendlyError.includes('message port closed')) {
+              userFriendlyError = 'Extension connection lost - please refresh this page';
+            } else if (userFriendlyError.includes('No response from background script')) {
+              userFriendlyError = 'Background script timeout - analysis may have taken too long';
+            }
+            window.postMessage({
+              type: 'REDIRECTINATOR_RESPONSE',
+              requestId: event.data.requestId,
+              success: false,
+              error: userFriendlyError
+            }, '*');
+          });
+
+        console.log('🔍 Message sent to background script, waiting for ANALYZE_URL_RESULT...');
       } catch (error) {
         console.error('❌ Failed to communicate with background script:', error);
         window.postMessage({
