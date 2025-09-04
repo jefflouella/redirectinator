@@ -1,4 +1,7 @@
 export default function handler(req, res) {
+  // Debug logging
+  console.log('API Route hit:', req.url, req.query);
+  
   const inferredProto = (req.connection && req.connection.encrypted) ? 'https' : 'http';
   const proto = (req.headers['x-forwarded-proto'] || inferredProto || 'https').toString();
   const host = req.headers.host || 'localhost';
@@ -9,6 +12,8 @@ export default function handler(req, res) {
     ? req.query.slug
     : (req.query.slug ? [req.query.slug] : []);
   const slug = parts.join('/') || '';
+  
+  console.log('Slug:', slug);
 
   const absolute = (p) => p.startsWith('http') ? p : `${baseTests}/${p}`;
 
