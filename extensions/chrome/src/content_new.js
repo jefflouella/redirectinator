@@ -14,57 +14,6 @@ if (window.location.protocol === 'chrome-extension:' ||
 } else {
   console.log('🔍 Redirectinator Advanced: Content script running on:', window.location.href);
 
-  // -------- Bridge to web app (postMessage) so the site can detect and use the extension --------
-  // Notify page that the content script bridge is ready
-  try {
-    window.postMessage({
-      type: 'REDIRECTINATOR_EXTENSION_READY',
-      version: '1.0.0-local',
-      timestamp: Date.now()
-    }, '*');
-  } catch (e) {
-    // no-op
-  }
-
-  // Listen for messages from the page
-  window.addEventListener('message', (event) => {
-    if (event.source !== window) return; // only accept same-page messages
-    const data = event.data || {};
-
-    // Health ping from the app -> respond so it knows the bridge exists
-    if (data.type === 'REDIRECTINATOR_CONTENT_SCRIPT_PING') {
-      try {
-        window.postMessage({
-          type: 'REDIRECTINATOR_CONTENT_SCRIPT_PONG',
-          version: '1.0.0-local',
-          timestamp: Date.now()
-        }, '*');
-      } catch (_) {}
-      return;
-    }
-
-    // Analysis request from the web app -> relay to background and return the result
-    if (data.type === 'REDIRECTINATOR_REQUEST' && data.url) {
-      const requestId = data.requestId || ('req_' + Date.now() + '_' + Math.random().toString(36).slice(2));
-      chrome.runtime.sendMessage({
-        type: 'ANALYZE_URL_REQUEST',
-        url: data.url,
-        options: data.options || {},
-        requestId
-      }, (response) => {
-        // Normalize background response and post back to page
-        const payload = {
-          type: 'REDIRECTINATOR_RESPONSE',
-          requestId,
-          result: response && response.success ? response.result : undefined,
-          error: response && !response.success ? (response.error || 'Unknown error') : undefined
-        };
-        try { window.postMessage(payload, '*'); } catch (_) {}
-      });
-      return;
-    }
-  });
-
   // Initialize content script when DOM is ready (like Redirect Path extension)
   document.addEventListener("DOMContentLoaded", function(event) {
     console.log('🔍 Redirectinator Advanced: DOMContentLoaded event fired');

@@ -54,20 +54,29 @@ export class RedirectChecker {
       const result = await this.performRedirectCheck(startingUrl);
       const responseTime = Math.round(performance.now() - startTime);
       
+      // Small guard: prefer extension-computed fields when present
+      const resolvedResult: 'direct' | 'redirect' | 'error' | 'loop' =
+        (result as any).result ?? this.determineResult(result, targetRedirect);
+      const resolvedRedirectCount: number =
+        (result as any).numberOfRedirects ?? (result as any).redirectCount ?? 0;
+      const resolvedStatusChain: string[] = (result as any).statusChain ?? [];
+      const resolvedFinalStatus: number = (result as any).finalStatusCode ?? 200;
+      const resolvedFinalUrl: string = (result as any).finalUrl ?? startingUrl;
+
       return {
         id,
         startingUrl,
         targetRedirect,
-        finalUrl: result.finalUrl,
-        result: this.determineResult(result, targetRedirect),
-        httpStatus: result.statusChain.join(' → '),
-        finalStatusCode: result.finalStatusCode,
-        numberOfRedirects: result.redirectCount,
+        finalUrl: resolvedFinalUrl,
+        result: resolvedResult,
+        httpStatus: resolvedStatusChain.length ? resolvedStatusChain.join(' → ') : String(resolvedFinalStatus),
+        finalStatusCode: resolvedFinalStatus,
+        numberOfRedirects: resolvedRedirectCount,
         responseTime,
         hasRedirectLoop: result.hasLoop,
         mixedRedirectTypes: result.hasMixedTypes,
-        fullRedirectChain: result.redirectChain,
-        statusChain: result.statusChain,
+        fullRedirectChain: (result as any).redirectChain ?? [],
+        statusChain: resolvedStatusChain,
         domainChanges: result.domainChanges,
         httpsUpgrade: result.httpsUpgrade,
         needsManualOverride: result.needsManualOverride,
@@ -77,10 +86,10 @@ export class RedirectChecker {
         suggestedDirectUrl: result.suggestedDirectUrl,
         timestamp: Date.now(),
         // New fields for enhanced redirect tracking
-        redirectTypes: result.redirectTypes,
-        redirectChainDetails: result.redirectChainDetails,
-        hasMetaRefresh: result.hasMetaRefresh,
-        hasJavaScriptRedirect: result.hasJavaScriptRedirect,
+        redirectTypes: (result as any).redirectTypes ?? [],
+        redirectChainDetails: (result as any).redirectChainDetails ?? [],
+        hasMetaRefresh: (result as any).hasMetaRefresh ?? false,
+        hasJavaScriptRedirect: (result as any).hasJavaScriptRedirect ?? false,
       };
     } catch (error) {
       const responseTime = Math.round(performance.now() - startTime);
@@ -170,17 +179,10 @@ export class RedirectChecker {
     
     console.log('🔍 Built redirect chain:', redirectChain);
 
-    // Calculate redirect count based on detected redirect types and HTTP redirects
-    let redirectCount = 0;
-    
-    // Count HTTP redirects from the chain
-    if (extensionResult.redirectChain?.length > 0) {
-      redirectCount += extensionResult.redirectChain.length;
-    }
-    
-    // Add client-side redirects
-    if (extensionResult.hasMetaRefresh) redirectCount++;
-    if (extensionResult.hasJavaScriptRedirect) redirectCount++;
+    // Calculate redirect count using only actual redirect steps in the chain
+    const redirectCount = (extensionResult.redirectChain || []).filter((s: any) => (
+      s.type === 'http_redirect' || s.type === 'meta_refresh' || s.type === 'javascript'
+    )).length;
     
     console.log('🔍 Extension redirect count calculation:', {
       httpRedirects: extensionResult.redirectChain?.length || 0,
@@ -246,44 +248,22 @@ export class RedirectChecker {
    * Build redirect types array from extension result
    */
   private buildRedirectTypes(extensionResult: any) {
-    const types = [];
-    
-    // Add Meta Refresh redirect if detected
-    if (extensionResult.hasMetaRefresh) {
+    const types: any[] = [];
+
+    // Prefer explicit steps from redirectChain; normalize for UI
+    (extensionResult.redirectChain || []).forEach((step: any) => {
+      if (!step || !step.type) return;
+      if (step.type === 'original' || step.type === 'final') return;
       types.push({
-        type: 'meta_refresh',
-        statusCode: 200,
-        url: extensionResult.originalUrl,
-        targetUrl: extensionResult.finalUrl,
-        delay: 0,
-        method: 'meta_refresh'
-      });
-    }
-    
-    // Add JavaScript redirect if detected
-    if (extensionResult.hasJavaScriptRedirect) {
-      types.push({
-        type: 'javascript',
-        statusCode: 200,
-        url: extensionResult.originalUrl,
-        targetUrl: extensionResult.finalUrl,
-        delay: 0,
-        method: 'javascript'
-      });
-    }
-    
-    // Add any additional redirects from the chain
-    if (extensionResult.redirectChain?.length > 0) {
-      types.push(...extensionResult.redirectChain.map((step: any) => ({
-        type: step.type || 'unknown',
+        type: step.type === 'http_redirect' ? 'http' : step.type === 'meta_refresh' ? 'meta' : step.type,
         statusCode: step.statusCode || 200,
-        url: step.url,
-        targetUrl: step.targetUrl,
+        url: step.from || step.url,
+        targetUrl: step.targetUrl || step.to || step.url,
         delay: step.delay || 0,
-        method: step.method || 'unknown'
-      })));
-    }
-    
+        method: step.method || (step.type === 'meta_refresh' ? 'meta' : step.type === 'javascript' ? 'javascript' : 'GET')
+      });
+    });
+
     return types;
   }
 

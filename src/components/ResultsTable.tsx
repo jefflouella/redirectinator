@@ -426,10 +426,10 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                         {/* Right Column */}
                         <div>
                           <h4 className="text-sm font-medium text-tech-700 mb-2">Redirect Chain</h4>
-                          {result.fullRedirectChain.length > 0 ? (
+                          {result.fullRedirectChain && Array.isArray(result.fullRedirectChain) && result.fullRedirectChain.length > 0 ? (
                             <div className="space-y-1">
                               {result.fullRedirectChain.map((url, index) => {
-                                const statusCode = result.statusChain[index];
+                                const statusCode = result.statusChain && Array.isArray(result.statusChain) ? result.statusChain[index] : undefined;
                                 const getStatusColor = (code: string) => {
                                   const numCode = parseInt(code);
                                   if (numCode === 200) return 'text-green-600';
@@ -442,13 +442,13 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                                 
                                 return (
                                   <div key={index} className="text-sm font-mono text-gray-600 bg-gray-50 p-2 rounded border">
-                                    {index + 1}. {url} <span className={`font-medium ${getStatusColor(statusCode)}`}>({statusCode || 'N/A'})</span>
+                                    {index + 1}. {url} <span className={`font-medium ${getStatusColor(statusCode || 'N/A')}`}>({statusCode || 'N/A'})</span>
                                   </div>
                                 );
                               })}
                               {/* Final URL */}
                               <div className="text-sm font-mono text-green-700 bg-green-50 p-2 rounded border border-green-200 font-medium">
-                                {result.fullRedirectChain.length + 1}. {result.finalUrl} <span className="text-green-800">({result.finalStatusCode})</span> = final
+                                {result.fullRedirectChain && Array.isArray(result.fullRedirectChain) ? result.fullRedirectChain.length + 1 : 1}. {result.finalUrl} <span className="text-green-800">({result.finalStatusCode})</span> = final
                               </div>
                             </div>
                           ) : (

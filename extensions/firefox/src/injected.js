@@ -80,34 +80,58 @@
 
     monitorLocationMethods() {
       const self = this;
-      const originalAssign = window.location.assign;
-      const originalReplace = window.location.replace;
+      
+      try {
+        const originalAssign = window.location.assign;
+        if (originalAssign && typeof originalAssign === 'function') {
+          window.location.assign = function(url) {
+            self.recordRedirect('location_assign', window.location.href, url);
+            return originalAssign.call(this, url);
+          };
+        }
+      } catch (error) {
+        console.log('Redirectinator Advanced: Could not override location.assign:', error.message);
+      }
 
-      window.location.assign = function(url) {
-        self.recordRedirect('location_assign', window.location.href, url);
-        return originalAssign.call(this, url);
-      };
-
-      window.location.replace = function(url) {
-        self.recordRedirect('location_replace', window.location.href, url);
-        return originalReplace.call(this, url);
-      };
+      try {
+        const originalReplace = window.location.replace;
+        if (originalReplace && typeof originalReplace === 'function') {
+          window.location.replace = function(url) {
+            self.recordRedirect('location_replace', window.location.href, url);
+            return originalReplace.call(this, url);
+          };
+        }
+      } catch (error) {
+        console.log('Redirectinator Advanced: Could not override location.replace:', error.message);
+      }
     }
 
     monitorHistoryMethods() {
       const self = this;
-      const originalPushState = history.pushState;
-      const originalReplaceState = history.replaceState;
+      
+      try {
+        const originalPushState = history.pushState;
+        if (originalPushState && typeof originalPushState === 'function') {
+          history.pushState = function(state, title, url) {
+            self.recordRedirect('history_pushState', window.location.href, url);
+            return originalPushState.call(this, state, title, url);
+          };
+        }
+      } catch (error) {
+        console.log('Redirectinator Advanced: Could not override history.pushState:', error.message);
+      }
 
-      history.pushState = function(state, title, url) {
-        self.recordRedirect('history_pushState', window.location.href, url);
-        return originalPushState.call(this, state, title, url);
-      };
-
-      history.replaceState = function(state, title, url) {
-        self.recordRedirect('history_replaceState', window.location.href, url);
-        return originalReplaceState.call(this, state, title, url);
-      };
+      try {
+        const originalReplaceState = history.replaceState;
+        if (originalReplaceState && typeof originalReplaceState === 'function') {
+          history.replaceState = function(state, title, url) {
+            self.recordRedirect('history_replaceState', window.location.href, url);
+            return originalReplaceState.call(this, state, title, url);
+          };
+        }
+      } catch (error) {
+        console.log('Redirectinator Advanced: Could not override history.replaceState:', error.message);
+      }
     }
 
     monitorFormSubmissions() {
@@ -123,34 +147,45 @@
 
     monitorScriptInjection() {
       const self = this;
-      const originalCreateElement = document.createElement;
+      
+      try {
+        const originalCreateElement = document.createElement;
+        if (originalCreateElement && typeof originalCreateElement === 'function') {
+          document.createElement = function(tagName) {
+            const element = originalCreateElement.call(this, tagName);
 
-      document.createElement = function(tagName) {
-        const element = originalCreateElement.call(this, tagName);
-
-        if (tagName?.toLowerCase() === 'script') {
-          const originalSrc = Object.getOwnPropertyDescriptor(element, 'src');
-
-          Object.defineProperty(element, 'src', {
-            get: function() {
-              return originalSrc.get.call(this);
-            },
-            set: function(value) {
-              // Check if this might be a redirect script
-              if (value && (
-                value.includes('redirect') ||
-                value.includes('location') ||
-                value.includes('window.location')
-              )) {
-                self.recordRedirect('script_injection', window.location.href, value);
+            if (tagName?.toLowerCase() === 'script') {
+              try {
+                const originalSrc = Object.getOwnPropertyDescriptor(element, 'src');
+                if (originalSrc && originalSrc.configurable) {
+                  Object.defineProperty(element, 'src', {
+                    get: function() {
+                      return originalSrc.get.call(this);
+                    },
+                    set: function(value) {
+                      // Check if this might be a redirect script
+                      if (value && (
+                        value.includes('redirect') ||
+                        value.includes('location') ||
+                        value.includes('window.location')
+                      )) {
+                        self.recordRedirect('script_injection', window.location.href, value);
+                      }
+                      originalSrc.set.call(this, value);
+                    }
+                  });
+                }
+              } catch (srcError) {
+                console.log('Redirectinator Advanced: Could not override script src property:', srcError.message);
               }
-              return originalSrc.set.call(this, value);
             }
-          });
-        }
 
-        return element;
-      };
+            return element;
+          };
+        }
+      } catch (error) {
+        console.log('Redirectinator Advanced: Could not override document.createElement:', error.message);
+      }
     }
 
     recordRedirect(method, from, to) {

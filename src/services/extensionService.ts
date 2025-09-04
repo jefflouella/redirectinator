@@ -291,7 +291,7 @@ class ExtensionService {
         // Method 1: Direct runtime communication (works if extension is loaded)
         console.log('🔗 Using direct runtime communication for URL analysis');
         chrome.runtime.sendMessage({
-          type: 'WEB_APP_ANALYZE_URL',
+          type: 'ANALYZE_URL_REQUEST',
           url: url,
           options: options,
           requestId: requestId

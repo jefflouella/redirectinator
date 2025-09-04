@@ -3,20 +3,278 @@
  * Handles URL analysis, tab management, and communication with web app
  */
 
+// Background script initialization
 console.log('🔧 Redirectinator Advanced Background Script Loading...');
 
-// Test if we're running
-chrome.runtime.onStartup?.addListener(() => {
-  console.log('🔧 Redirectinator Advanced: Extension started');
-});
-
-chrome.runtime.onInstalled?.addListener(() => {
+// Initialize extension
+chrome.runtime.onInstalled.addListener(() => {
   console.log('🔧 Redirectinator Advanced: Extension installed/reloaded');
 });
 
-console.log('🔧 Redirectinator Advanced Background Script Loaded Successfully');
-console.log('🔧 Extension ID:', chrome.runtime.id);
-console.log('🔧 Manifest:', chrome.runtime.getManifest());
+// Get extension info
+chrome.management.getSelf((info) => {
+  console.log('🔧 Redirectinator Advanced Background Script Loaded Successfully');
+  console.log('🔧 Extension ID:', info.id);
+  console.log('🔧 Manifest:', info.manifest);
+});
+
+// Track redirects during navigation (global scope)
+const navigationRedirects = new Map();
+
+// Track analysis results from each navigation step
+const analysisResults = new Map();
+
+// Tab management system (like Redirect Path extension)
+const tabs = {};
+
+// Record client details (like Redirect Path extension)
+function recordClientDetails(request, sender) {
+  var tabId = sender.tab.id;
+  var tab = getTab(tabId);
+
+  if (request.userClicked) {
+    tab.userClicked = true;
+    console.log('🔍 User click recorded for tab:', tabId);
+  } else if (request.metaRefreshDetails) {
+    tab.meta[sender.tab.url] = request.metaRefreshDetails;
+    console.log('🔍 Meta refresh recorded for tab:', tabId, request.metaRefreshDetails);
+  }
+
+  setTab(tabId, tab);
+}
+
+// Get tab data (like Redirect Path extension)
+function getTab(tabId) {
+  if (typeof(tabs[tabId]) != 'undefined') {
+    return tabs[tabId];
+  }
+
+  // Not seen this tab, init it
+  return {
+    path: [],
+    meta: {},
+    serverClientSyncPath: {
+      client: {},
+      server: {}
+    },
+    previousClientRequest: null,
+    userClicked: false
+  };
+}
+
+// Set tab data (like Redirect Path extension)
+function setTab(tabId, tab) {
+  tabs[tabId] = tab;
+}
+
+// Get client request by URL (like Redirect Path extension)
+function getClientRequestByUrl(tabId, url) {
+  var tab = getTab(tabId);
+  return tab.serverClientSyncPath.client[url] || null;
+}
+
+// Get server request by URL (like Redirect Path extension)
+function getServerRequestByUrl(tabId, url) {
+  var tab = getTab(tabId);
+  return tab.serverClientSyncPath.server[url] || null;
+}
+
+// Set client request by URL (like Redirect Path extension)
+function setClientRequestByUrl(tabId, request) {
+  var tab = getTab(tabId);
+  tab.serverClientSyncPath.client[request.url] = request;
+  setTab(tabId, tab);
+}
+
+// Set server request by URL (like Redirect Path extension)
+function setServerRequestByUrl(tabId, request) {
+  var tab = getTab(tabId);
+  tab.serverClientSyncPath.server[request.url] = request;
+  setTab(tabId, tab);
+}
+
+// Server-client path sync (like Redirect Path extension)
+function onServerClientPathSync(tabId, url) {
+  // This "event" will execute when both final client (webNavigation) and server (webRequest) events have been received.
+  // We need data from both of the callbacks to determine what type of redirect this was, and if we need to reset the path etc.
+
+  var currentClientRequestDetails = getClientRequestByUrl(tabId, url);
+  var currentServerRequestDetails = getServerRequestByUrl(tabId, url);
+
+  // Both populated, we're clear to proceed.
+  if (currentClientRequestDetails && currentServerRequestDetails) {
+    console.log('🔍 Server-client sync for URL:', url);
+    
+    // Build the pathItem object with what we know so far
+    var pathItem = {
+      type: 'normal',
+      redirect_type: 'none',
+      status_code: currentServerRequestDetails.statusCode,
+      url: currentServerRequestDetails.url,
+      ip: (currentServerRequestDetails.ip) ? currentServerRequestDetails.ip : '(not available)',
+      headers: currentServerRequestDetails.responseHeaders,
+      status_line: currentServerRequestDetails.statusLine
+    };
+
+    var tab = getTab(tabId);
+
+    // Forward/back can get trapped by JS (pushState) so if we pick up that
+    // qualifier mark it as user generated (which it is)
+    if (currentClientRequestDetails.transitionQualifiers.indexOf('forward_back') !== -1) {
+      tab.userClicked = true;
+    }
+
+    // We got here from a client redirect, so the path hasn't ended yet. Also the user hasn't fired any click events
+    // on this page.
+    if (currentClientRequestDetails.transitionQualifiers.indexOf('client_redirect') !== -1 && tab.userClicked !== true) {
+      tab = setClientRedirectData(tab, currentClientRequestDetails);
+    }
+
+    tab.userClicked = false;
+
+    // Every time the path "syncs" like this, we can discard any of the meta data about
+    // the previous URLs in the path, we will "render" it down in to the path anyway.
+    tab.serverClientSyncPath = {
+      client: {},
+      server: {}
+    };
+
+    recordPathItem(tabId, pathItem);
+    tab.previousClientRequest = currentClientRequestDetails;
+    setTab(tabId, tab);
+  }
+}
+
+// Set client redirect data (like Redirect Path extension)
+function setClientRedirectData(tab, currentClientRequestDetails) {
+  // Btw, we're editing the pathItem for the PREVIOUS client request to set the details of the
+  // client request it initiated. Get the path, as well as the previous client
+  // request to match urls and what not.
+  if (tab.previousClientRequest) {
+    var indexToModify = tab.path.map(function (el, idx) {
+      return el.url;
+    }).lastIndexOf(tab.previousClientRequest.url);
+
+    // lastIndexOf above so we get the most recent client url. This only matters
+    // in a refresh scenario where using indexOf doesn't work.
+
+    var pathItemToModify = tab.path[indexToModify];
+
+    pathItemToModify.type = 'client_redirect';
+    pathItemToModify.redirect_type = 'javascript';
+
+    // Default, set the redirect url to the current client URL, but this
+    // won't be correct if we got here via a server redirect. The next
+    // if takes care of that
+    pathItemToModify.redirect_url = currentClientRequestDetails.url;
+
+    // Set the redirect URL to the URL that came right after the last
+    // client request in the path if there is such a thing. Picks up
+    // client > server redirects.
+    if (tab.path[(indexToModify + 1)]) {
+      pathItemToModify.redirect_url = tab.path[(indexToModify + 1)].url;
+    }
+
+    if (typeof(tab.meta[tab.previousClientRequest.url]) !== 'undefined') {
+      var metaInformation = tab.meta[tab.previousClientRequest.url];
+
+      pathItemToModify.redirect_type = 'meta'
+      pathItemToModify.redirect_url = metaInformation.url;
+      pathItemToModify.meta_timer = metaInformation.timer;
+    }
+
+    tab.path[indexToModify] = pathItemToModify;
+  }
+
+  return tab;
+}
+
+// Record path item (like Redirect Path extension)
+function recordPathItem(tabId, pathItem) {
+  if (tabId > 0) {
+    var tab = getTab(tabId);
+
+    tab.lastactive = new Date().getTime();
+
+    // Fill in optional stuff
+    pathItem.redirect_url = pathItem.redirect_url || null;
+    pathItem.meta_timer = pathItem.meta_timer || null;
+
+    tab.path.push(pathItem);
+
+    // Limit the path to 20 steps.
+    if (tab.path.length > 20) {
+      var step = tab.path.shift();
+      console.info(tabId, 'Path was too long - removed the first step on the path', step);
+    }
+
+    setTab(tabId, tab);
+    
+    console.log('🔍 Path item recorded:', pathItem);
+  }
+}
+
+// Set up webRequest listeners to capture HTTP redirects (following Redirect Path extension pattern)
+console.log('🔍 Setting up WebRequest API listeners for redirect detection...');
+
+try {
+  // Define request filter for main frame requests only
+  const REQUEST_FILTER = {'urls': ['<all_urls>'], 'types': ['main_frame']};
+  const EXTRA_INFO = ['responseHeaders'];
+
+  // Listen for redirects using webRequest API (like Redirect Path extension)
+  chrome.webRequest.onBeforeRedirect.addListener((details) => {
+    if (details.frameType == "outermost_frame") { 
+      console.log('🔍 HTTP redirect detected via webRequest:', {
+        from: details.url,
+        to: details.redirectUrl,
+        statusCode: details.statusCode,
+        type: details.type,
+        tabId: details.tabId
+      });
+      
+      recordPathItem(details.tabId, {
+        type: 'server_redirect',
+        redirect_type: details.statusCode,
+        status_code: details.statusCode,
+        url: details.url,
+        redirect_url: details.redirectUrl,
+        ip: (details.ip) ? details.ip : '(not available)',
+        headers: details.responseHeaders,
+        status_line: details.statusLine
+      });
+    }
+  }, REQUEST_FILTER, EXTRA_INFO);
+
+  // Listen for completed requests (like Redirect Path extension)
+  chrome.webRequest.onCompleted.addListener((details) => {
+    if (details.frameType == "outermost_frame") {
+      console.log('🔍 Request completed:', details.url, 'Status:', details.statusCode);
+      setServerRequestByUrl(details.tabId, details);
+      onServerClientPathSync(details.tabId, details.url);
+    }
+  }, REQUEST_FILTER, EXTRA_INFO);
+
+  // Also use webNavigation for additional navigation events (like Redirect Path extension)
+  if (chrome.webNavigation && chrome.webNavigation.onCommitted) {
+    chrome.webNavigation.onCommitted.addListener(async (details) => {
+      if (details.frameId === 0) { // Main frame only
+        console.log('🔍 Navigation committed:', details.url, 'Type:', details.transitionType);
+        
+        // Set client request by URL (like Redirect Path extension)
+        setClientRequestByUrl(details.tabId, details);
+        
+        // Sync server and client data (like Redirect Path extension)
+        onServerClientPathSync(details.tabId, details.url);
+      }
+    });
+  }
+  
+  console.log('✅ WebRequest API listeners initialized successfully');
+} catch (error) {
+  console.warn('⚠️ Error setting up WebRequest API listeners:', error);
+  console.log('🔄 Falling back to basic redirect detection methods');
+}
 
 class UrlAnalysisQueue {
   constructor(maxConcurrent = 3) {
@@ -234,14 +492,14 @@ async function performAnalysis(url, options = {}) {
       const httpRedirects = await followHttpRedirects(url, options.maxRedirects || 10);
       console.log('🔍 HTTP redirects found:', httpRedirects);
 
-      // Step 2: Create tab to analyze the final page for client-side redirects
-      console.log('🔍 Step 2: Creating tab for client-side analysis...');
+      // Step 2: Create tab with ORIGINAL URL to capture meta refresh and JavaScript redirects
+      console.log('🔍 Step 2: Creating tab with original URL for early detection...');
       try {
         tab = await chrome.tabs.create({
-          url: httpRedirects.finalUrl,
+          url: url, // Use original URL, not final URL
           active: false
         });
-        console.log('🔍 Tab created with ID:', tab.id);
+        console.log('🔍 Tab created with ID:', tab.id, 'and original URL:', url);
       } catch (tabError) {
         console.error('❌ Failed to create tab:', tabError);
         throw new Error(`Failed to create analysis tab: ${tabError.message}`);
@@ -250,8 +508,21 @@ async function performAnalysis(url, options = {}) {
       // Store analysis reference
       activeAnalyses.set(tab.id, results);
 
-      // Wait for page to load
-      console.log('🔍 Waiting for tab to load...');
+      // Inject content script IMMEDIATELY after tab creation to ensure it runs on original page
+      console.log('🔍 Injecting content script IMMEDIATELY after tab creation for original page detection...');
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['src/content.js']
+        });
+        console.log('✅ Content script injected successfully into original page');
+      } catch (injectError) {
+        console.error('❌ Failed to inject content script:', injectError);
+        // Continue without content script analysis
+      }
+
+      // Wait for page to load and navigate through redirects
+      console.log('🔍 Waiting for tab to load and navigate through redirects...');
       try {
         await waitForTabLoad(tab.id, options.timeout || 15000);
         console.log('✅ Tab loaded successfully');
@@ -260,7 +531,7 @@ async function performAnalysis(url, options = {}) {
         throw new Error(`Tab load timeout: ${loadError.message}`);
       }
 
-      // Get final URL from tab
+      // Get final URL from tab after all redirects
       const tabInfo = await chrome.tabs.get(tab.id);
       results.finalUrl = tabInfo.url;
       console.log('🔍 Final URL after navigation:', results.finalUrl);
@@ -269,36 +540,23 @@ async function performAnalysis(url, options = {}) {
       results.httpRedirects = httpRedirects.redirects || [];
       console.log('🔍 HTTP redirects stored:', results.httpRedirects.length);
 
-    // Inject content script for client-side analysis
-    console.log('🔍 Injecting content script...');
-    try {
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['src/content.js']
-      });
-      console.log('✅ Content script injected successfully');
-    } catch (injectError) {
-      console.error('❌ Failed to inject content script:', injectError);
-      // Continue without content script analysis
-    }
+    // Wait for content script to initialize and analyze the original page
+    console.log('🔍 Waiting for content script to analyze original page...');
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Give more time for detection
 
-    // Wait for content script to initialize and analyze
-    console.log('🔍 Waiting for content script to initialize...');
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Get analysis results from content script
-    console.log('🔍 Requesting analysis from content script...');
+    // Get analysis results from content script BEFORE navigation
+    console.log('🔍 Requesting analysis from content script on original page...');
     let analysisResults = {};
     try {
       analysisResults = await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
-          console.warn('⏰ Content script analysis timeout');
+          console.warn('⏰ Content script analysis timeout on original page');
           resolve({}); // Resolve with empty results instead of rejecting
-        }, 8000);
+        }, 10000);
 
         function messageHandler(message) {
           if (message.type === 'CONTENT_ANALYSIS_COMPLETE' && message.tabId === tab.id) {
-            console.log('✅ Content script analysis complete:', message.data);
+            console.log('✅ Content script analysis complete on original page:', message.data);
             clearTimeout(timeout);
             chrome.runtime.onMessage.removeListener(messageHandler);
             resolve(message.data);
@@ -324,6 +582,9 @@ async function performAnalysis(url, options = {}) {
       console.error('❌ Content script analysis failed:', analysisError);
       analysisResults = {}; // Continue with empty analysis results
     }
+
+    // Store the analysis results from the original page
+    console.log('🔍 Analysis results from original page:', analysisResults);
 
     // Build comprehensive redirect chain
     console.log('🔍 Building comprehensive redirect chain...');
@@ -352,6 +613,72 @@ async function performAnalysis(url, options = {}) {
           timestamp: redirect.timestamp || Date.now()
         });
       });
+    }
+
+    // Add HTTP redirects captured during navigation via webRequest
+    const tabNavigationRedirects = navigationRedirects.get(tab.id) || [];
+    if (tabNavigationRedirects.length > 0) {
+      console.log('🔍 Adding webRequest-captured redirects:', tabNavigationRedirects.length);
+      tabNavigationRedirects.forEach((redirect, index) => {
+        redirectChain.push({
+          step: redirectChain.length,
+          url: redirect.url,
+          type: 'http_redirect',
+          statusCode: redirect.statusCode,
+          method: redirect.method || 'GET',
+          from: redirect.url,
+          targetUrl: redirect.targetUrl,
+          timestamp: redirect.timestamp
+        });
+      });
+    }
+
+    // Add redirects derived from Redirect Path style tab path data
+    try {
+      const tabData = getTab(tab.id);
+      if (tabData && Array.isArray(tabData.path) && tabData.path.length > 0) {
+        console.log('🔍 Merging Redirect Path tab path items:', tabData.path.length);
+        tabData.path.forEach((item) => {
+          if (item.type === 'server_redirect') {
+            redirectChain.push({
+              step: redirectChain.length,
+              url: item.url,
+              type: 'http_redirect',
+              statusCode: item.status_code,
+              method: 'GET',
+              from: item.url,
+              targetUrl: item.redirect_url || undefined,
+              timestamp: Date.now()
+            });
+          } else if (item.type === 'client_redirect') {
+            if (item.redirect_type === 'meta') {
+              redirectChain.push({
+                step: redirectChain.length,
+                url: item.redirect_url || item.url,
+                type: 'meta_refresh',
+                method: 'meta',
+                from: item.url,
+                targetUrl: item.redirect_url || undefined,
+                delay: item.meta_timer ? parseInt(item.meta_timer) || 0 : undefined,
+                timestamp: Date.now()
+              });
+            } else {
+              // javascript
+              redirectChain.push({
+                step: redirectChain.length,
+                url: item.redirect_url || item.url,
+                type: 'javascript',
+                method: 'javascript',
+                from: item.url,
+                targetUrl: item.redirect_url || undefined,
+                timestamp: Date.now()
+              });
+            }
+          }
+        });
+      }
+    } catch (mergeErr) {
+      console.warn('⚠️ Failed to merge tab path items:', mergeErr);
     }
 
     // Add meta refresh redirects from content script
@@ -421,6 +748,7 @@ async function performAnalysis(url, options = {}) {
         console.warn('Could not remove tab:', e);
       }
       activeAnalyses.delete(tab.id);
+      navigationRedirects.delete(tab.id); // Clean up navigation redirects
     }
 
     results.analysisTime = Date.now() - startTime;
@@ -463,7 +791,9 @@ async function performAnalysis(url, options = {}) {
  * Handle messages from web app and content scripts
  */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('Background script received message:', request.type, request);
+  console.log('🔍 Background script received message:', request.type, request);
+  console.log('🔍 Sender:', sender);
+  console.log('🔍 Message details:', { type: request.type, hasType: !!request.type, keys: Object.keys(request) });
 
   if (request.type === 'WEB_APP_ANALYZE_URL') {
     console.log('Processing URL analysis request:', request.url);
@@ -492,22 +822,90 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
+  // Handle meta refresh detection (like Redirect Path extension)
+  if (request.name === 'metaRefreshDetect') {
+    console.log('🔍 Received metaRefreshDetect message:', request);
+    recordClientDetails(request, sender);
+    sendResponse({ received: true });
+    return true;
+  }
+
   if (request.type === 'GET_HEALTH_REPORT') {
     // Return extension health metrics
     sendResponse(healthMonitor.getHealthReport());
     return true;
   }
 
+  if (request.type === 'CLEAR_CACHE') {
+    // Clear the analysis cache
+    try {
+      analysisCache.clear();
+      console.log('🧹 Analysis cache cleared via popup request');
+      sendResponse({ success: true, message: 'Cache cleared successfully' });
+    } catch (error) {
+      console.error('❌ Error clearing cache:', error);
+      sendResponse({ success: false, error: error.message });
+    }
+    return true;
+  }
+
   if (request.type === 'PING') {
-    console.log('🏓 Received PING from web app');
-    sendResponse({
+    console.log('🏓 Received PING from web app - responding with PONG');
+    const response = {
       type: 'PONG',
       version: '1.0.0-local',
       timestamp: Date.now(),
       status: 'active',
       extensionId: chrome.runtime.id
-    });
+    };
+    console.log('🏓 Sending PONG response:', response);
+    sendResponse(response);
     return true;
+  }
+
+  // Handle ANALYZE_URL_REQUEST (for main app communication)
+  if (request.type === 'ANALYZE_URL_REQUEST') {
+    console.log('🔍 Runtime: Received ANALYZE_URL_REQUEST from main app:', request.url);
+    
+    const responseTabId = sender?.tab?.id;
+    const requestId = request.requestId;
+
+    try {
+      console.log('🔍 Runtime: Starting performAnalysis for main app...');
+
+      // Perform the analysis
+      performAnalysis(request.url, request.options || {})
+        .then(result => {
+          console.log('🔍 Runtime: Analysis completed successfully for main app');
+          
+          // Send response via sendResponse for runtime messages
+          sendResponse({
+            success: true,
+            result: result
+          });
+        })
+        .catch(error => {
+          console.error('❌ Runtime: Analysis failed for main app:', error);
+          
+          // Send error response via sendResponse for runtime messages
+          sendResponse({
+            success: false,
+            error: error.message
+          });
+        });
+
+      // Return true to keep message channel open for async response
+      return true;
+    } catch (syncError) {
+      console.error('❌ Runtime: Synchronous error in ANALYZE_URL_REQUEST handler:', syncError);
+      
+      // Send synchronous error response
+      sendResponse({
+        success: false,
+        error: `Synchronous error: ${syncError.message}`
+      });
+      return true;
+    }
   }
 
   if (request.type === 'GET_INFO') {
@@ -547,63 +945,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  if (request.type === 'ANALYZE_URL_REQUEST') {
-    console.log('🔍 Runtime: Received ANALYZE_URL_REQUEST from content script:', request.url);
-    const responseTabId = sender?.tab?.id;
-    const requestId = request.requestId;
-
-    try {
-      console.log('🔍 Runtime: Starting performAnalysis...');
-
-      // Fire and forget analysis; immediately ACK to keep the sender free
-      sendResponse({ accepted: true });
-
-      performAnalysis(request.url, request.options || {})
-        .then(result => {
-          console.log('🔍 Runtime: Tab analysis completed successfully');
-          if (responseTabId != null) {
-            console.log('🔍 Runtime: Posting ANALYZE_URL_RESULT to tab', responseTabId);
-            chrome.tabs.sendMessage(responseTabId, {
-              type: 'ANALYZE_URL_RESULT',
-              requestId,
-              success: true,
-              result
-            });
-          } else {
-            console.warn('⚠️ No sender tab available to return results');
-          }
-        })
-        .catch(error => {
-          console.error('❌ Runtime: Tab analysis failed:', error);
-          if (responseTabId != null) {
-            chrome.tabs.sendMessage(responseTabId, {
-              type: 'ANALYZE_URL_RESULT',
-              requestId,
-              success: false,
-              error: error.message
-            });
-          }
-        });
-
-      // Return true just in case, although we already ACKed
-      return true;
-    } catch (syncError) {
-      console.error('❌ Runtime: Synchronous error in ANALYZE_URL_REQUEST handler:', syncError);
-      try {
-        if (sender?.tab?.id != null) {
-          chrome.tabs.sendMessage(sender.tab.id, {
-            type: 'ANALYZE_URL_RESULT',
-            requestId,
-            success: false,
-            error: `Synchronous error: ${syncError.message}`
-          });
-        }
-      } catch (e) {
-        console.error('❌ Failed to send synchronous error to tab:', e);
-      }
-      return true;
-    }
-  }
+  // ANALYZE_URL_REQUEST handler moved above to handle both main app and content script requests
 
   if (request.type === 'TEST_CONNECTION') {
     console.log('🧪 Received TEST_CONNECTION from web app');
