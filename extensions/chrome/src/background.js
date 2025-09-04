@@ -465,14 +465,31 @@ async function performAnalysis(url, options = {}) {
     console.log('🔍 No cached result found, proceeding with analysis');
 
     const startTime = Date.now();
+    // Helper function to clean malformed URLs
+    const cleanUrl = (url) => {
+      if (!url || typeof url !== 'string') return null;
+      
+      // Remove malformed patterns like "https://www.https://www.https://www."
+      const cleaned = url.replace(/^(https?:\/\/[^\/]*?)(\1)+/g, '$1');
+      
+      try {
+        new URL(cleaned);
+        return cleaned;
+      } catch {
+        return null;
+      }
+    };
+
+    const cleanOriginalUrl = cleanUrl(url) || url;
+    
     const results = {
-      originalUrl: url,
+      originalUrl: cleanOriginalUrl,
       startTime,
       redirectChain: [],
       httpRedirects: [],
       metaRefresh: null,
       javascriptRedirects: [],
-      finalUrl: url,
+      finalUrl: cleanOriginalUrl,
       finalStatusCode: null,
       analysisTime: 0,
       status: 'pending',
@@ -533,7 +550,8 @@ async function performAnalysis(url, options = {}) {
 
       // Get final URL from tab after all redirects
       const tabInfo = await chrome.tabs.get(tab.id);
-      results.finalUrl = tabInfo.url;
+      const cleanFinalUrl = cleanUrl(tabInfo.url);
+      results.finalUrl = cleanFinalUrl || tabInfo.url;
       console.log('🔍 Final URL after navigation:', results.finalUrl);
 
       // Store HTTP redirects from the chain following
@@ -639,40 +657,46 @@ async function performAnalysis(url, options = {}) {
       if (tabData && Array.isArray(tabData.path) && tabData.path.length > 0) {
         console.log('🔍 Merging Redirect Path tab path items:', tabData.path.length);
         tabData.path.forEach((item) => {
-          if (item.type === 'server_redirect') {
+          const cleanItemUrl = cleanUrl(item.url);
+          const cleanRedirectUrl = cleanUrl(item.redirect_url);
+          
+          if (item.type === 'server_redirect' && cleanItemUrl) {
             redirectChain.push({
               step: redirectChain.length,
-              url: item.url,
+              url: cleanItemUrl,
               type: 'http_redirect',
               statusCode: item.status_code,
               method: 'GET',
-              from: item.url,
-              targetUrl: item.redirect_url || undefined,
+              from: cleanItemUrl,
+              targetUrl: cleanRedirectUrl || undefined,
               timestamp: Date.now()
             });
           } else if (item.type === 'client_redirect') {
-            if (item.redirect_type === 'meta') {
-              redirectChain.push({
-                step: redirectChain.length,
-                url: item.redirect_url || item.url,
-                type: 'meta_refresh',
-                method: 'meta',
-                from: item.url,
-                targetUrl: item.redirect_url || undefined,
-                delay: item.meta_timer ? parseInt(item.meta_timer) || 0 : undefined,
-                timestamp: Date.now()
-              });
-            } else {
-              // javascript
-              redirectChain.push({
-                step: redirectChain.length,
-                url: item.redirect_url || item.url,
-                type: 'javascript',
-                method: 'javascript',
-                from: item.url,
-                targetUrl: item.redirect_url || undefined,
-                timestamp: Date.now()
-              });
+            const clientUrl = cleanRedirectUrl || cleanItemUrl;
+            if (clientUrl) {
+              if (item.redirect_type === 'meta') {
+                redirectChain.push({
+                  step: redirectChain.length,
+                  url: clientUrl,
+                  type: 'meta_refresh',
+                  method: 'meta',
+                  from: cleanItemUrl || clientUrl,
+                  targetUrl: cleanRedirectUrl || undefined,
+                  delay: item.meta_timer ? parseInt(item.meta_timer) || 0 : undefined,
+                  timestamp: Date.now()
+                });
+              } else {
+                // javascript
+                redirectChain.push({
+                  step: redirectChain.length,
+                  url: clientUrl,
+                  type: 'javascript',
+                  method: 'javascript',
+                  from: cleanItemUrl || clientUrl,
+                  targetUrl: cleanRedirectUrl || undefined,
+                  timestamp: Date.now()
+                });
+              }
             }
           }
         });
