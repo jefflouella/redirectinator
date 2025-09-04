@@ -156,25 +156,45 @@ export class RedirectChecker {
       step.statusCode || 200
     ) || [extensionResult.finalStatusCode || 200];
 
+    // Helper function to validate and clean URLs
+    const cleanUrl = (url: string): string | null => {
+      if (!url || typeof url !== 'string') return null;
+      
+      // Remove malformed patterns like "https://www.https://www.https://www."
+      const cleaned = url.replace(/^(https?:\/\/[^\/]*?)(\1)+/g, '$1');
+      
+      try {
+        new URL(cleaned);
+        return cleaned;
+      } catch {
+        return null;
+      }
+    };
+
     // Build complete redirect chain including HTTP redirects and client-side redirects
     const redirectChain: string[] = [];
     
-    // Start with original URL
-    redirectChain.push(extensionResult.originalUrl);
+    // Start with original URL (clean it)
+    const originalUrl = cleanUrl(extensionResult.originalUrl);
+    if (originalUrl) {
+      redirectChain.push(originalUrl);
+    }
     
     // Add redirects from the chain (support different step shapes)
     if (extensionResult.redirectChain?.length > 0) {
       extensionResult.redirectChain.forEach((step: any) => {
         const target = step.targetUrl || step.to || step.url;
-        if (target && !redirectChain.includes(target)) {
-          redirectChain.push(target);
+        const cleanedTarget = cleanUrl(target);
+        if (cleanedTarget && !redirectChain.includes(cleanedTarget)) {
+          redirectChain.push(cleanedTarget);
         }
       });
     }
     
     // Add final URL if different and not already included
-    if (extensionResult.finalUrl && !redirectChain.includes(extensionResult.finalUrl)) {
-      redirectChain.push(extensionResult.finalUrl);
+    const finalUrl = cleanUrl(extensionResult.finalUrl);
+    if (finalUrl && !redirectChain.includes(finalUrl)) {
+      redirectChain.push(finalUrl);
     }
     
     console.log('🔍 Built redirect chain:', redirectChain);
@@ -193,9 +213,9 @@ export class RedirectChecker {
 
     return {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      startingUrl: extensionResult.originalUrl,
+      startingUrl: originalUrl || extensionResult.originalUrl,
       targetRedirect: '', // Not applicable for extension results
-      finalUrl: extensionResult.finalUrl || extensionResult.originalUrl,
+      finalUrl: finalUrl || originalUrl || extensionResult.originalUrl,
       result: redirectCount > 0 ? 'redirect' : 'direct',
       httpStatus: extensionResult.finalStatusCode?.toString() || '200',
       finalStatusCode: extensionResult.finalStatusCode || 200,
