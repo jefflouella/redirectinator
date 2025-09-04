@@ -1477,6 +1477,14 @@ app.get('/api/health', (req, res) => {
 
   // Listing endpoints
   app.get(toUrl('/list.json'), (req, res) => res.json(mappings));
+  app.get('/api/redirect-tests/list', (req, res) => {
+    const format = (req.query.format || 'csv').toString();
+    if (format === 'json') {
+      return res.json(mappings);
+    }
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(mappings.map(m => `${m.start}, ${m.target || TARGET}`).join('\n'));
+  });
   app.get(toUrl('/list.csv'), (req, res) => {
     res.setHeader('Content-Type', 'text/plain');
     res.send(mappings.map(m => `${m.start}, ${m.target || TARGET}`).join('\n'));

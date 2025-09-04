@@ -9,6 +9,8 @@
     }
   },
   "routes": [
+    { "src": "/redirect-tests/list\\.csv", "dest": "/api/redirect-tests/list?format=csv" },
+    { "src": "/redirect-tests/list\\.json", "dest": "/api/redirect-tests/list?format=json" },
     { "src": "/api/(.*)", "dest": "/api/$1" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
