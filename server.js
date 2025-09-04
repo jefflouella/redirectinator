@@ -1476,7 +1476,9 @@ app.get('/api/health', (req, res) => {
   register('/messy-5', http(302, toUrl('/loop-start')), toUrl('/loop-start'));
 
   // Listing endpoints
+  // Plain JSON at static path for local/dev
   app.get(toUrl('/list.json'), (req, res) => res.json(mappings));
+  // API route for Vercel and direct use
   app.get('/api/redirect-tests/list', (req, res) => {
     const format = (req.query.format || 'csv').toString();
     if (format === 'json') {
@@ -1485,7 +1487,13 @@ app.get('/api/health', (req, res) => {
     res.setHeader('Content-Type', 'text/plain');
     res.send(mappings.map(m => `${m.start}, ${m.target || TARGET}`).join('\n'));
   });
+  // Static CSV at path for local/dev
   app.get(toUrl('/list.csv'), (req, res) => {
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(mappings.map(m => `${m.start}, ${m.target || TARGET}`).join('\n'));
+  });
+  // Catch-all for /redirect-tests/list to route to API (for environments where rewrites vary)
+  app.get(toUrl('/list'), (req, res) => {
     res.setHeader('Content-Type', 'text/plain');
     res.send(mappings.map(m => `${m.start}, ${m.target || TARGET}`).join('\n'));
   });
