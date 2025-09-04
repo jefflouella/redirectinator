@@ -133,6 +133,9 @@ app.use(express.static('dist'));
 // Serve public assets
 app.use('/public', express.static('public'));
 
+// Serve test assets
+app.use('/redirect-tests', express.static('redirect-tests'));
+
 
 
 // Import comprehensive affiliate database
@@ -1402,6 +1405,83 @@ app.post('/api/check-redirect', async (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
+
+/**
+ * Redirect test suite
+ * All endpoints live under /redirect-tests and redirect to /redirect-tests/target by default
+ */
+(() => {
+  const TEST_BASE = '/redirect-tests';
+  const mappings = [];
+
+  function toUrl(path) {
+    return `${TEST_BASE}${path.startsWith('/') ? '' : '/'}${path}`;
+  }
+
+  // Target page
+  app.get(toUrl('/target'), (req, res) => {
+    res.status(200).send('<h1>Redirect Test Target</h1>');
+  });
+
+  const TARGET = toUrl('/target');
+
+  // Helpers
+  function register(path, handler, recordTo) {
+    app.get(toUrl(path), handler);
+    if (recordTo) mappings.push({ start: toUrl(path), target: recordTo });
+  }
+  const http = (code, dest) => (req, res) => res.redirect(code, dest);
+  const meta = (dest) => (req, res) => res
+      .status(200)
+      .send(`<!doctype html><meta http-equiv="refresh" content="0; url=${dest}"><title>Meta</title>`);
+  const js = (dest) => (req, res) => res
+      .status(200)
+      .send(`<!doctype html><script>location.replace('${dest}')</script><title>JS</title>`);
+
+  // One-hop
+  register('/301-1', http(301, TARGET), TARGET);
+  register('/302-1', http(302, TARGET), TARGET);
+  register('/307-1', http(307, TARGET), TARGET);
+  register('/308-1', http(308, TARGET), TARGET);
+  register('/meta-1', meta(TARGET), TARGET);
+  register('/js-1', js(TARGET), TARGET);
+
+  // Two-hop (HTTP -> HTTP)
+  register('/301-2', http(301, toUrl('/302-1')), toUrl('/302-1'));
+  register('/302-2', http(302, toUrl('/307-1')), toUrl('/307-1'));
+  register('/307-2', http(307, toUrl('/308-1')), toUrl('/308-1'));
+  register('/308-2', http(308, toUrl('/301-1')), toUrl('/301-1'));
+
+  // Mixed two-hop
+  register('/meta-to-301', meta(toUrl('/301-1')), toUrl('/301-1'));
+  register('/js-to-302', js(toUrl('/302-1')), toUrl('/302-1'));
+
+  // Six-hop chain
+  register('/six-http', http(301, toUrl('/a1')), toUrl('/a1'));
+  register('/a1', http(302, toUrl('/a2')));
+  register('/a2', http(307, toUrl('/a3')));
+  register('/a3', http(308, toUrl('/a4')));
+  register('/a4', http(301, toUrl('/a5')));
+  register('/a5', http(302, TARGET));
+
+  // Loop
+  register('/loop-start', http(301, toUrl('/loop-b')), toUrl('/loop-b'));
+  register('/loop-b', http(302, toUrl('/loop-start')));
+
+  // Messy scenarios
+  register('/messy-1', http(307, toUrl('/meta-to-301')), toUrl('/meta-to-301'));
+  register('/messy-2', js(toUrl('/six-http')), toUrl('/six-http'));
+  register('/messy-3', http(301, toUrl('/js-to-302')), toUrl('/js-to-302'));
+  register('/messy-4', meta(toUrl('/308-2')), toUrl('/308-2'));
+  register('/messy-5', http(302, toUrl('/loop-start')), toUrl('/loop-start'));
+
+  // Listing endpoints
+  app.get(toUrl('/list.json'), (req, res) => res.json(mappings));
+  app.get(toUrl('/list.csv'), (req, res) => {
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(mappings.map(m => `${m.start}, ${m.target || TARGET}`).join('\n'));
+  });
+})();
 
 // Note: For development, run 'npm run dev' to serve the frontend
 // For production, the catch-all route would be added here
