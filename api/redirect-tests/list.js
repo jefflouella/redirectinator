@@ -1,4 +1,4 @@
-module.exports = function handler(req, res) {
+export default function handler(req, res) {
   try {
     const inferredProto = (req.connection && req.connection.encrypted) ? 'https' : 'http';
     const proto = (req.headers['x-forwarded-proto'] || inferredProto || 'https').toString();
@@ -30,5 +30,5 @@ module.exports = function handler(req, res) {
   } catch (e) {
     res.status(500).json({ error: 'failed', message: e.message });
   }
-};
+}
 // Cleanup stale experimental export left over from previous edits
