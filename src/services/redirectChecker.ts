@@ -39,6 +39,21 @@ export class RedirectChecker {
     return this.mode;
   }
 
+  // Helper function to clean malformed URLs
+  private cleanUrl(url: string): string | null {
+    if (!url || typeof url !== 'string') return null;
+    
+    // Remove malformed patterns like "https://www.https://www.https://www."
+    const cleaned = url.replace(/^(https?:\/\/[^\/]*?)(\1)+/g, '$1');
+    
+    try {
+      new URL(cleaned);
+      return cleaned;
+    } catch {
+      return null;
+    }
+  }
+
   // Toggle between modes
   toggleMode() {
     this.mode = this.mode === 'default' ? 'advanced' : 'default';
@@ -50,8 +65,11 @@ export class RedirectChecker {
     const startTime = performance.now();
     const id = crypto.randomUUID();
     
+    // Clean the starting URL before processing
+    const cleanStartingUrl = this.cleanUrl(startingUrl) || startingUrl;
+    
     try {
-      const result = await this.performRedirectCheck(startingUrl);
+      const result = await this.performRedirectCheck(cleanStartingUrl);
       const responseTime = Math.round(performance.now() - startTime);
       
       // Small guard: prefer extension-computed fields when present
@@ -61,11 +79,11 @@ export class RedirectChecker {
         (result as any).numberOfRedirects ?? (result as any).redirectCount ?? 0;
       const resolvedStatusChain: string[] = (result as any).statusChain ?? [];
       const resolvedFinalStatus: number = (result as any).finalStatusCode ?? 200;
-      const resolvedFinalUrl: string = (result as any).finalUrl ?? startingUrl;
+      const resolvedFinalUrl: string = this.cleanUrl((result as any).finalUrl) || (result as any).finalUrl || cleanStartingUrl;
 
       return {
         id,
-        startingUrl,
+        startingUrl: cleanStartingUrl,
         targetRedirect,
         finalUrl: resolvedFinalUrl,
         result: resolvedResult,
@@ -96,7 +114,7 @@ export class RedirectChecker {
       
       return {
         id,
-        startingUrl,
+        startingUrl: cleanStartingUrl,
         targetRedirect,
         finalUrl: '',
         result: 'error',
