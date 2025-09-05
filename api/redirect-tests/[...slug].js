@@ -1,7 +1,4 @@
 export default function handler(req, res) {
-  // Debug logging
-  console.log('API Route hit:', req.url, req.query);
-  
   const inferredProto = (req.connection && req.connection.encrypted) ? 'https' : 'http';
   const proto = (req.headers['x-forwarded-proto'] || inferredProto || 'https').toString();
   const host = req.headers.host || 'localhost';
@@ -12,8 +9,6 @@ export default function handler(req, res) {
     ? req.query.slug
     : (req.query.slug ? [req.query.slug] : []);
   const slug = parts.join('/') || '';
-  
-  console.log('Slug:', slug);
 
   const absolute = (p) => p.startsWith('http') ? p : `${baseTests}/${p}`;
 
@@ -37,7 +32,7 @@ export default function handler(req, res) {
 
   const target = 'target';
 
-  // Routing table
+  // Dynamic routing based on URL pattern
   switch (slug) {
     case 'target':
       res.statusCode = 200;
@@ -45,12 +40,13 @@ export default function handler(req, res) {
       res.end('<h1>Redirect Test Target</h1>');
       return;
 
-    // One hop HTTP
+    // One hop HTTP redirects
     case '301-1': return redirect(301, target);
     case '302-1': return redirect(302, target);
     case '307-1': return redirect(307, target);
     case '308-1': return redirect(308, target);
-    // One hop client-side
+    
+    // One hop client-side redirects
     case 'meta-1': return sendMeta(target);
     case 'js-1': return sendJs(target);
 
@@ -76,18 +72,45 @@ export default function handler(req, res) {
     case 'loop-start': return redirect(301, 'loop-b');
     case 'loop-b': return redirect(302, 'loop-start');
 
-    // Messy
+    // Messy combinations
     case 'messy-1': return redirect(307, 'meta-to-301');
     case 'messy-2': return sendJs('six-http');
     case 'messy-3': return redirect(301, 'js-to-302');
     case 'messy-4': return sendMeta('308-2');
     case 'messy-5': return redirect(302, 'loop-start');
+
+    // Generic redirect patterns for any URL
+    default:
+      // Check if slug matches common redirect patterns
+      if (slug.match(/^(\d{3})-(\d+)$/)) {
+        // Pattern: 301-1, 302-2, etc.
+        const [, code, hop] = slug.match(/^(\d{3})-(\d+)$/);
+        const statusCode = parseInt(code);
+        if (statusCode >= 300 && statusCode < 400) {
+          if (hop === '1') {
+            return redirect(statusCode, target);
+          } else {
+            return redirect(statusCode, `${code}-${parseInt(hop) - 1}`);
+          }
+        }
+      }
+      
+      if (slug.startsWith('meta-')) {
+        // Pattern: meta-anything
+        return sendMeta(target);
+      }
+      
+      if (slug.startsWith('js-')) {
+        // Pattern: js-anything
+        return sendJs(target);
+      }
+      
+      if (slug.startsWith('loop')) {
+        // Pattern: loop-anything
+        return redirect(301, 'loop-b');
+      }
+      
+      // Default: return a simple redirect
+      return redirect(302, target);
   }
-
-  // Not found
-  res.statusCode = 404;
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.end('Not found');
 }
-
-
