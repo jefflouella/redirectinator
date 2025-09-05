@@ -11,7 +11,7 @@
   "routes": [
     { "src": "/redirect-tests/list\\.csv", "dest": "/api/redirect-tests/list?format=csv" },
     { "src": "/redirect-tests/list\\.json", "dest": "/api/redirect-tests/list?format=json" },
-    { "src": "/redirect-tests/(.*)", "dest": "/api/redirect-tests/dynamic" },
+    { "src": "/redirect-tests/(.*)", "dest": "/api/redirect-tests/test?type=$1" },
     { "src": "/api/(.*)", "dest": "/api/$1" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }

@@ -8,6 +8,8 @@ export default function handler(req, res) {
   const slug = redirectTestsIndex >= 0 && redirectTestsIndex < pathParts.length - 1 
     ? pathParts[redirectTestsIndex + 1] 
     : '';
+  
+  console.log('Dynamic redirect handler:', { url: req.url, pathParts, slug });
 
   const inferredProto = (req.connection && req.connection.encrypted) ? 'https' : 'http';
   const proto = (req.headers['x-forwarded-proto'] || inferredProto || 'https').toString();
