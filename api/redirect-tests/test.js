@@ -1,6 +1,16 @@
 export default function handler(req, res) {
+  // Extract the path from the request to determine the redirect type
+  const url = new URL(req.url, `https://${req.headers.host}`);
+  const pathParts = url.pathname.split('/').filter(Boolean);
+  
+  // Find the slug part after /redirect-tests/
+  const redirectTestsIndex = pathParts.indexOf('redirect-tests');
+  const slug = redirectTestsIndex >= 0 && redirectTestsIndex < pathParts.length - 1 
+    ? pathParts[redirectTestsIndex + 1] 
+    : '';
+  
   const { 
-    type = 'http',           // http, meta, js, target
+    type = slug || 'http',   // http, meta, js, target
     code = '302',            // 301, 302, 307, 308
     target = 'target',       // target URL
     delay = '0',             // delay in ms
@@ -74,6 +84,34 @@ export default function handler(req, res) {
 </body>
 </html>`);
   };
+
+  // Handle specific test patterns
+  if (slug.match(/^(\d{3})-(\d+)$/)) {
+    // Pattern: 301-1, 302-2, etc.
+    const [, code, hop] = slug.match(/^(\d{3})-(\d+)$/);
+    const statusCode = parseInt(code);
+    if (statusCode >= 300 && statusCode < 400) {
+      if (hop === '1') {
+        return redirect(statusCode, target);
+      } else {
+        return redirect(statusCode, `${code}-${parseInt(hop) - 1}`);
+      }
+    }
+  }
+  
+  if (slug.startsWith('meta-')) {
+    // Pattern: meta-anything
+    return sendMeta(target, parseInt(delay) || 0);
+  }
+  
+  if (slug.startsWith('js-')) {
+    // Pattern: js-anything
+    return sendJs(target, parseInt(delay) || 100);
+  }
+  
+  if (slug === 'target') {
+    return showTarget();
+  }
 
   // Handle different redirect types
   switch (type) {
