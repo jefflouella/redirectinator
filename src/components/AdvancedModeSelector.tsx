@@ -308,19 +308,17 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
             <div className="flex flex-col items-center space-y-1">
               <button
                 onClick={handleModeToggle}
-                disabled={disabled || !extensionAvailable}
+                disabled={disabled}
                 className={`
                   relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
                   ${
                     currentMode === 'advanced'
                       ? 'bg-purple-600'
-                      : extensionAvailable
-                        ? 'bg-blue-600'
-                        : 'bg-gray-300 cursor-not-allowed'
+                      : 'bg-blue-600'
                   }
                   ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
-                title={`Extension available: ${extensionAvailable}, Disabled: ${disabled || !extensionAvailable}`}
+                title={`Extension available: ${extensionAvailable}, Disabled: ${disabled}`}
               >
                 <span
                   className={`
@@ -404,9 +402,22 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
                   <p className="text-xs text-gray-600 mb-1">
                     Advanced mode provides enhanced redirect detection capabilities.
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 mb-2">
                     💡 <strong>Note:</strong> Extension installation required for full functionality.
                   </p>
+                  <div className="space-y-2">
+                    <a
+                      href="/extensions/dist/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      📥 Download Extensions
+                    </a>
+                    <p className="text-xs text-gray-500">
+                      See installation guide for step-by-step instructions
+                    </p>
+                  </div>
                 </>
               )}
             </div>
