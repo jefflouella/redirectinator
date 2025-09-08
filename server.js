@@ -23,8 +23,8 @@ async function initBrowser() {
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
         '--no-zygote',
-        '--disable-gpu'
-      ]
+        '--disable-gpu',
+      ],
     });
   }
   return browser;
@@ -42,60 +42,60 @@ function isAffiliateLink(url) {
     'clickbank',
     'commissionjunction',
     'shareasale',
-    'rakuten'
+    'rakuten',
   ];
-  
+
   const lowerUrl = url.toLowerCase();
   return affiliateDomains.some(domain => lowerUrl.includes(domain));
 }
-
-
 
 // Use Puppeteer for affiliate links
 async function checkRedirectWithPuppeteer(url, maxRedirects = 10) {
   const browser = await initBrowser();
   const page = await browser.newPage();
-  
+
   // Set realistic browser viewport and user agent
   await page.setViewport({ width: 1280, height: 720 });
-  await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-  
+  await page.setUserAgent(
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  );
+
   // Enable request interception to track redirects
   const redirectChain = [];
   const statusChain = [];
   let redirectCount = 0;
   let finalUrl = url;
   let finalStatusCode = 200;
-  
+
   // Track redirects
   page.on('response', response => {
     const status = response.status();
     const responseUrl = response.url();
-    
+
     if (status >= 300 && status < 400) {
       redirectCount++;
       redirectChain.push(responseUrl);
       statusChain.push(status.toString());
     }
   });
-  
+
   try {
     // Navigate to the URL
-    const response = await page.goto(url, { 
+    const response = await page.goto(url, {
       waitUntil: 'networkidle2',
-      timeout: 10000 
+      timeout: 10000,
     });
-    
+
     finalUrl = page.url();
     finalStatusCode = response.status();
-    
+
     // If we got a successful response, add it to the chain
     if (finalStatusCode >= 200 && finalStatusCode < 300) {
       statusChain.push(finalStatusCode.toString());
     }
-    
+
     console.log(`Puppeteer: ${url} → ${finalUrl} (${finalStatusCode})`);
-    
+
     return {
       finalUrl,
       finalStatusCode,
@@ -106,9 +106,8 @@ async function checkRedirectWithPuppeteer(url, maxRedirects = 10) {
       hasMixedTypes: statusChain.length > 1,
       domainChanges: new URL(finalUrl).hostname !== new URL(url).hostname,
       httpsUpgrade: url.startsWith('http:') && finalUrl.startsWith('https:'),
-      method: 'PUPPETEER'
+      method: 'PUPPETEER',
     };
-    
   } catch (error) {
     console.error(`Puppeteer request failed for ${url}:`, error.message);
     throw error;
@@ -119,10 +118,12 @@ async function checkRedirectWithPuppeteer(url, maxRedirects = 10) {
 
 // Middleware
 app.use(helmet());
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    credentials: true,
+  })
+);
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -136,69 +137,85 @@ app.use('/public', express.static('public'));
 // Serve test assets
 app.use('/redirect-tests', express.static('redirect-tests'));
 
-
-
 // Import comprehensive affiliate database
 import { getAffiliateInfo } from './affiliate-database.js';
 
 // SEMrush API proxy endpoint
 app.get('/api/semrush', async (req, res) => {
   try {
-    const { key, type, display_limit, export_columns, database, display_date, domain } = req.query;
-    
+    const {
+      key,
+      type,
+      display_limit,
+      export_columns,
+      database,
+      display_date,
+      domain,
+    } = req.query;
+
     // Validate required parameters
     if (!key || !type || !domain) {
-      return res.status(400).json({ 
-        error: 'Missing required parameters: key, type, and domain are required' 
+      return res.status(400).json({
+        error:
+          'Missing required parameters: key, type, and domain are required',
       });
     }
-    
+
     // Build SEMrush API URL - using the correct endpoint from documentation
     const semrushUrl = 'https://api.semrush.com/';
-    
+
     // Enforce SEMrush API limits
     const limit = Math.min(parseInt(display_limit) || 1000, 10000);
-    
+
     const params = new URLSearchParams({
       key,
       // Respect requested report type; default to domain_organic
-      type: (typeof type === 'string' && type.trim()) ? type : 'domain_organic',
+      type: typeof type === 'string' && type.trim() ? type : 'domain_organic',
       display_limit: limit.toString(),
-      export_columns: (typeof export_columns === 'string' && export_columns.trim()) ? export_columns : 'Ph,Po,Nq,Cp,Ur,Tr,Tc,Co,Nr,Td',
-      database: (typeof database === 'string' && database.trim()) ? database : 'us',
-      domain
+      export_columns:
+        typeof export_columns === 'string' && export_columns.trim()
+          ? export_columns
+          : 'Ph,Po,Nq,Cp,Ur,Tr,Tc,Co,Nr,Td',
+      database:
+        typeof database === 'string' && database.trim() ? database : 'us',
+      domain,
     });
-    if (display_date && typeof display_date === 'string' && display_date.trim()) {
+    if (
+      display_date &&
+      typeof display_date === 'string' &&
+      display_date.trim()
+    ) {
       params.append('display_date', display_date);
     }
-    
+
     console.log(`Proxying SEMrush request for domain: ${domain}`);
-    
+
     // Make request to SEMrush API
     const response = await fetch(`${semrushUrl}?${params.toString()}`);
-    
+
     if (!response.ok) {
-      console.error(`SEMrush API error: ${response.status} ${response.statusText}`);
-      return res.status(response.status).json({ 
-        error: `SEMrush API error: ${response.status} ${response.statusText}` 
+      console.error(
+        `SEMrush API error: ${response.status} ${response.statusText}`
+      );
+      return res.status(response.status).json({
+        error: `SEMrush API error: ${response.status} ${response.statusText}`,
       });
     }
-    
+
     const data = await response.text();
-    
+
     // Set CORS headers for the frontend
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
+
     res.send(data);
-    
   } catch (error) {
     console.error('SEMrush proxy error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to proxy SEMrush API request',
-      details: error.message 
+      details: error.message,
     });
   }
 });
@@ -210,7 +227,7 @@ app.get('/api/semrush/units', async (req, res) => {
     if (!key) {
       return res.status(400).json({ error: 'Missing required parameter: key' });
     }
-    
+
     // SEMrush doesn't have a direct "units" endpoint
     // Instead, we'll make a simple test request to check if the API key is valid
     const semrushUrl = 'https://api.semrush.com/';
@@ -220,37 +237,43 @@ app.get('/api/semrush/units', async (req, res) => {
       display_limit: '1',
       export_columns: 'Ph',
       database: 'us',
-      domain: 'example.com'
+      domain: 'example.com',
     });
-    
+
     const response = await fetch(`${semrushUrl}?${params.toString()}`);
     const data = await response.text();
-    
+
     // SEMrush returns CSV data, not JSON
     // If we get data back, the API key is valid
     if (response.ok && data && data.trim() !== '') {
       // Check if we got actual data (not an error message)
       if (data.includes('Keyword') || data.includes('Ph,Po,Nq')) {
-        res.json({ 
-          remaining: null, 
+        res.json({
+          remaining: null,
           valid: true,
-          message: 'API key is valid. SEMrush does not provide remaining units via API.'
+          message:
+            'API key is valid. SEMrush does not provide remaining units via API.',
         });
       } else {
-        res.status(400).json({ 
+        res.status(400).json({
           error: 'SEMrush API error: Invalid response',
-          details: data
+          details: data,
         });
       }
     } else {
-      res.status(response.status).json({ 
+      res.status(response.status).json({
         error: `SEMrush API error: ${response.status} ${response.statusText}`,
-        details: 'API key may be invalid or expired'
+        details: 'API key may be invalid or expired',
       });
     }
   } catch (error) {
     console.error('SEMrush units proxy error:', error);
-    res.status(500).json({ error: 'Failed to validate SEMrush API key', details: error.message });
+    res
+      .status(500)
+      .json({
+        error: 'Failed to validate SEMrush API key',
+        details: error.message,
+      });
   }
 });
 
@@ -259,7 +282,7 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
   let browser;
   try {
     console.log(`Starting Puppeteer for: ${url}`);
-    
+
     // Launch browser with specific arguments to avoid detection
     browser = await puppeteer.launch({
       headless: true,
@@ -276,29 +299,32 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
         '--disable-renderer-backgrounding',
         '--disable-features=TranslateUI',
         '--disable-ipc-flooding-protection',
-        '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      ]
+        '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      ],
     });
 
     const page = await browser.newPage();
-    
+
     // Set viewport and user agent
     await page.setViewport({ width: 1920, height: 1080 });
-    await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    
+    await page.setUserAgent(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    );
+
     // Set extra headers to look more like a real browser
     await page.setExtraHTTPHeaders({
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      Accept:
+        'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.9',
       'Accept-Encoding': 'gzip, deflate, br',
-      'DNT': '1',
-      'Connection': 'keep-alive',
+      DNT: '1',
+      Connection: 'keep-alive',
       'Upgrade-Insecure-Requests': '1',
       'Sec-Fetch-Dest': 'document',
       'Sec-Fetch-Mode': 'navigate',
       'Sec-Fetch-Site': 'none',
       'Sec-Fetch-User': '?1',
-      'Cache-Control': 'max-age=0'
+      'Cache-Control': 'max-age=0',
     });
 
     const redirectChain = [];
@@ -317,20 +343,20 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
     page.on('response', response => {
       const status = response.status();
       const responseUrl = response.url();
-      
+
       if (responseUrl !== currentUrl) {
         redirectCount++;
         redirectChain.push(currentUrl);
         statusChain.push(status.toString());
-        
+
         // Add HTTP redirect to types
         redirectTypes.push({
           type: 'http',
           statusCode: status,
           url: currentUrl,
-          targetUrl: responseUrl
+          targetUrl: responseUrl,
         });
-        
+
         // Add to detailed chain
         redirectChainDetails.push({
           step: ++stepCounter,
@@ -338,9 +364,9 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
           type: 'http',
           statusCode: status,
           targetUrl: responseUrl,
-          method: 'HTTP'
+          method: 'HTTP',
         });
-        
+
         currentUrl = responseUrl;
         finalUrl = responseUrl;
         finalStatusCode = status;
@@ -352,27 +378,29 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
       if (frame === page.mainFrame()) {
         const newUrl = frame.url();
         if (newUrl !== currentUrl && newUrl !== 'about:blank') {
-          console.log(`JavaScript navigation detected: ${currentUrl} → ${newUrl}`);
+          console.log(
+            `JavaScript navigation detected: ${currentUrl} → ${newUrl}`
+          );
           hasJavaScriptRedirect = true;
           redirectCount++;
           redirectChain.push(currentUrl);
-          
+
           // Add JavaScript redirect to types
           redirectTypes.push({
             type: 'javascript',
             url: currentUrl,
-            targetUrl: newUrl
+            targetUrl: newUrl,
           });
-          
+
           // Add to detailed chain
           redirectChainDetails.push({
             step: ++stepCounter,
             url: currentUrl,
             type: 'javascript',
             targetUrl: newUrl,
-            method: 'JavaScript'
+            method: 'JavaScript',
           });
-          
+
           currentUrl = newUrl;
           finalUrl = newUrl;
         }
@@ -380,15 +408,15 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
     });
 
     // Navigate to the URL and wait for network to be idle
-    const response = await page.goto(url, { 
+    const response = await page.goto(url, {
       waitUntil: 'networkidle2',
-      timeout: 10000 
+      timeout: 10000,
     });
 
     if (response) {
       finalStatusCode = response.status();
       finalUrl = page.url();
-      
+
       if (statusChain.length === 0) {
         statusChain.push(finalStatusCode.toString());
       }
@@ -397,15 +425,19 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
     // Enhanced redirect detection and following
     let maxRedirectAttempts = 5; // Prevent infinite loops
     let redirectAttempts = 0;
-    
+
     while (redirectAttempts < maxRedirectAttempts) {
       redirectAttempts++;
-      console.log(`Redirect attempt ${redirectAttempts}: checking ${page.url()}`);
-      
+      console.log(
+        `Redirect attempt ${redirectAttempts}: checking ${page.url()}`
+      );
+
       // Check for meta refresh redirects
       try {
         const metaRefreshContent = await page.evaluate(() => {
-          const metaRefresh = document.querySelector('meta[http-equiv="refresh"]');
+          const metaRefresh = document.querySelector(
+            'meta[http-equiv="refresh"]'
+          );
           if (metaRefresh) {
             const content = metaRefresh.getAttribute('content');
             if (content) {
@@ -419,18 +451,20 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
         });
 
         if (metaRefreshContent && metaRefreshContent.url) {
-          console.log(`Meta refresh detected: ${metaRefreshContent.delay}s delay, target: ${metaRefreshContent.url}`);
+          console.log(
+            `Meta refresh detected: ${metaRefreshContent.delay}s delay, target: ${metaRefreshContent.url}`
+          );
           hasMetaRefresh = true;
           redirectCount++;
-          
+
           // Add meta refresh to types
           redirectTypes.push({
             type: 'meta',
             url: page.url(),
             targetUrl: metaRefreshContent.url,
-            delay: metaRefreshContent.delay
+            delay: metaRefreshContent.delay,
           });
-          
+
           // Add to detailed chain
           redirectChainDetails.push({
             step: ++stepCounter,
@@ -438,15 +472,21 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
             type: 'meta',
             targetUrl: metaRefreshContent.url,
             delay: metaRefreshContent.delay,
-            method: 'Meta Refresh'
+            method: 'Meta Refresh',
           });
-          
+
           // Follow the meta refresh redirect
-          const targetUrl = new URL(metaRefreshContent.url, page.url()).toString();
+          const targetUrl = new URL(
+            metaRefreshContent.url,
+            page.url()
+          ).toString();
           console.log(`Following meta refresh to: ${targetUrl}`);
-          
+
           try {
-            await page.goto(targetUrl, { waitUntil: 'networkidle2', timeout: 10000 });
+            await page.goto(targetUrl, {
+              waitUntil: 'networkidle2',
+              timeout: 10000,
+            });
             redirectChain.push(page.url());
             continue; // Check for more redirects
           } catch (error) {
@@ -467,9 +507,9 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
             /window\.location\.href\s*=\s*['"]([^'"]+)['"]/g,
             /window\.location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
             /location\.href\s*=\s*['"]([^'"]+)['"]/g,
-            /location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+            /location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
           ];
-          
+
           const foundRedirects = [];
           scripts.forEach(script => {
             const content = script.textContent || '';
@@ -480,43 +520,55 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
               }
             });
           });
-          
+
           return foundRedirects;
         });
 
         if (jsRedirects.length > 0) {
-          console.log(`JavaScript redirect patterns found: ${jsRedirects.join(', ')}`);
+          console.log(
+            `JavaScript redirect patterns found: ${jsRedirects.join(', ')}`
+          );
           hasJavaScriptRedirect = true;
-          
+
           // Add JavaScript redirects to types (if not already added)
           jsRedirects.forEach(targetUrl => {
-            if (!redirectTypes.some(rt => rt.type === 'javascript' && rt.targetUrl === targetUrl)) {
+            if (
+              !redirectTypes.some(
+                rt => rt.type === 'javascript' && rt.targetUrl === targetUrl
+              )
+            ) {
               redirectTypes.push({
                 type: 'javascript',
                 url: page.url(),
-                targetUrl: targetUrl
+                targetUrl: targetUrl,
               });
             }
           });
-          
+
           // Try to execute the JavaScript redirect
           try {
             const targetUrl = new URL(jsRedirects[0], page.url()).toString();
-            console.log(`Attempting to follow JavaScript redirect to: ${targetUrl}`);
-            
+            console.log(
+              `Attempting to follow JavaScript redirect to: ${targetUrl}`
+            );
+
             // Wait a bit for any JavaScript to execute
             await page.waitForTimeout(2000);
-            
+
             // Check if the page URL changed due to JavaScript
             const newUrl = page.url();
             if (newUrl !== page.url()) {
-              console.log(`JavaScript redirect executed: ${page.url()} → ${newUrl}`);
+              console.log(
+                `JavaScript redirect executed: ${page.url()} → ${newUrl}`
+              );
               redirectCount++;
               redirectChain.push(page.url());
               continue; // Check for more redirects
             }
           } catch (error) {
-            console.log(`Failed to follow JavaScript redirect: ${error.message}`);
+            console.log(
+              `Failed to follow JavaScript redirect: ${error.message}`
+            );
           }
         }
       } catch (error) {
@@ -532,15 +584,21 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
       step: ++stepCounter,
       url: page.url(),
       type: 'final',
-      method: 'Final Destination'
+      method: 'Final Destination',
     });
 
     await browser.close();
 
     // Check if we got a 403 or other blocking response
-    if (finalStatusCode === 403 || finalStatusCode === 429 || finalStatusCode === 503) {
-      console.log(`Blocked by affiliate service (${finalStatusCode}), returning manual override suggestion`);
-      
+    if (
+      finalStatusCode === 403 ||
+      finalStatusCode === 429 ||
+      finalStatusCode === 503
+    ) {
+      console.log(
+        `Blocked by affiliate service (${finalStatusCode}), returning manual override suggestion`
+      );
+
       // Return a special response indicating manual override is needed
       return {
         finalUrl: url, // Keep original URL
@@ -558,7 +616,7 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
         redirectTypes: [],
         redirectChainDetails: [],
         hasMetaRefresh: false,
-        hasJavaScriptRedirect: false
+        hasJavaScriptRedirect: false,
       };
     }
 
@@ -567,9 +625,12 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
     const originalProtocol = new URL(url).protocol;
     const finalDomain = new URL(finalUrl).hostname;
     const domainChanges = finalDomain !== originalDomain;
-    const httpsUpgrade = originalProtocol === 'http:' && finalUrl.startsWith('https:');
+    const httpsUpgrade =
+      originalProtocol === 'http:' && finalUrl.startsWith('https:');
 
-    console.log(`Puppeteer completed for ${url}: ${redirectCount} redirects, final URL: ${finalUrl}`);
+    console.log(
+      `Puppeteer completed for ${url}: ${redirectCount} redirects, final URL: ${finalUrl}`
+    );
     console.log(`DEBUG: Final response data:`, {
       finalUrl,
       finalStatusCode,
@@ -584,7 +645,7 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
       redirectTypes,
       redirectChainDetails,
       hasMetaRefresh,
-      hasJavaScriptRedirect
+      hasJavaScriptRedirect,
     });
 
     return {
@@ -601,12 +662,11 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
       redirectTypes,
       redirectChainDetails,
       hasMetaRefresh,
-      hasJavaScriptRedirect
+      hasJavaScriptRedirect,
     };
-
   } catch (error) {
     console.error(`Puppeteer error for ${url}:`, error);
-    
+
     if (browser) {
       await browser.close();
     }
@@ -614,7 +674,7 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
     return {
       error: 'Puppeteer request failed',
       message: error.message,
-      method: 'PUPPETEER'
+      method: 'PUPPETEER',
     };
   }
 }
@@ -622,27 +682,31 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
 // Helper function to suggest final URLs for common affiliate patterns
 function getSuggestedFinalUrl(url) {
   const urlLower = url.toLowerCase();
-  
+
   // Linkby patterns
   if (urlLower.includes('go.linkby.com')) {
     return 'https://www.mauijim.com/'; // Common destination for Linkby links
   }
-  
+
   // Partnerize patterns
   if (urlLower.includes('prf.hn')) {
     return 'https://www.mauijim.com/'; // Common destination for Partnerize links
   }
-  
+
   // Amazon affiliate patterns
   if (urlLower.includes('amzn.to') || urlLower.includes('amazon.com/dp')) {
     return 'https://www.amazon.com/'; // Generic Amazon destination
   }
-  
+
   // Generic shortener patterns
-  if (urlLower.includes('bit.ly') || urlLower.includes('t.co') || urlLower.includes('tinyurl.com')) {
+  if (
+    urlLower.includes('bit.ly') ||
+    urlLower.includes('t.co') ||
+    urlLower.includes('tinyurl.com')
+  ) {
     return 'https://example.com/'; // Generic destination
   }
-  
+
   return null; // No suggestion available
 }
 
@@ -650,7 +714,7 @@ function getSuggestedFinalUrl(url) {
 app.get('/api/wayback/discover', async (req, res) => {
   try {
     const { domain, from, to, limit, filters } = req.query;
-    
+
     if (!domain) {
       return res.status(400).json({ error: 'Domain parameter is required' });
     }
@@ -675,9 +739,9 @@ app.get('/api/wayback/discover', async (req, res) => {
       cdxParams.append('filter', '!statuscode:410');
       cdxParams.append('filter', '!statuscode:500');
     }
-    
+
     // Note: Marketing/tracking URLs will be filtered out in the parsing logic below
-    
+
     // Note: We're not adding the !mimetype:text/html filter by default
     // to match the working behavior
 
@@ -687,7 +751,7 @@ app.get('/api/wayback/discover', async (req, res) => {
     // Make request to CDX API with timeout
     const controller = new AbortController();
     const requestedLimit = parseInt(limit) || 1000;
-    
+
     // Dynamic timeout based on requested limit
     let timeoutDuration = 30000; // Default 30 seconds
     if (requestedLimit > 5000) {
@@ -695,7 +759,7 @@ app.get('/api/wayback/discover', async (req, res) => {
     } else if (requestedLimit > 1000) {
       timeoutDuration = 45000; // 45 seconds for medium datasets
     }
-    
+
     const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
 
     try {
@@ -703,37 +767,39 @@ app.get('/api/wayback/discover', async (req, res) => {
         method: 'GET',
         headers: {
           'User-Agent': 'Redirectinator/2.0 (https://redirectinator.us)',
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
         signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      throw new Error(`CDX API request failed: ${response.status} ${response.statusText}`);
-    }
+      if (!response.ok) {
+        throw new Error(
+          `CDX API request failed: ${response.status} ${response.statusText}`
+        );
+      }
 
       const data = await response.text();
       console.log(`CDX API returned data for ${domain}`);
       // Parse the response (CDX returns space-separated values with fl parameter)
       const lines = data.trim().split('\n');
-      
+
       const waybackUrls = lines
         .filter(line => line.trim() && line.includes(' ')) // Only lines with space separators
         .map(line => {
           // Split by spaces, but handle URLs that contain spaces
           const firstSpace = line.indexOf(' ');
           const lastSpace = line.lastIndexOf(' ');
-          
+
           if (firstSpace === -1 || lastSpace === firstSpace) {
             return null; // Invalid format
           }
-          
+
           const timestamp = line.substring(0, firstSpace);
           const mimeType = line.substring(lastSpace + 1);
           const original = line.substring(firstSpace + 1, lastSpace);
-          
+
           return {
             timestamp: timestamp,
             original: original,
@@ -744,38 +810,42 @@ app.get('/api/wayback/discover', async (req, res) => {
           };
         })
         .filter(url => {
-          return url && url.original && url.timestamp && url.timestamp.length >= 8;
+          return (
+            url && url.original && url.timestamp && url.timestamp.length >= 8
+          );
         })
         .filter(url => {
           // Filter out marketing/tracking URLs and internal system files (not useful for redirect analysis)
           const original = url.original.toLowerCase();
-          return !original.includes('irclickid=') &&
-                 !original.includes('utm_') &&
-                 !original.includes('ref=') &&
-                 !original.includes('source=') &&
-                 !original.includes('campaign=') &&
-                 !original.includes('affiliate=') &&
-                 !original.includes('partner=') &&
-                 !original.includes('tracking=') &&
-                 !original.includes('clickid=') &&
-                 // Filter out API endpoints and internal system files
-                 !original.includes('/api/') &&
-                 !original.includes('/bf?') &&
-                 !original.includes('type=js') &&
-                 !original.includes('type=css') &&
-                 !original.includes('type=json') &&
-                 !original.includes('sn=v_') &&
-                 !original.includes('svrid') &&
-                 !original.includes('model.json') &&
-                 !original.includes('tcfb/') &&
-                 !original.includes('magellan/') &&
-                 // Filter out other common internal patterns
-                 !original.includes('/static/') &&
-                 !original.includes('/assets/') &&
-                 !original.includes('/js/') &&
-                 !original.includes('/css/') &&
-                 !original.includes('/images/') &&
-                 !original.includes('/fonts/');
+          return (
+            !original.includes('irclickid=') &&
+            !original.includes('utm_') &&
+            !original.includes('ref=') &&
+            !original.includes('source=') &&
+            !original.includes('campaign=') &&
+            !original.includes('affiliate=') &&
+            !original.includes('partner=') &&
+            !original.includes('tracking=') &&
+            !original.includes('clickid=') &&
+            // Filter out API endpoints and internal system files
+            !original.includes('/api/') &&
+            !original.includes('/bf?') &&
+            !original.includes('type=js') &&
+            !original.includes('type=css') &&
+            !original.includes('type=json') &&
+            !original.includes('sn=v_') &&
+            !original.includes('svrid') &&
+            !original.includes('model.json') &&
+            !original.includes('tcfb/') &&
+            !original.includes('magellan/') &&
+            // Filter out other common internal patterns
+            !original.includes('/static/') &&
+            !original.includes('/assets/') &&
+            !original.includes('/js/') &&
+            !original.includes('/css/') &&
+            !original.includes('/images/') &&
+            !original.includes('/fonts/')
+          );
         });
 
       res.json({
@@ -785,34 +855,77 @@ app.get('/api/wayback/discover', async (req, res) => {
         timeframe: `${from} to ${to}`,
         filtersApplied: filters ? filters.split(',') : [],
       });
-
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      
+
       if (fetchError.name === 'AbortError') {
-        console.error(`Wayback CDX API request timed out after ${timeoutDuration/1000} seconds, providing demo data`);
-        
+        console.error(
+          `Wayback CDX API request timed out after ${timeoutDuration / 1000} seconds, providing demo data`
+        );
+
         // Provide demo data when API times out
         const requestedLimit = parseInt(limit) || 1000;
         const maxDemoUrls = Math.min(requestedLimit, 50); // Cap demo at 50 for performance
-        
+
         const commonPaths = [
-          '/', '/about', '/contact', '/products', '/services', '/blog', '/support',
-          '/help', '/faq', '/pricing', '/features', '/download', '/login', '/signup',
-          '/news', '/press', '/careers', '/team', '/investors', '/partners', '/api',
-          '/docs', '/tutorials', '/resources', '/community', '/forum', '/events',
-          '/webinars', '/case-studies', '/testimonials', '/reviews', '/portfolio',
-          '/gallery', '/media', '/videos', '/podcasts', '/whitepapers', '/guides',
-          '/templates', '/tools', '/calculator', '/comparison', '/demo', '/trial',
-          '/pricing', '/plans', '/enterprise', '/solutions', '/industries', '/use-cases'
+          '/',
+          '/about',
+          '/contact',
+          '/products',
+          '/services',
+          '/blog',
+          '/support',
+          '/help',
+          '/faq',
+          '/pricing',
+          '/features',
+          '/download',
+          '/login',
+          '/signup',
+          '/news',
+          '/press',
+          '/careers',
+          '/team',
+          '/investors',
+          '/partners',
+          '/api',
+          '/docs',
+          '/tutorials',
+          '/resources',
+          '/community',
+          '/forum',
+          '/events',
+          '/webinars',
+          '/case-studies',
+          '/testimonials',
+          '/reviews',
+          '/portfolio',
+          '/gallery',
+          '/media',
+          '/videos',
+          '/podcasts',
+          '/whitepapers',
+          '/guides',
+          '/templates',
+          '/tools',
+          '/calculator',
+          '/comparison',
+          '/demo',
+          '/trial',
+          '/pricing',
+          '/plans',
+          '/enterprise',
+          '/solutions',
+          '/industries',
+          '/use-cases',
         ];
-        
+
         const demoUrls = [];
         for (let i = 0; i < maxDemoUrls; i++) {
           const path = commonPaths[i % commonPaths.length];
           const dayOffset = Math.floor(i / 3); // Spread across multiple days
           const timestamp = `202306${(15 + dayOffset).toString().padStart(2, '0')}000000`;
-          
+
           demoUrls.push({
             timestamp,
             original: `http://${domain}${path}`,
@@ -830,21 +943,21 @@ app.get('/api/wayback/discover', async (req, res) => {
           timeframe: `${from} to ${to}`,
           filtersApplied: filters ? filters.split(',') : [],
           demo: true,
-          message: `Demo data provided due to API timeout after ${timeoutDuration/1000} seconds. Large datasets (${requestedLimit} URLs requested) may take longer to process. Try reducing the limit or date range, or wait and try again.`
+          message: `Demo data provided due to API timeout after ${timeoutDuration / 1000} seconds. Large datasets (${requestedLimit} URLs requested) may take longer to process. Try reducing the limit or date range, or wait and try again.`,
         });
       } else {
         console.error('Wayback discovery proxy error:', fetchError);
-        res.status(500).json({ 
+        res.status(500).json({
           error: 'Failed to discover URLs from Wayback Machine',
-          details: fetchError.message 
+          details: fetchError.message,
         });
       }
     }
   } catch (error) {
     console.error('Wayback discovery proxy error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to discover URLs from Wayback Machine',
-      details: error.message 
+      details: error.message,
     });
   }
 });
@@ -852,21 +965,31 @@ app.get('/api/wayback/discover', async (req, res) => {
 // Redirect checker endpoint
 app.post('/api/check-redirect', async (req, res) => {
   try {
-    const { url, method = 'HEAD', followRedirects = false, maxRedirects = 10, usePuppeteer = false } = req.body;
-    
+    const {
+      url,
+      method = 'HEAD',
+      followRedirects = false,
+      maxRedirects = 10,
+      usePuppeteer = false,
+    } = req.body;
+
     // Debug logging
-    console.log(`Processing ${url} with method=${method}, followRedirects=${followRedirects}, usePuppeteer=${usePuppeteer}`);
+    console.log(
+      `Processing ${url} with method=${method}, followRedirects=${followRedirects}, usePuppeteer=${usePuppeteer}`
+    );
     console.log(`Full request body:`, req.body);
 
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-    console.log(`Checking redirects for: ${url} using ${method}${usePuppeteer ? ' with Puppeteer' : ''}`);
+    console.log(
+      `Checking redirects for: ${url} using ${method}${usePuppeteer ? ' with Puppeteer' : ''}`
+    );
 
     // Check if this is an affiliate link that we explicitly block
     const affiliateInfo = getAffiliateInfo(url);
-    
+
     if (affiliateInfo) {
       console.log(`Affiliate link blocked: ${url} - ${affiliateInfo.service}`);
       return res.json({
@@ -882,38 +1005,48 @@ app.post('/api/check-redirect', async (req, res) => {
         method: 'BLOCKED_AFFILIATE',
         blockedReason: `Affiliate links from ${affiliateInfo.service} are not supported due to anti-bot protection. Please use the direct destination URL instead.`,
         affiliateService: affiliateInfo.service,
-        suggestedDirectUrl: affiliateInfo.suggestedUrl
+        suggestedDirectUrl: affiliateInfo.suggestedUrl,
       });
     }
 
     // Check if we should use Puppeteer for enhanced redirect detection
-    console.log(`DEBUG: usePuppeteer=${usePuppeteer}, type=${typeof usePuppeteer}, truthy=${Boolean(usePuppeteer)}`);
+    console.log(
+      `DEBUG: usePuppeteer=${usePuppeteer}, type=${typeof usePuppeteer}, truthy=${Boolean(usePuppeteer)}`
+    );
     console.log(`DEBUG: usePuppeteer JSON: ${JSON.stringify(usePuppeteer)}`);
     console.log(`DEBUG: usePuppeteer === true: ${usePuppeteer === true}`);
-    console.log(`DEBUG: usePuppeteer === "true": ${usePuppeteer === "true"}`);
-    
+    console.log(`DEBUG: usePuppeteer === "true": ${usePuppeteer === 'true'}`);
+
     // Ensure usePuppeteer is properly converted to boolean
-    const shouldUsePuppeteer = Boolean(usePuppeteer) || usePuppeteer === "true";
+    const shouldUsePuppeteer = Boolean(usePuppeteer) || usePuppeteer === 'true';
     console.log(`DEBUG: shouldUsePuppeteer=${shouldUsePuppeteer}`);
-    
+
     if (shouldUsePuppeteer) {
       console.log(`Using Puppeteer for enhanced redirect detection: ${url}`);
-      const puppeteerResult = await performPuppeteerRedirectCheck(url, maxRedirects, res);
+      const puppeteerResult = await performPuppeteerRedirectCheck(
+        url,
+        maxRedirects,
+        res
+      );
       if (puppeteerResult.error) {
         return res.status(500).json({
           error: puppeteerResult.error,
           message: puppeteerResult.message,
-          method: 'PUPPETEER'
+          method: 'PUPPETEER',
         });
       }
       return res.json(puppeteerResult);
     } else {
-      console.log(`NOT using Puppeteer, usePuppeteer=${usePuppeteer}, type=${typeof usePuppeteer}`);
+      console.log(
+        `NOT using Puppeteer, usePuppeteer=${usePuppeteer}, type=${typeof usePuppeteer}`
+      );
     }
 
     // Manual redirect tracking
-    console.log(`Starting manual redirect tracking for ${url}, maxRedirects=${maxRedirects}`);
-    
+    console.log(
+      `Starting manual redirect tracking for ${url}, maxRedirects=${maxRedirects}`
+    );
+
     const redirectChain = [];
     const statusChain = [];
     let currentUrl = url;
@@ -934,19 +1067,21 @@ app.post('/api/check-redirect', async (req, res) => {
           redirect: 'follow',
           signal: AbortSignal.timeout(5000), // 5 second timeout
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'User-Agent':
+              'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            Accept:
+              'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
-            'DNT': '1',
-            'Connection': 'keep-alive',
+            DNT: '1',
+            Connection: 'keep-alive',
             'Upgrade-Insecure-Requests': '1',
             'Sec-Fetch-Dest': 'document',
             'Sec-Fetch-Mode': 'navigate',
             'Sec-Fetch-Site': 'none',
             'Sec-Fetch-User': '?1',
-            'Cache-Control': 'max-age=0'
-          }
+            'Cache-Control': 'max-age=0',
+          },
         });
 
         const finalUrl = response.url || url;
@@ -959,7 +1094,8 @@ app.post('/api/check-redirect', async (req, res) => {
 
           const finalDomain = new URL(finalUrl).hostname;
           const domainChanges = finalDomain !== originalDomain;
-          const httpsUpgrade = originalProtocol === 'http:' && finalUrl.startsWith('https:');
+          const httpsUpgrade =
+            originalProtocol === 'http:' && finalUrl.startsWith('https:');
 
           return res.json({
             finalUrl,
@@ -971,7 +1107,7 @@ app.post('/api/check-redirect', async (req, res) => {
             hasMixedTypes: false,
             domainChanges,
             httpsUpgrade,
-            method: 'GET_FOLLOW'
+            method: 'GET_FOLLOW',
           });
         }
 
@@ -985,27 +1121,28 @@ app.post('/api/check-redirect', async (req, res) => {
           hasMixedTypes: false,
           domainChanges: false,
           httpsUpgrade: false,
-          method: 'GET_FOLLOW'
+          method: 'GET_FOLLOW',
         });
-
       } catch (error) {
         console.error(`GET request failed for ${url}:`, error.message);
         return res.status(500).json({
           error: 'Request failed',
           message: error.message,
-          method: 'GET_FOLLOW'
+          method: 'GET_FOLLOW',
         });
       }
     }
 
     // Manual redirect tracking
-    console.log(`Starting manual redirect tracking for ${url}, maxRedirects=${maxRedirects}`);
+    console.log(
+      `Starting manual redirect tracking for ${url}, maxRedirects=${maxRedirects}`
+    );
     const redirectTypeDetails = [];
     const redirectChainDetails = [];
     let hasMetaRefresh = false;
     let hasJavaScriptRedirect = false;
     let stepCounter = 0;
-    
+
     while (redirectCount < maxRedirects) {
       if (visitedUrls.has(currentUrl)) {
         hasLoop = true;
@@ -1019,53 +1156,61 @@ app.post('/api/check-redirect', async (req, res) => {
           redirect: 'manual',
           signal: AbortSignal.timeout(5000), // 5 second timeout
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'User-Agent':
+              'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            Accept:
+              'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
-            'DNT': '1',
-            'Connection': 'keep-alive',
+            DNT: '1',
+            Connection: 'keep-alive',
             'Upgrade-Insecure-Requests': '1',
             'Sec-Fetch-Dest': 'document',
             'Sec-Fetch-Mode': 'navigate',
             'Sec-Fetch-Site': 'none',
             'Sec-Fetch-User': '?1',
-            'Cache-Control': 'max-age=0'
-          }
+            'Cache-Control': 'max-age=0',
+          },
         });
 
         const status = response.status;
-        statusChain.push(status.toString());
-        redirectTypes.add(status);
-
-        console.log(`${method} ${currentUrl} → ${status} ${response.headers.get('location') || '(no location)'}`);
+        console.log(
+          `${method} ${currentUrl} → ${status} ${response.headers.get('location') || '(no location)'}`
+        );
 
         if (status >= 200 && status < 300) {
           // Success - check for meta refresh and JavaScript redirects
+          let hasClientSideRedirect = false;
+
           try {
             const htmlContent = await response.text();
-            
+
             // Check for meta refresh
-            const metaRefreshMatch = htmlContent.match(/<meta[^>]*http-equiv=["']refresh["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+            const metaRefreshMatch = htmlContent.match(
+              /<meta[^>]*http-equiv=["']refresh["'][^>]*content=["']([^"']+)["'][^>]*>/i
+            );
             if (metaRefreshMatch) {
               const content = metaRefreshMatch[1];
               const parts = content.split(';');
               const delay = parseInt(parts[0]) || 0;
               const targetUrl = parts[1] ? parts[1].trim() : '';
-              
+
               if (targetUrl) {
-                console.log(`Meta refresh detected: ${delay}s delay, target: ${targetUrl}`);
+                console.log(
+                  `Meta refresh detected: ${delay}s delay, target: ${targetUrl}`
+                );
                 hasMetaRefresh = true;
+                hasClientSideRedirect = true;
                 redirectCount++;
-                
+
                 // Add meta refresh to types
                 redirectTypeDetails.push({
                   type: 'meta',
                   url: currentUrl,
                   targetUrl: targetUrl,
-                  delay: delay
+                  delay: delay,
                 });
-                
+
                 // Add to detailed chain
                 redirectChainDetails.push({
                   step: ++stepCounter,
@@ -1073,66 +1218,85 @@ app.post('/api/check-redirect', async (req, res) => {
                   type: 'meta',
                   targetUrl: targetUrl,
                   delay: delay,
-                  method: 'Meta Refresh'
+                  method: 'Meta Refresh',
                 });
-                
+
                 // Update current URL and continue
                 const newUrl = new URL(targetUrl, currentUrl);
                 currentUrl = newUrl.toString();
                 continue;
               }
             }
-            
+
             // Check for JavaScript redirects
             const jsRedirectPatterns = [
               /window\.location\s*=\s*['"]([^'"]+)['"]/g,
               /window\.location\.href\s*=\s*['"]([^'"]+)['"]/g,
               /window\.location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
               /location\.href\s*=\s*['"]([^'"]+)['"]/g,
-              /location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+              /location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
             ];
-            
+
             let jsRedirectFound = false;
             jsRedirectPatterns.forEach(pattern => {
               let match;
               while ((match = pattern.exec(htmlContent)) !== null) {
                 console.log(`JavaScript redirect pattern found: ${match[1]}`);
                 hasJavaScriptRedirect = true;
+                hasClientSideRedirect = true;
                 jsRedirectFound = true;
-                
+
                 // Add JavaScript redirect to types
                 redirectTypeDetails.push({
                   type: 'javascript',
                   url: currentUrl,
-                  targetUrl: match[1]
+                  targetUrl: match[1],
                 });
-                
+
                 // Add to detailed chain
                 redirectChainDetails.push({
                   step: ++stepCounter,
                   url: currentUrl,
                   type: 'javascript',
                   targetUrl: match[1],
-                  method: 'JavaScript'
+                  method: 'JavaScript',
                 });
               }
             });
-            
+
             if (jsRedirectFound) {
               redirectCount++;
             }
           } catch (parseError) {
-            console.log('Error parsing HTML content for meta refresh/JS redirects:', parseError.message);
+            console.log(
+              'Error parsing HTML content for meta refresh/JS redirects:',
+              parseError.message
+            );
           }
-          
-          // Success - no more redirects
-          console.log(`SUCCESS: ${currentUrl} returned ${status}, ending redirect chain`);
-          break;
+
+          // Only add 200 status to chain if there are no client-side redirects
+          if (!hasClientSideRedirect) {
+            statusChain.push(status.toString());
+            redirectTypes.add(status);
+            console.log(
+              `SUCCESS: ${currentUrl} returned ${status}, ending redirect chain`
+            );
+            break;
+          } else {
+            console.log(
+              `SUCCESS with client-side redirect: ${currentUrl} returned ${status}, continuing redirect chain`
+            );
+            // Don't add the 200 status to the chain since it contains a redirect
+          }
         } else if (status >= 300 && status < 400) {
           // Redirect
           redirectCount++;
           redirectChain.push(currentUrl);
-          console.log(`REDIRECT DETECTED: ${currentUrl} → ${status}, redirectCount now ${redirectCount}`);
+          statusChain.push(status.toString());
+          redirectTypes.add(status);
+          console.log(
+            `REDIRECT DETECTED: ${currentUrl} → ${status}, redirectCount now ${redirectCount}`
+          );
 
           const location = response.headers.get('location');
           if (!location) {
@@ -1144,9 +1308,9 @@ app.post('/api/check-redirect', async (req, res) => {
             type: 'http',
             statusCode: status,
             url: currentUrl,
-            targetUrl: location
+            targetUrl: location,
           });
-          
+
           // Add to detailed chain
           redirectChainDetails.push({
             step: ++stepCounter,
@@ -1154,7 +1318,7 @@ app.post('/api/check-redirect', async (req, res) => {
             type: 'http',
             statusCode: status,
             targetUrl: location,
-            method: 'HTTP'
+            method: 'HTTP',
           });
 
           // Check for domain changes
@@ -1162,18 +1326,31 @@ app.post('/api/check-redirect', async (req, res) => {
           currentUrl = newUrl.toString();
         } else if (status >= 400 && status < 500) {
           // Client error (4xx) - break the chain
-          console.log(`CLIENT ERROR: ${currentUrl} returned ${status}, ending redirect chain`);
+          statusChain.push(status.toString());
+          redirectTypes.add(status);
+          console.log(
+            `CLIENT ERROR: ${currentUrl} returned ${status}, ending redirect chain`
+          );
           break;
         } else if (status >= 500) {
           // Server error (5xx) - break the chain
-          console.log(`SERVER ERROR: ${currentUrl} returned ${status}, ending redirect chain`);
+          statusChain.push(status.toString());
+          redirectTypes.add(status);
+          console.log(
+            `SERVER ERROR: ${currentUrl} returned ${status}, ending redirect chain`
+          );
           break;
         } else {
           // Other error status
+          statusChain.push(status.toString());
+          redirectTypes.add(status);
           break;
         }
       } catch (error) {
-        console.error(`${method} request failed for ${currentUrl}:`, error.message);
+        console.error(
+          `${method} request failed for ${currentUrl}:`,
+          error.message
+        );
 
         // If HEAD fails, try GET as fallback for this URL only
         if (method === 'HEAD') {
@@ -1184,53 +1361,61 @@ app.post('/api/check-redirect', async (req, res) => {
               redirect: 'manual',
               signal: AbortSignal.timeout(5000), // 5 second timeout
               headers: {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'User-Agent':
+                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                Accept:
+                  'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.9',
                 'Accept-Encoding': 'gzip, deflate, br',
-                'DNT': '1',
-                'Connection': 'keep-alive',
+                DNT: '1',
+                Connection: 'keep-alive',
                 'Upgrade-Insecure-Requests': '1',
                 'Sec-Fetch-Dest': 'document',
                 'Sec-Fetch-Mode': 'navigate',
                 'Sec-Fetch-Site': 'none',
                 'Sec-Fetch-User': '?1',
-                'Cache-Control': 'max-age=0'
-              }
+                'Cache-Control': 'max-age=0',
+              },
             });
 
             const status = getResponse.status;
-            statusChain.push(status.toString());
-            redirectTypes.add(status);
-
-            console.log(`GET ${currentUrl} → ${status} ${getResponse.headers.get('location') || '(no location)'}`);
+            console.log(
+              `GET ${currentUrl} → ${status} ${getResponse.headers.get('location') || '(no location)'}`
+            );
 
             if (status >= 200 && status < 300) {
               // Success with GET - check for meta refresh and JavaScript redirects
+              let hasClientSideRedirect = false;
+
               try {
                 const htmlContent = await getResponse.text();
-                
+
                 // Check for meta refresh
-                const metaRefreshMatch = htmlContent.match(/<meta[^>]*http-equiv=["']refresh["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+                const metaRefreshMatch = htmlContent.match(
+                  /<meta[^>]*http-equiv=["']refresh["'][^>]*content=["']([^"']+)["'][^>]*>/i
+                );
                 if (metaRefreshMatch) {
                   const content = metaRefreshMatch[1];
                   const parts = content.split(';');
                   const delay = parseInt(parts[0]) || 0;
                   const targetUrl = parts[1] ? parts[1].trim() : '';
-                  
+
                   if (targetUrl) {
-                    console.log(`Meta refresh detected with GET: ${delay}s delay, target: ${targetUrl}`);
+                    console.log(
+                      `Meta refresh detected with GET: ${delay}s delay, target: ${targetUrl}`
+                    );
                     hasMetaRefresh = true;
+                    hasClientSideRedirect = true;
                     redirectCount++;
-                    
+
                     // Add meta refresh to types
                     redirectTypeDetails.push({
                       type: 'meta',
                       url: currentUrl,
                       targetUrl: targetUrl,
-                      delay: delay
+                      delay: delay,
                     });
-                    
+
                     // Add to detailed chain
                     redirectChainDetails.push({
                       step: ++stepCounter,
@@ -1238,65 +1423,84 @@ app.post('/api/check-redirect', async (req, res) => {
                       type: 'meta',
                       targetUrl: targetUrl,
                       delay: delay,
-                      method: 'Meta Refresh'
+                      method: 'Meta Refresh',
                     });
-                    
+
                     // Update current URL and continue
                     const newUrl = new URL(targetUrl, currentUrl);
                     currentUrl = newUrl.toString();
                     continue;
                   }
                 }
-                
+
                 // Check for JavaScript redirects
                 const jsRedirectPatterns = [
                   /window\.location\s*=\s*['"]([^'"]+)['"]/g,
                   /window\.location\.href\s*=\s*['"]([^'"]+)['"]/g,
                   /window\.location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
                   /location\.href\s*=\s*['"]([^'"]+)['"]/g,
-                  /location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+                  /location\.replace\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
                 ];
-                
+
                 let jsRedirectFound = false;
                 jsRedirectPatterns.forEach(pattern => {
                   let match;
                   while ((match = pattern.exec(htmlContent)) !== null) {
-                    console.log(`JavaScript redirect pattern found with GET: ${match[1]}`);
+                    console.log(
+                      `JavaScript redirect pattern found with GET: ${match[1]}`
+                    );
                     hasJavaScriptRedirect = true;
+                    hasClientSideRedirect = true;
                     jsRedirectFound = true;
-                    
+
                     // Add JavaScript redirect to types
                     redirectTypeDetails.push({
                       type: 'javascript',
                       url: currentUrl,
-                      targetUrl: match[1]
+                      targetUrl: match[1],
                     });
-                    
+
                     // Add to detailed chain
                     redirectChainDetails.push({
                       step: ++stepCounter,
                       url: currentUrl,
                       type: 'javascript',
                       targetUrl: match[1],
-                      method: 'JavaScript'
+                      method: 'JavaScript',
                     });
                   }
                 });
-                
+
                 if (jsRedirectFound) {
                   redirectCount++;
                 }
               } catch (parseError) {
-                console.log('Error parsing HTML content for meta refresh/JS redirects with GET:', parseError.message);
+                console.log(
+                  'Error parsing HTML content for meta refresh/JS redirects with GET:',
+                  parseError.message
+                );
               }
-              
-              // Success with GET
-              console.log(`SUCCESS: ${currentUrl} returned ${status} with GET, ending redirect chain`);
-              break;
+
+              // Only add 200 status to chain if there are no client-side redirects
+              if (!hasClientSideRedirect) {
+                statusChain.push(status.toString());
+                redirectTypes.add(status);
+                console.log(
+                  `SUCCESS: ${currentUrl} returned ${status} with GET, ending redirect chain`
+                );
+                break;
+              } else {
+                console.log(
+                  `SUCCESS with client-side redirect: ${currentUrl} returned ${status} with GET, continuing redirect chain`
+                );
+                // Don't add the 200 status to the chain since it contains a redirect
+              }
             } else if (status >= 300 && status < 400) {
               // Redirect with GET
               redirectCount++;
               redirectChain.push(currentUrl);
+              statusChain.push(status.toString());
+              redirectTypes.add(status);
 
               const location = getResponse.headers.get('location');
               if (location) {
@@ -1305,9 +1509,9 @@ app.post('/api/check-redirect', async (req, res) => {
                   type: 'http',
                   statusCode: status,
                   url: currentUrl,
-                  targetUrl: location
+                  targetUrl: location,
                 });
-                
+
                 // Add to detailed chain
                 redirectChainDetails.push({
                   step: ++stepCounter,
@@ -1315,9 +1519,9 @@ app.post('/api/check-redirect', async (req, res) => {
                   type: 'http',
                   statusCode: status,
                   targetUrl: location,
-                  method: 'HTTP'
+                  method: 'HTTP',
                 });
-                
+
                 const newUrl = new URL(location, currentUrl);
                 currentUrl = newUrl.toString();
                 continue; // Continue the loop with the new URL
@@ -1327,30 +1531,45 @@ app.post('/api/check-redirect', async (req, res) => {
               }
             } else if (status >= 400 && status < 500) {
               // Client error (4xx) with GET - break the chain
-              console.log(`CLIENT ERROR: ${currentUrl} returned ${status} with GET, ending redirect chain`);
+              statusChain.push(status.toString());
+              redirectTypes.add(status);
+              console.log(
+                `CLIENT ERROR: ${currentUrl} returned ${status} with GET, ending redirect chain`
+              );
               break;
             } else if (status >= 500) {
               // Server error (5xx) with GET - break the chain
-              console.log(`SERVER ERROR: ${currentUrl} returned ${status} with GET, ending redirect chain`);
+              statusChain.push(status.toString());
+              redirectTypes.add(status);
+              console.log(
+                `SERVER ERROR: ${currentUrl} returned ${status} with GET, ending redirect chain`
+              );
               break;
             } else {
               // Other error status with GET
+              statusChain.push(status.toString());
+              redirectTypes.add(status);
               break;
             }
           } catch (getError) {
-            console.error(`GET fallback failed for ${currentUrl}:`, getError.message);
+            console.error(
+              `GET fallback failed for ${currentUrl}:`,
+              getError.message
+            );
           }
         }
 
         return res.status(500).json({
           error: 'Request failed',
           message: error.message,
-          method: method
+          method: method,
         });
       }
     }
 
-    console.log(`Redirect chain complete. Final URL: ${currentUrl}, Total redirects: ${redirectCount}`);
+    console.log(
+      `Redirect chain complete. Final URL: ${currentUrl}, Total redirects: ${redirectCount}`
+    );
     console.log(`Status chain: ${statusChain.join(' → ')}`);
     console.log(`Redirect URLs: ${redirectChain.join(' → ')}`);
 
@@ -1364,7 +1583,8 @@ app.post('/api/check-redirect', async (req, res) => {
     if (redirectChain.length > 0) {
       const finalDomain = new URL(currentUrl).hostname;
       domainChanges = finalDomain !== originalDomain;
-      httpsUpgrade = originalProtocol === 'http:' && currentUrl.startsWith('https:');
+      httpsUpgrade =
+        originalProtocol === 'http:' && currentUrl.startsWith('https:');
     }
 
     // Add final step to detailed chain
@@ -1372,7 +1592,7 @@ app.post('/api/check-redirect', async (req, res) => {
       step: ++stepCounter,
       url: currentUrl,
       type: 'final',
-      method: 'Final Destination'
+      method: 'Final Destination',
     });
 
     res.json({
@@ -1389,14 +1609,13 @@ app.post('/api/check-redirect', async (req, res) => {
       redirectTypes: redirectTypeDetails,
       redirectChainDetails,
       hasMetaRefresh,
-      hasJavaScriptRedirect
+      hasJavaScriptRedirect,
     });
-
   } catch (error) {
     console.error('Server error:', error);
     res.status(500).json({
       error: 'Server error',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -1431,12 +1650,18 @@ app.get('/api/health', (req, res) => {
     if (recordTo) mappings.push({ start: toUrl(path), target: recordTo });
   }
   const http = (code, dest) => (req, res) => res.redirect(code, dest);
-  const meta = (dest) => (req, res) => res
+  const meta = dest => (req, res) =>
+    res
       .status(200)
-      .send(`<!doctype html><meta http-equiv="refresh" content="0; url=${dest}"><title>Meta</title>`);
-  const js = (dest) => (req, res) => res
+      .send(
+        `<!doctype html><meta http-equiv="refresh" content="0; url=${dest}"><title>Meta</title>`
+      );
+  const js = dest => (req, res) =>
+    res
       .status(200)
-      .send(`<!doctype html><script>location.replace('${dest}')</script><title>JS</title>`);
+      .send(
+        `<!doctype html><script>location.replace('${dest}')</script><title>JS</title>`
+      );
 
   // One-hop
   register('/301-1', http(301, TARGET), TARGET);

@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, AlertCircle, CheckCircle, Loader2, Info, X } from 'lucide-react';
-import { SEMrushService, SEMrushDiscoveryParams, SEMrushDiscoveryResult } from '@/services/semrushService';
+import {
+  Search,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  Info,
+  X,
+} from 'lucide-react';
+import {
+  SEMrushService,
+  SEMrushDiscoveryParams,
+  SEMrushDiscoveryResult,
+} from '@/services/semrushService';
 
 interface SEMrushDiscoveryTabProps {
   onUrlsDiscovered: (urls: string[]) => void;
@@ -9,7 +20,7 @@ interface SEMrushDiscoveryTabProps {
 
 export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
   onUrlsDiscovered,
-  onClose
+  onClose,
 }) => {
   const [domain, setDomain] = useState('');
   // SEMrush uses a single as-of date (monthly snapshot). Use explicit Month + Year selects.
@@ -17,13 +28,30 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
   const currentYear = now.getFullYear();
   const currentMonthIndex = now.getMonth(); // 0-11
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(currentMonthIndex);
+  const [selectedMonthIndex, setSelectedMonthIndex] =
+    useState<number>(currentMonthIndex);
   const [selectedMonth, setSelectedMonth] = useState<string>(
     `${currentYear}-${String(currentMonthIndex + 1).padStart(2, '0')}`
   );
-  const monthsShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthsShort = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   const firstHistoricalYear = 2012; // Based on SEMrush historical availability
-  const years: number[] = Array.from({ length: currentYear - firstHistoricalYear + 1 }, (_, i) => currentYear - i);
+  const years: number[] = Array.from(
+    { length: currentYear - firstHistoricalYear + 1 },
+    (_, i) => currentYear - i
+  );
 
   // Keep combined YYYY-MM string in sync with dropdowns
   useEffect(() => {
@@ -33,9 +61,10 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
   const [urlLimit, setUrlLimit] = useState(1000);
   const [country, setCountry] = useState('us');
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
-  
+
   const [isDiscovering, setIsDiscovering] = useState(false);
-  const [discoveryResult, setDiscoveryResult] = useState<SEMrushDiscoveryResult | null>(null);
+  const [discoveryResult, setDiscoveryResult] =
+    useState<SEMrushDiscoveryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
 
@@ -45,7 +74,20 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
 
   const semrushService = new SEMrushService();
 
-
+  const checkApiKeyStatus = useCallback(async () => {
+    try {
+      const hasKey = await semrushService.hasApiKey();
+      setHasApiKey(hasKey);
+      if (hasKey) {
+        const units = await semrushService.getRemainingUnits();
+        setRemainingUnits(units);
+      } else {
+        setRemainingUnits(null);
+      }
+    } catch (error) {
+      console.error('Failed to check API key status:', error);
+    }
+  }, [semrushService]);
 
   useEffect(() => {
     checkApiKeyStatus();
@@ -68,21 +110,6 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
     };
   }, [showInfo]);
 
-  const checkApiKeyStatus = useCallback(async () => {
-    try {
-      const hasKey = await semrushService.hasApiKey();
-      setHasApiKey(hasKey);
-      if (hasKey) {
-        const units = await semrushService.getRemainingUnits();
-        setRemainingUnits(units);
-      } else {
-        setRemainingUnits(null);
-      }
-    } catch (error) {
-      console.error('Failed to check API key status:', error);
-    }
-  }, [semrushService]);
-
   const handleDiscover = async () => {
     if (!domain.trim()) {
       setError('Please enter a domain');
@@ -90,7 +117,9 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
     }
 
     if (!hasApiKey) {
-      setError('SEMrush API key not configured. Please add your API key in Settings.');
+      setError(
+        'SEMrush API key not configured. Please add your API key in Settings.'
+      );
       return;
     }
 
@@ -117,7 +146,9 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
       const result = await semrushService.discoverTopPages(params);
       setDiscoveryResult(result);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to discover pages');
+      setError(
+        error instanceof Error ? error.message : 'Failed to discover pages'
+      );
     } finally {
       setIsDiscovering(false);
     }
@@ -141,15 +172,17 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
     }
   };
 
-
-
   return (
     <div className="space-y-6">
       {/* Discovery Form */}
       <div className="space-y-4">
         <div className="space-y-3">
           <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-            <img src="/SEMrush-Icon.png" alt="SEMrush" className="w-6 h-4 mr-2" />
+            <img
+              src="/SEMrush-Icon.png"
+              alt="SEMrush"
+              className="w-6 h-4 mr-2"
+            />
             Top Pages Discovery
             <button
               onClick={() => setShowInfo(!showInfo)}
@@ -159,15 +192,17 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
               <Info className="w-4 h-4" />
             </button>
           </h3>
-          
+
           {/* Info Tooltip */}
           {showInfo && (
-            <div 
+            <div
               ref={infoRef}
               className="absolute top-0 left-0 mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3 shadow-lg z-50 max-w-md"
             >
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-blue-900">How SEMrush Discovery Works</h4>
+                <h4 className="text-sm font-semibold text-blue-900">
+                  How SEMrush Discovery Works
+                </h4>
                 <button
                   onClick={() => setShowInfo(false)}
                   className="p-1 text-blue-600 hover:text-blue-800 transition-colors rounded-full hover:bg-blue-100"
@@ -177,15 +212,45 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
                 </button>
               </div>
               <div className="text-sm text-blue-800 space-y-2">
-                <p><strong>What it does:</strong> Discovers top-performing pages from SEMrush historical data for your specified timeframe.</p>
-                <p><strong>Data source:</strong> Uses SEMrush's domain analytics to find pages that were ranking and driving traffic.</p>
-                <p><strong>Historical insight:</strong> Shows pages that were successful during your selected period, even if they're no longer active.</p>
-                <p><strong>Use cases:</strong> Perfect for finding lost content, analyzing competitor pages, or discovering old URLs that may need redirects.</p>
-                <p><strong>API requirement:</strong> Requires a SEMrush API key (stored securely in your browser).</p>
-                <p><strong>API costs:</strong> Each discovery request costs 1 API unit, regardless of the number of results requested.</p>
-                <p><strong>Limits:</strong> Maximum 10,000 results per request (SEMrush API limit).</p>
-                <p><strong>Plan note:</strong> Historical Top Pages are available on higher-tier SEMrush plans. Lower-tier plans only support Current Data.</p>
-                <p><strong>✅ Ready to use:</strong> SEMrush API integration is working! Discover top organic pages for any domain.</p>
+                <p>
+                  <strong>What it does:</strong> Discovers top-performing pages
+                  from SEMrush historical data for your specified timeframe.
+                </p>
+                <p>
+                  <strong>Data source:</strong> Uses SEMrush's domain analytics
+                  to find pages that were ranking and driving traffic.
+                </p>
+                <p>
+                  <strong>Historical insight:</strong> Shows pages that were
+                  successful during your selected period, even if they're no
+                  longer active.
+                </p>
+                <p>
+                  <strong>Use cases:</strong> Perfect for finding lost content,
+                  analyzing competitor pages, or discovering old URLs that may
+                  need redirects.
+                </p>
+                <p>
+                  <strong>API requirement:</strong> Requires a SEMrush API key
+                  (stored securely in your browser).
+                </p>
+                <p>
+                  <strong>API costs:</strong> Each discovery request costs 1 API
+                  unit, regardless of the number of results requested.
+                </p>
+                <p>
+                  <strong>Limits:</strong> Maximum 10,000 results per request
+                  (SEMrush API limit).
+                </p>
+                <p>
+                  <strong>Plan note:</strong> Historical Top Pages are available
+                  on higher-tier SEMrush plans. Lower-tier plans only support
+                  Current Data.
+                </p>
+                <p>
+                  <strong>✅ Ready to use:</strong> SEMrush API integration is
+                  working! Discover top organic pages for any domain.
+                </p>
               </div>
             </div>
           )}
@@ -194,7 +259,9 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 flex items-start">
             <Info className="w-4 h-4 mr-2 mt-0.5" />
             <div>
-              <span className="font-medium">Plan note:</span> Historical Top Pages are only available on higher SEMrush plans. Lower-tier plans only support Current Data.
+              <span className="font-medium">Plan note:</span> Historical Top
+              Pages are only available on higher SEMrush plans. Lower-tier plans
+              only support Current Data.
             </div>
           </div>
 
@@ -206,12 +273,12 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
               <input
                 type="text"
                 value={domain}
-                onChange={(e) => setDomain(e.target.value)}
+                onChange={e => setDomain(e.target.value)}
                 placeholder="example.com"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 URL Limit
@@ -219,7 +286,7 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
               <input
                 type="number"
                 value={urlLimit}
-                onChange={(e) => setUrlLimit(parseInt(e.target.value) || 1000)}
+                onChange={e => setUrlLimit(parseInt(e.target.value) || 1000)}
                 min="1"
                 max="10000"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -234,7 +301,7 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
               </label>
               <select
                 value={country}
-                onChange={(e) => setCountry(e.target.value)}
+                onChange={e => setCountry(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="us">United States</option>
@@ -249,14 +316,16 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
                 <option value="ru">Russia</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Device
               </label>
               <select
                 value={device}
-                onChange={(e) => setDevice(e.target.value as 'desktop' | 'mobile')}
+                onChange={e =>
+                  setDevice(e.target.value as 'desktop' | 'mobile')
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="desktop">Desktop</option>
@@ -271,36 +340,48 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
               <div className="flex space-x-2">
                 <select
                   value={selectedYear}
-                  onChange={(e) => {
+                  onChange={e => {
                     const y = parseInt(e.target.value, 10);
                     setSelectedYear(y);
                     // If selecting current year, prevent selecting a future month
-                    if (y === currentYear && selectedMonthIndex > currentMonthIndex) {
+                    if (
+                      y === currentYear &&
+                      selectedMonthIndex > currentMonthIndex
+                    ) {
                       setSelectedMonthIndex(currentMonthIndex);
                     }
                   }}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {years.map(y => (
-                    <option key={y} value={y}>{y}</option>
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
                   ))}
                 </select>
                 <select
                   value={selectedMonthIndex}
-                  onChange={(e) => setSelectedMonthIndex(parseInt(e.target.value, 10))}
+                  onChange={e =>
+                    setSelectedMonthIndex(parseInt(e.target.value, 10))
+                  }
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {monthsShort.map((m, idx) => {
-                    const disabled = (selectedYear === currentYear && idx > currentMonthIndex) ||
-                                     (selectedYear === firstHistoricalYear && idx < 0); // no lower bound within 2012
+                    const disabled =
+                      (selectedYear === currentYear &&
+                        idx > currentMonthIndex) ||
+                      (selectedYear === firstHistoricalYear && idx < 0); // no lower bound within 2012
                     return (
-                      <option key={m} value={idx} disabled={disabled}>{m}</option>
+                      <option key={m} value={idx} disabled={disabled}>
+                        {m}
+                      </option>
                     );
                   })}
                 </select>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                SEMrush returns a monthly snapshot as of the selected month. Historical availability varies by database.
+                SEMrush returns a monthly snapshot as of the selected month.
+                Historical availability varies by database.
               </p>
             </div>
           </div>
@@ -323,7 +404,7 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
                 </>
               )}
             </button>
-            
+
             <button
               onClick={handleClear}
               disabled={isDiscovering}
@@ -352,11 +433,14 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
               <span className="text-green-800">
-                Found {discoveryResult.totalFound} top-performing pages for {discoveryResult.domain}
+                Found {discoveryResult.totalFound} top-performing pages for{' '}
+                {discoveryResult.domain}
               </span>
             </div>
             <p className="text-sm text-green-700 mt-1">
-              Timeframe: {discoveryResult.timeframe} | Country: {discoveryResult.country.toUpperCase()} | Device: {discoveryResult.device}
+              Timeframe: {discoveryResult.timeframe} | Country:{' '}
+              {discoveryResult.country.toUpperCase()} | Device:{' '}
+              {discoveryResult.device}
             </p>
           </div>
 
@@ -366,12 +450,19 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
             </div>
             <div className="max-h-64 overflow-y-auto">
               {discoveryResult.pages.slice(0, 20).map((page, index) => (
-                <div key={index} className="px-4 py-3 border-b border-gray-100 last:border-b-0">
+                <div
+                  key={index}
+                  className="px-4 py-3 border-b border-gray-100 last:border-b-0"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{page.url}</p>
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {page.url}
+                      </p>
                       <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500">
-                        <span>Traffic: {page.organicTraffic.toLocaleString()}</span>
+                        <span>
+                          Traffic: {page.organicTraffic.toLocaleString()}
+                        </span>
                         <span>Keywords: {page.organicKeywords}</span>
                         <span>Position: {page.organicPosition.toFixed(1)}</span>
                       </div>
@@ -392,10 +483,7 @@ export const SEMrushDiscoveryTab: React.FC<SEMrushDiscoveryTabProps> = ({
               Add all discovered pages to your project for redirect analysis
             </p>
             <div className="flex items-center space-x-3">
-              <button
-                onClick={onClose}
-                className="btn-secondary"
-              >
+              <button onClick={onClose} className="btn-secondary">
                 Cancel
               </button>
               <button
