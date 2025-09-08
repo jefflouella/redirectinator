@@ -4,7 +4,7 @@ import { Dashboard } from './components/Dashboard';
 import { UrlInputOverlay } from './components/UrlInputOverlay';
 import { UrlSummary } from './components/UrlSummary';
 import { ProcessingOptions } from './components/ProcessingOptions';
-import { ProcessingStatusDisplay } from './components/ProcessingStatusDisplay';
+import { ProcessingStatus as ProcessingStatusComponent } from './components/ProcessingStatus';
 import { ResultsTable } from './components/ResultsTable';
 import { ProjectManager } from './components/ProjectManager';
 import { Settings } from './components/Settings';
@@ -12,6 +12,7 @@ import { Footer } from './components/Footer';
 import { AboutPage } from './components/AboutPage';
 import { PrivacyPage } from './components/PrivacyPage';
 import { TermsPage } from './components/TermsPage';
+import { ExtensionsPage } from './components/ExtensionsPage';
 import { NotificationProvider } from './components/NotificationProvider';
 import { ExportService } from './services/exportService';
 import { useProjects } from './hooks/useProjects';
@@ -45,15 +46,20 @@ function App() {
     updateProject,
     setCurrentProject,
   } = useProjects(settings);
-  const { results, processingStatus, processUrls, stopProcessing, clearResults: clearInMemoryResults } =
-    useUrlProcessing(
-      currentProject,
-      newResults => {
-        // Save results to persistent storage when processing completes
-        saveResults(newResults);
-      },
-      mode // Pass the current mode
-    );
+  const {
+    results,
+    processingStatus,
+    processUrls,
+    stopProcessing,
+    clearResults: clearInMemoryResults,
+  } = useUrlProcessing(
+    currentProject,
+    newResults => {
+      // Save results to persistent storage when processing completes
+      saveResults(newResults);
+    },
+    mode // Pass the current mode
+  );
 
   // Use persistent results storage
   const {
@@ -206,7 +212,7 @@ function App() {
     <NotificationProvider>
       <div
         className="min-h-screen flex flex-col"
-        style={{ backgroundColor: '#f9fafb' }}
+        style={{ backgroundColor: '#f8fafc' }}
       >
         <Header
           currentProject={currentProject}
@@ -214,66 +220,73 @@ function App() {
           activeTab={activeTab}
         />
 
-        <main className="flex-1">
+        <main className="flex-1 bg-gradient-to-b from-white to-slate-50">
           {activeTab === 'dashboard' && (
-            <div className="container mx-auto px-4 py-6 space-y-6">
+            <div className="container mx-auto px-6 py-8 space-y-6">
               <Dashboard
                 summaryStats={summaryStats}
-                processingStatus={processingStatus}
                 onExport={exportResults}
                 mode={mode}
                 onModeChange={handleModeChange}
               />
 
-              <UrlSummary
-                key={`${currentProject?.id}-${currentProject?.updatedAt}-${currentProject?.urls?.length}-${refreshCounter}`}
-                currentProject={currentProject}
-                onProcessUrls={processUrls}
-                isProcessing={processingStatus.isProcessing}
-                onEditUrls={() => setIsUrlOverlayOpen(true)}
-                onNavigateToProjects={() => navigateTo('projects')}
-                onProjectUpdate={async updatedProject => {
-                  try {
-                    // Save the updated project to the database
-                    await updateProject(updatedProject.id, updatedProject);
-                    // Update the current project state
-                    setCurrentProject(updatedProject);
-                    // Force a re-render
-                    setRefreshCounter(prev => prev + 1);
-                  } catch (error) {
-                    console.error('Failed to save updated project:', error);
-                    // Could add error notification here
-                  }
-                }}
-              />
+              {/* URLs Ready Section - Now appears first */}
+              <div className="urls-ready-section">
+                <UrlSummary
+                  key={`${currentProject?.id}-${currentProject?.updatedAt}-${currentProject?.urls?.length}-${refreshCounter}`}
+                  currentProject={currentProject}
+                  onProcessUrls={processUrls}
+                  isProcessing={processingStatus.isProcessing}
+                  onEditUrls={() => setIsUrlOverlayOpen(true)}
+                  onNavigateToProjects={() => navigateTo('projects')}
+                  onProjectUpdate={async updatedProject => {
+                    try {
+                      // Save the updated project to the database
+                      await updateProject(updatedProject.id, updatedProject);
+                      // Update the current project state
+                      setCurrentProject(updatedProject);
+                      // Force a re-render
+                      setRefreshCounter(prev => prev + 1);
+                    } catch (error) {
+                      console.error('Failed to save updated project:', error);
+                      // Could add error notification here
+                    }
+                  }}
+                />
+              </div>
 
-              <ProcessingOptions
-                currentProject={currentProject}
-                urlCount={currentProject?.urls?.length || 0}
-                resultCount={finalResults.length}
-                isProcessing={processingStatus.isProcessing}
-                processingStatus={processingStatus}
-                onRunAllUrls={handleRunAllUrls}
-                onRunNewUrls={handleRunNewUrls}
-                onContinueProcessing={handleContinueProcessing}
-                onStopProcessing={handleStopProcessing}
-                onClearResults={handleClearResults}
-                progressStats={progressStats}
-              />
+              <div className="url-input-section">
+                <ProcessingOptions
+                  currentProject={currentProject}
+                  urlCount={currentProject?.urls?.length || 0}
+                  resultCount={finalResults.length}
+                  isProcessing={processingStatus.isProcessing}
+                  processingStatus={processingStatus}
+                  onRunAllUrls={handleRunAllUrls}
+                  onRunNewUrls={handleRunNewUrls}
+                  onContinueProcessing={handleContinueProcessing}
+                  onStopProcessing={handleStopProcessing}
+                  onClearResults={handleClearResults}
+                  progressStats={progressStats}
+                />
+              </div>
 
-              <ProcessingStatusDisplay
-                isProcessing={processingStatus.isProcessing}
-                processingStatus={processingStatus}
-              />
+              {/* Processing Status Section - moved from Dashboard */}
+              <ProcessingStatusComponent processingStatus={processingStatus} />
 
               {finalResults.length > 0 && (
-                <ResultsTable results={finalResults} onExport={exportResults} />
+                <div className="results-section">
+                  <ResultsTable
+                    results={finalResults}
+                    onExport={exportResults}
+                  />
+                </div>
               )}
             </div>
           )}
 
           {activeTab === 'projects' && (
-            <div className="container mx-auto px-4 py-6 space-y-6">
+            <div className="container mx-auto px-6 py-8 space-y-6">
               <ProjectManager
                 projects={projects}
                 currentProject={currentProject}
@@ -300,6 +313,10 @@ function App() {
 
           {activeTab === 'terms' && (
             <TermsPage onBack={() => navigateTo('dashboard')} />
+          )}
+
+          {activeTab === 'extensions' && (
+            <ExtensionsPage onBack={() => navigateTo('dashboard')} />
           )}
         </main>
 

@@ -6,7 +6,8 @@ type TabType =
   | 'settings'
   | 'about'
   | 'privacy'
-  | 'terms';
+  | 'terms'
+  | 'extensions';
 
 export const useRouting = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -32,6 +33,8 @@ export const useRouting = () => {
         newTab = 'projects';
       } else if (path === '/settings') {
         newTab = 'settings';
+      } else if (path === '/extensions') {
+        newTab = 'extensions';
       } else {
         newTab = 'dashboard';
       }
