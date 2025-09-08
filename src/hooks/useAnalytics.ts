@@ -10,9 +10,12 @@ export const useAnalytics = () => {
     }
   }, []);
 
-  const trackFeatureUsage = useCallback((feature: string, details?: Record<string, unknown>) => {
-    analytics.trackFeatureUsage(feature, details);
-  }, []);
+  const trackFeatureUsage = useCallback(
+    (feature: string, details?: Record<string, unknown>) => {
+      analytics.trackFeatureUsage(feature, details);
+    },
+    []
+  );
 
   const trackUrlProcessing = useCallback((urlCount: number, method: string) => {
     analytics.trackUrlProcessing(urlCount, method);
@@ -38,29 +41,47 @@ export const useAnalytics = () => {
     analytics.trackPerformance(metric, value);
   }, []);
 
-  const trackCopyAction = useCallback((contentType: string, context?: string) => {
-    analytics.trackCopyAction(contentType, context);
-  }, []);
+  const trackCopyAction = useCallback(
+    (contentType: string, context?: string) => {
+      analytics.trackCopyAction(contentType, context);
+    },
+    []
+  );
 
-  const trackSearch = useCallback((query: string, context: string, resultCount?: number) => {
-    analytics.trackSearch(query, context, resultCount);
-  }, []);
+  const trackSearch = useCallback(
+    (query: string, context: string, resultCount?: number) => {
+      analytics.trackSearch(query, context, resultCount);
+    },
+    []
+  );
 
-  const trackFilter = useCallback((filterType: string, filterValue: string, resultCount?: number) => {
-    analytics.trackFilter(filterType, filterValue, resultCount);
-  }, []);
+  const trackFilter = useCallback(
+    (filterType: string, filterValue: string, resultCount?: number) => {
+      analytics.trackFilter(filterType, filterValue, resultCount);
+    },
+    []
+  );
 
-  const trackBulkAction = useCallback((action: string, itemCount: number, context?: string) => {
-    analytics.trackBulkAction(action, itemCount, context);
-  }, []);
+  const trackBulkAction = useCallback(
+    (action: string, itemCount: number, context?: string) => {
+      analytics.trackBulkAction(action, itemCount, context);
+    },
+    []
+  );
 
-  const trackCleanup = useCallback((action: string, itemsAffected: number, context?: string) => {
-    analytics.trackCleanup(action, itemsAffected, context);
-  }, []);
+  const trackCleanup = useCallback(
+    (action: string, itemsAffected: number, context?: string) => {
+      analytics.trackCleanup(action, itemsAffected, context);
+    },
+    []
+  );
 
-  const trackUIInteraction = useCallback((interaction: string, element: string, context?: string) => {
-    analytics.trackUIInteraction(interaction, element, context);
-  }, []);
+  const trackUIInteraction = useCallback(
+    (interaction: string, element: string, context?: string) => {
+      analytics.trackUIInteraction(interaction, element, context);
+    },
+    []
+  );
 
   return {
     trackFeatureUsage,
@@ -77,6 +98,6 @@ export const useAnalytics = () => {
     trackCleanup,
     trackUIInteraction,
     isEnabled: analytics.isAnalyticsEnabled(),
-    setEnabled: analytics.setEnabled.bind(analytics)
+    setEnabled: analytics.setEnabled.bind(analytics),
   };
 };

@@ -8,15 +8,18 @@ import {
   ArrowRight,
   AlertTriangle,
   Sparkles,
-  Filter
+  Filter,
 } from 'lucide-react';
 import { useUrlPersistence } from '@/hooks/useUrlPersistence';
 import { useNotifications } from './NotificationProvider';
 import { UrlCleaner } from './UrlCleaner';
+import { ConfirmationOverlay } from './ConfirmationOverlay';
 
 interface UrlSummaryProps {
   currentProject: Project | null;
-  onProcessUrls: (urls: Array<{ startingUrl: string; targetRedirect: string }>) => void;
+  onProcessUrls: (
+    urls: Array<{ startingUrl: string; targetRedirect: string }>
+  ) => void;
   isProcessing: boolean;
   onEditUrls: () => void;
   onNavigateToProjects?: () => void;
@@ -29,12 +32,20 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
   isProcessing,
   onEditUrls,
   onNavigateToProjects,
-  onProjectUpdate
+  onProjectUpdate,
 }) => {
   const [isCleanerOpen, setIsCleanerOpen] = useState(false);
-  const { urls, isLoading: urlsLoading, clearUrls, refreshUrls, detectDuplicates, cleanDuplicates } = useUrlPersistence({ 
-    currentProject, 
-    onProjectUpdate 
+  const [showClearConfirmation, setShowClearConfirmation] = useState(false);
+  const {
+    urls,
+    isLoading: urlsLoading,
+    clearUrls,
+    refreshUrls,
+    detectDuplicates,
+    cleanDuplicates,
+  } = useUrlPersistence({
+    currentProject,
+    onProjectUpdate,
   });
   const { addNotification } = useNotifications();
 
@@ -50,24 +61,28 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
 
   const validateUrls = () => {
     const errors: string[] = [];
-    
+
     urls.forEach((url, index) => {
       try {
         new URL(url.startingUrl);
       } catch {
-        errors.push(`Row ${index + 1}: Invalid starting URL - ${url.startingUrl}`);
+        errors.push(
+          `Row ${index + 1}: Invalid starting URL - ${url.startingUrl}`
+        );
       }
-      
+
       // Only validate target URL if it's provided
       if (url.targetRedirect.trim()) {
         try {
           new URL(url.targetRedirect);
         } catch {
-          errors.push(`Row ${index + 1}: Invalid target URL - ${url.targetRedirect}`);
+          errors.push(
+            `Row ${index + 1}: Invalid target URL - ${url.targetRedirect}`
+          );
         }
       }
     });
-    
+
     return errors;
   };
 
@@ -95,17 +110,34 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
     if (duplicateInfo.hasDuplicates) {
       const removedCount = duplicateInfo.totalCount - duplicateInfo.uniqueCount;
       cleanDuplicates();
-      
+
       // Show notification
       addNotification({
         type: 'success',
         title: 'Duplicates Cleaned',
         message: `Removed ${removedCount} duplicate URL${removedCount !== 1 ? 's' : ''}. Now ${duplicateInfo.uniqueCount} unique URLs remain.`,
-        duration: 4000
+        duration: 4000,
       });
-      
+
       console.log(`Cleaned ${removedCount} duplicate URLs`);
     }
+  };
+
+  const handleClearUrls = () => {
+    setShowClearConfirmation(true);
+  };
+
+  const handleConfirmClear = () => {
+    clearUrls();
+    setShowClearConfirmation(false);
+    
+    // Show notification
+    addNotification({
+      type: 'success',
+      title: 'URLs Cleared',
+      message: 'All URLs have been removed from the project.',
+      duration: 3000,
+    });
   };
 
   // Show empty state when no URLs
@@ -118,10 +150,10 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Plus className="w-8 h-8 text-blue-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Start!</h3>
-            <p className="text-gray-600 mb-4">
-              First, let's create a project.
-            </p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Ready to Start!
+            </h3>
+            <p className="text-gray-600 mb-4">First, let's create a project.</p>
             <button
               onClick={onNavigateToProjects}
               className="btn-primary flex items-center space-x-2 mx-auto"
@@ -141,7 +173,9 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Plus className="w-8 h-8 text-blue-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Start!</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Ready to Start!
+          </h3>
           <p className="text-gray-600 mb-4">
             Add URLs to begin analyzing redirects for your project
           </p>
@@ -163,7 +197,9 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
       <div className="card">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-600">Loading URLs from project...</span>
+          <span className="ml-3 text-gray-600">
+            Loading URLs from project...
+          </span>
         </div>
       </div>
     );
@@ -174,9 +210,11 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
     <div className="card">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-            duplicateInfo.hasDuplicates ? 'bg-amber-100' : 'bg-green-100'
-          }`}>
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              duplicateInfo.hasDuplicates ? 'bg-amber-100' : 'bg-green-100'
+            }`}
+          >
             {duplicateInfo.hasDuplicates ? (
               <AlertTriangle className="w-5 h-5 text-amber-600" />
             ) : (
@@ -188,12 +226,15 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
               URLs Ready ({urls.length})
               {duplicateInfo.hasDuplicates && (
                 <span className="ml-2 text-sm font-normal text-amber-600">
-                  • {duplicateInfo.duplicateCount} duplicate{duplicateInfo.duplicateCount !== 1 ? 's' : ''}
+                  • {duplicateInfo.duplicateCount} duplicate
+                  {duplicateInfo.duplicateCount !== 1 ? 's' : ''}
                 </span>
               )}
             </h3>
             <p className="text-sm text-gray-600">
-              {currentProject ? `Project: ${currentProject.name}` : 'No project selected'}
+              {currentProject
+                ? `Project: ${currentProject.name}`
+                : 'No project selected'}
               {duplicateInfo.hasDuplicates && (
                 <span className="ml-2 text-amber-600">
                   ({duplicateInfo.uniqueCount} unique URLs)
@@ -228,7 +269,7 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
             <span>Clean URLs</span>
           </button>
           <button
-            onClick={clearUrls}
+            onClick={handleClearUrls}
             className="btn-secondary flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             <Trash2 className="w-4 h-4" />
@@ -245,8 +286,10 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
             <div className="text-sm text-amber-800">
               <p className="font-medium">Duplicate URLs detected</p>
               <p>
-                Found {duplicateInfo.duplicateCount} duplicate URL{duplicateInfo.duplicateCount !== 1 ? 's' : ''} 
-                out of {duplicateInfo.totalCount} total. Only {duplicateInfo.uniqueCount} unique URLs will be processed.
+                Found {duplicateInfo.duplicateCount} duplicate URL
+                {duplicateInfo.duplicateCount !== 1 ? 's' : ''}
+                out of {duplicateInfo.totalCount} total. Only{' '}
+                {duplicateInfo.uniqueCount} unique URLs will be processed.
               </p>
             </div>
           </div>
@@ -291,9 +334,8 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
           {!currentProject
             ? 'Please select or create a project first'
             : duplicateInfo.hasDuplicates
-            ? `${duplicateInfo.uniqueCount} unique URL${duplicateInfo.uniqueCount !== 1 ? 's' : ''} ready to process (${duplicateInfo.duplicateCount} duplicates will be skipped)`
-            : `${urls.length} URL${urls.length !== 1 ? 's' : ''} ready to process`
-          }
+              ? `${duplicateInfo.uniqueCount} unique URL${duplicateInfo.uniqueCount !== 1 ? 's' : ''} ready to process (${duplicateInfo.duplicateCount} duplicates will be skipped)`
+              : `${urls.length} URL${urls.length !== 1 ? 's' : ''} ready to process`}
         </div>
         <button
           onClick={handleProcess}
@@ -305,9 +347,8 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
             {isProcessing
               ? 'Processing...'
               : !currentProject
-              ? 'Select Project First'
-              : 'Process URLs'
-            }
+                ? 'Select Project First'
+                : 'Process URLs'}
           </span>
         </button>
       </div>
@@ -317,7 +358,7 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
         <UrlCleaner
           urls={urls}
           onClose={() => setIsCleanerOpen(false)}
-          onUrlsUpdated={(updatedUrls) => {
+          onUrlsUpdated={updatedUrls => {
             // Update the URLs in the project
             if (currentProject) {
               const updatedProject = {
@@ -335,6 +376,18 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
           }}
         />
       )}
+
+      {/* Clear URLs Confirmation Overlay */}
+      <ConfirmationOverlay
+        isOpen={showClearConfirmation}
+        onClose={() => setShowClearConfirmation(false)}
+        onConfirm={handleConfirmClear}
+        title="Clear All URLs"
+        message={`Are you sure you want to clear all ${urls.length} URLs from this project? This action cannot be undone and will remove all URLs you've added.`}
+        confirmText="Clear URLs"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };

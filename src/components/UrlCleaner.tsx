@@ -8,7 +8,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Copy,
-  ExternalLink
+  ExternalLink,
 } from 'lucide-react';
 import { useNotifications } from './NotificationProvider';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -16,7 +16,9 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 interface UrlCleanerProps {
   urls: Array<{ startingUrl: string; targetRedirect: string }>;
   onClose: () => void;
-  onUrlsUpdated: (updatedUrls: Array<{ startingUrl: string; targetRedirect: string }>) => void;
+  onUrlsUpdated: (
+    updatedUrls: Array<{ startingUrl: string; targetRedirect: string }>
+  ) => void;
 }
 
 interface UrlWithMetadata {
@@ -29,14 +31,24 @@ interface UrlWithMetadata {
   duplicateGroup?: string;
 }
 
-export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpdated }) => {
+export const UrlCleaner: React.FC<UrlCleanerProps> = ({
+  urls,
+  onClose,
+  onUrlsUpdated,
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedParameter, setSelectedParameter] = useState<string>('');
   const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [urlsToDelete, setUrlsToDelete] = useState<string[]>([]);
   const { addNotification } = useNotifications();
-  const { trackCopyAction, trackSearch, trackFilter, trackCleanup, trackUIInteraction } = useAnalytics();
+  const {
+    trackCopyAction,
+    trackSearch,
+    trackFilter,
+    trackCleanup,
+    trackUIInteraction,
+  } = useAnalytics();
 
   // Process URLs to extract parameters and detect duplicates
   const processedUrls = useMemo(() => {
@@ -46,7 +58,7 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
     const processed = urls.map((url, index) => {
       const urlObj = new URL(url.startingUrl);
       const parameters = new Map<string, string>();
-      
+
       // Extract all query parameters
       urlObj.searchParams.forEach((value, key) => {
         parameters.set(key, value);
@@ -54,8 +66,19 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
       });
 
       // Detect tracking parameters
-      const trackingParams = ['utm_', 'ref', 'source', 'campaign', 'affiliate', 'partner', 'tracking', 'clickid', 'irclickid', 'hss_channel'];
-      const hasTrackingParams = Array.from(parameters.keys()).some(param => 
+      const trackingParams = [
+        'utm_',
+        'ref',
+        'source',
+        'campaign',
+        'affiliate',
+        'partner',
+        'tracking',
+        'clickid',
+        'irclickid',
+        'hss_channel',
+      ];
+      const hasTrackingParams = Array.from(parameters.keys()).some(param =>
         trackingParams.some(tracking => param.toLowerCase().includes(tracking))
       );
 
@@ -97,31 +120,32 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(url => 
+      filtered = filtered.filter(url =>
         url.startingUrl.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Filter by parameter
     if (selectedParameter) {
-      filtered = filtered.filter(url => 
-        url.parameters.has(selectedParameter)
-      );
+      filtered = filtered.filter(url => url.parameters.has(selectedParameter));
     }
 
     return filtered;
   }, [processedUrls.processed, searchTerm, selectedParameter]);
 
   // Handle individual URL selection
-  const toggleUrlSelection = useCallback((urlId: string) => {
-    const newSelected = new Set(selectedUrls);
-    if (newSelected.has(urlId)) {
-      newSelected.delete(urlId);
-    } else {
-      newSelected.add(urlId);
-    }
-    setSelectedUrls(newSelected);
-  }, [selectedUrls]);
+  const toggleUrlSelection = useCallback(
+    (urlId: string) => {
+      const newSelected = new Set(selectedUrls);
+      if (newSelected.has(urlId)) {
+        newSelected.delete(urlId);
+      } else {
+        newSelected.add(urlId);
+      }
+      setSelectedUrls(newSelected);
+    },
+    [selectedUrls]
+  );
 
   // Handle select all/none
   const toggleSelectAll = useCallback(() => {
@@ -141,7 +165,7 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
         type: 'warning',
         title: 'No URLs Selected',
         message: 'Please select URLs to delete first.',
-        duration: 3000
+        duration: 3000,
       });
       return;
     }
@@ -153,14 +177,21 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
 
   // Confirm and execute delete
   const confirmDelete = useCallback(() => {
-    const urlsToKeep = processedUrls.processed.filter(url => !urlsToDelete.includes(url.id));
-    onUrlsUpdated(urlsToKeep.map(url => ({ startingUrl: url.startingUrl, targetRedirect: url.targetRedirect })));
-    
+    const urlsToKeep = processedUrls.processed.filter(
+      url => !urlsToDelete.includes(url.id)
+    );
+    onUrlsUpdated(
+      urlsToKeep.map(url => ({
+        startingUrl: url.startingUrl,
+        targetRedirect: url.targetRedirect,
+      }))
+    );
+
     addNotification({
       type: 'success',
       title: 'URLs Deleted',
       message: `Successfully deleted ${urlsToDelete.length} URL${urlsToDelete.length !== 1 ? 's' : ''}.`,
-      duration: 4000
+      duration: 4000,
     });
 
     setSelectedUrls(new Set());
@@ -171,7 +202,7 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
   // Remove duplicates (keep one from each group)
   const removeDuplicates = useCallback(() => {
     const uniqueUrls = new Map<string, UrlWithMetadata>();
-    
+
     processedUrls.processed.forEach(url => {
       if (url.duplicateGroup) {
         // Keep the first URL from each duplicate group
@@ -185,31 +216,40 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
     });
 
     const deduplicatedUrls = Array.from(uniqueUrls.values());
-    const removedCount = processedUrls.processed.length - deduplicatedUrls.length;
-    
-    onUrlsUpdated(deduplicatedUrls.map(url => ({ startingUrl: url.startingUrl, targetRedirect: url.targetRedirect })));
-    
+    const removedCount =
+      processedUrls.processed.length - deduplicatedUrls.length;
+
+    onUrlsUpdated(
+      deduplicatedUrls.map(url => ({
+        startingUrl: url.startingUrl,
+        targetRedirect: url.targetRedirect,
+      }))
+    );
+
     addNotification({
       type: 'success',
       title: 'Duplicates Removed',
       message: `Removed ${removedCount} duplicate URL${removedCount !== 1 ? 's' : ''}. ${deduplicatedUrls.length} unique URLs remain.`,
-      duration: 4000
+      duration: 4000,
     });
 
     trackCleanup('remove_duplicates', removedCount, 'url_cleaner');
   }, [processedUrls.processed, onUrlsUpdated, addNotification, trackCleanup]);
 
   // Copy URL to clipboard
-  const copyUrl = useCallback((url: string) => {
-    navigator.clipboard.writeText(url);
-    addNotification({
-      type: 'success',
-      title: 'URL Copied',
-      message: 'URL copied to clipboard.',
-      duration: 2000
-    });
-    trackCopyAction('url', 'url_cleaner');
-  }, [addNotification, trackCopyAction]);
+  const copyUrl = useCallback(
+    (url: string) => {
+      navigator.clipboard.writeText(url);
+      addNotification({
+        type: 'success',
+        title: 'URL Copied',
+        message: 'URL copied to clipboard.',
+        duration: 2000,
+      });
+      trackCopyAction('url', 'url_cleaner');
+    },
+    [addNotification, trackCopyAction]
+  );
 
   // Track search term changes
   useEffect(() => {
@@ -233,7 +273,8 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Clean URLs</h2>
             <p className="text-gray-600 mt-1">
-              {filteredUrls.length} of {processedUrls.processed.length} URLs • {selectedUrls.size} selected
+              {filteredUrls.length} of {processedUrls.processed.length} URLs •{' '}
+              {selectedUrls.size} selected
             </p>
           </div>
           <button
@@ -255,7 +296,7 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
                   type="text"
                   placeholder="Search URLs..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -265,13 +306,19 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
             <div className="w-64">
               <select
                 value={selectedParameter}
-                onChange={(e) => setSelectedParameter(e.target.value)}
+                onChange={e => setSelectedParameter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">All Parameters</option>
                 {processedUrls.allParams.map(param => (
                   <option key={param} value={param}>
-                    {param} ({processedUrls.processed.filter(url => url.parameters.has(param)).length})
+                    {param} (
+                    {
+                      processedUrls.processed.filter(url =>
+                        url.parameters.has(param)
+                      ).length
+                    }
+                    )
                   </option>
                 ))}
               </select>
@@ -291,7 +338,9 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
                   <Square className="w-4 h-4" />
                 )}
                 <span>
-                  {selectedUrls.size === filteredUrls.length ? 'Deselect All' : 'Select All'}
+                  {selectedUrls.size === filteredUrls.length
+                    ? 'Deselect All'
+                    : 'Select All'}
                 </span>
               </button>
 
@@ -341,7 +390,7 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUrls.map((url) => (
+                {filteredUrls.map(url => (
                   <tr key={url.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
@@ -365,20 +414,28 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1">
-                        {Array.from(url.parameters.entries()).map(([key, value]) => (
-                          <span
-                            key={key}
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              key.toLowerCase().includes('utm_') || key.toLowerCase().includes('tracking')
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-blue-100 text-blue-800'
-                            }`}
-                          >
-                            {key}={value.length > 20 ? `${value.substring(0, 20)}...` : value}
-                          </span>
-                        ))}
+                        {Array.from(url.parameters.entries()).map(
+                          ([key, value]) => (
+                            <span
+                              key={key}
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                key.toLowerCase().includes('utm_') ||
+                                key.toLowerCase().includes('tracking')
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}
+                            >
+                              {key}=
+                              {value.length > 20
+                                ? `${value.substring(0, 20)}...`
+                                : value}
+                            </span>
+                          )
+                        )}
                         {url.parameters.size === 0 && (
-                          <span className="text-gray-400 text-xs">No parameters</span>
+                          <span className="text-gray-400 text-xs">
+                            No parameters
+                          </span>
                         )}
                       </div>
                     </td>
@@ -434,9 +491,12 @@ export const UrlCleaner: React.FC<UrlCleanerProps> = ({ urls, onClose, onUrlsUpd
                 <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900">Confirm Deletion</h3>
+                <h3 className="text-lg font-medium text-gray-900">
+                  Confirm Deletion
+                </h3>
                 <p className="text-sm text-gray-500">
-                  Are you sure you want to delete {urlsToDelete.length} URL{urlsToDelete.length !== 1 ? 's' : ''}?
+                  Are you sure you want to delete {urlsToDelete.length} URL
+                  {urlsToDelete.length !== 1 ? 's' : ''}?
                 </p>
               </div>
             </div>

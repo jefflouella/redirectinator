@@ -6,18 +6,24 @@ interface ProcessingStatusProps {
   processingStatus: ProcessingStatusType;
 }
 
-export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ processingStatus }) => {
+export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
+  processingStatus,
+}) => {
   const getProgressPercentage = () => {
     if (processingStatus.totalUrls === 0) return 0;
-    return Math.round((processingStatus.processedUrls / processingStatus.totalUrls) * 100);
+    return Math.round(
+      (processingStatus.processedUrls / processingStatus.totalUrls) * 100
+    );
   };
 
   const getEstimatedTimeRemaining = () => {
-    if (!processingStatus.startTime || processingStatus.processedUrls === 0) return null;
+    if (!processingStatus.startTime || processingStatus.processedUrls === 0)
+      return null;
 
     const elapsed = Date.now() - processingStatus.startTime;
     const rate = processingStatus.processedUrls / elapsed;
-    const remaining = (processingStatus.totalUrls - processingStatus.processedUrls) / rate;
+    const remaining =
+      (processingStatus.totalUrls - processingStatus.processedUrls) / rate;
 
     return Math.round(remaining / 1000); // Convert to seconds
   };
@@ -43,7 +49,8 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ processingSt
               Processing URLs
             </h3>
             <p className="text-sm text-primary-700">
-              Batch {processingStatus.currentBatch} of {processingStatus.totalBatches}
+              Batch {processingStatus.currentBatch} of{' '}
+              {processingStatus.totalBatches}
             </p>
           </div>
         </div>
@@ -70,7 +77,9 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ processingSt
       {processingStatus.currentUrl && (
         <div className="flex items-center space-x-2 text-sm text-primary-700">
           <Clock className="w-4 h-4" />
-          <span className="font-mono truncate">{processingStatus.currentUrl}</span>
+          <span className="font-mono truncate">
+            {processingStatus.currentUrl}
+          </span>
         </div>
       )}
 
@@ -86,11 +95,15 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ processingSt
         <div className="mt-4 p-3 bg-error-50 border border-error-200 rounded-lg">
           <div className="flex items-center space-x-2 text-error-700 mb-2">
             <AlertCircle className="w-4 h-4" />
-            <span className="font-medium">Errors ({processingStatus.errors.length})</span>
+            <span className="font-medium">
+              Errors ({processingStatus.errors.length})
+            </span>
           </div>
           <div className="text-sm text-error-600 space-y-1">
             {processingStatus.errors.slice(-3).map((error, index) => (
-              <div key={index} className="font-mono text-xs">{error}</div>
+              <div key={index} className="font-mono text-xs">
+                {error}
+              </div>
             ))}
           </div>
         </div>

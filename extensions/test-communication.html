@@ -1,21 +1,46 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Extension Communication Test</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .test-result { margin: 10px 0; padding: 10px; border-radius: 4px; }
-        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
-        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
-        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
-        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      .test-result {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+      }
+      .error {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+      }
+      .info {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 5px;
+        cursor: pointer;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>🔗 Extension Communication Test</h1>
-    <p>This page tests direct communication with the Redirectinator extension.</p>
+    <p>
+      This page tests direct communication with the Redirectinator extension.
+    </p>
 
     <button onclick="testRuntimeConnection()">Test Runtime Connection</button>
     <button onclick="testPingPong()">Test Ping/Pong</button>
@@ -25,106 +50,136 @@
     <div id="results"></div>
 
     <script>
-        function addResult(message, type = 'info') {
-            const results = document.getElementById('results');
-            const div = document.createElement('div');
-            div.className = `test-result ${type}`;
-            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
-            results.appendChild(div);
-            results.scrollTop = results.scrollHeight;
+      function addResult(message, type = 'info') {
+        const results = document.getElementById('results');
+        const div = document.createElement('div');
+        div.className = `test-result ${type}`;
+        div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+        results.appendChild(div);
+        results.scrollTop = results.scrollHeight;
+      }
+
+      function clearResults() {
+        document.getElementById('results').innerHTML = '';
+      }
+
+      function testRuntimeConnection() {
+        addResult('Testing Chrome runtime availability...', 'info');
+
+        if (typeof chrome === 'undefined') {
+          addResult('❌ Chrome runtime not available', 'error');
+          return;
         }
 
-        function clearResults() {
-            document.getElementById('results').innerHTML = '';
+        if (!chrome.runtime) {
+          addResult('❌ chrome.runtime not available', 'error');
+          return;
         }
 
-        function testRuntimeConnection() {
-            addResult('Testing Chrome runtime availability...', 'info');
+        addResult('✅ Chrome runtime available', 'success');
 
-            if (typeof chrome === 'undefined') {
-                addResult('❌ Chrome runtime not available', 'error');
-                return;
-            }
-
-            if (!chrome.runtime) {
-                addResult('❌ chrome.runtime not available', 'error');
-                return;
-            }
-
-            addResult('✅ Chrome runtime available', 'success');
-
-            if (chrome.runtime.id) {
-                addResult(`✅ Extension ID: ${chrome.runtime.id}`, 'success');
-            } else {
-                addResult('⚠️ No extension ID (may be expected for unpacked)', 'info');
-            }
-
-            if (chrome.runtime.getManifest) {
-                try {
-                    const manifest = chrome.runtime.getManifest();
-                    addResult(`✅ Manifest: ${manifest.name} v${manifest.version}`, 'success');
-                } catch (error) {
-                    addResult(`❌ Manifest error: ${error.message}`, 'error');
-                }
-            }
+        if (chrome.runtime.id) {
+          addResult(`✅ Extension ID: ${chrome.runtime.id}`, 'success');
+        } else {
+          addResult(
+            '⚠️ No extension ID (may be expected for unpacked)',
+            'info'
+          );
         }
 
-        function testPingPong() {
-            addResult('Testing ping/pong communication...', 'info');
+        if (chrome.runtime.getManifest) {
+          try {
+            const manifest = chrome.runtime.getManifest();
+            addResult(
+              `✅ Manifest: ${manifest.name} v${manifest.version}`,
+              'success'
+            );
+          } catch (error) {
+            addResult(`❌ Manifest error: ${error.message}`, 'error');
+          }
+        }
+      }
 
-            if (typeof chrome === 'undefined' || !chrome.runtime) {
-                addResult('❌ Chrome runtime not available', 'error');
-                return;
-            }
+      function testPingPong() {
+        addResult('Testing ping/pong communication...', 'info');
 
-            chrome.runtime.sendMessage({ type: 'PING' }, (response) => {
-                if (chrome.runtime.lastError) {
-                    addResult(`❌ Ping failed: ${chrome.runtime.lastError.message}`, 'error');
-                    return;
-                }
-
-                if (response && response.type === 'PONG') {
-                    addResult(`✅ Pong received! Version: ${response.version}, Status: ${response.status}`, 'success');
-                } else {
-                    addResult(`⚠️ Unexpected response: ${JSON.stringify(response)}`, 'error');
-                }
-            });
+        if (typeof chrome === 'undefined' || !chrome.runtime) {
+          addResult('❌ Chrome runtime not available', 'error');
+          return;
         }
 
-        function testAnalyzeUrl() {
-            addResult('Testing URL analysis...', 'info');
+        chrome.runtime.sendMessage({ type: 'PING' }, response => {
+          if (chrome.runtime.lastError) {
+            addResult(
+              `❌ Ping failed: ${chrome.runtime.lastError.message}`,
+              'error'
+            );
+            return;
+          }
 
-            if (typeof chrome === 'undefined' || !chrome.runtime) {
-                addResult('❌ Chrome runtime not available', 'error');
-                return;
-            }
-
-            const testUrl = 'http://testing.tamethebots.com/metaredirect.html';
-
-            chrome.runtime.sendMessage({
-                type: 'WEB_APP_ANALYZE_URL',
-                url: testUrl,
-                options: { timeout: 10000 }
-            }, (response) => {
-                if (chrome.runtime.lastError) {
-                    addResult(`❌ Analysis failed: ${chrome.runtime.lastError.message}`, 'error');
-                    return;
-                }
-
-                if (response && response.success) {
-                    addResult(`✅ Analysis successful! Final URL: ${response.result.finalUrl}`, 'success');
-                    addResult(`📊 Details: ${response.result.redirectCount} redirects, ${response.result.analysisTime}ms`, 'info');
-                } else {
-                    addResult(`❌ Analysis error: ${response?.error || 'Unknown error'}`, 'error');
-                }
-            });
-        }
-
-        // Auto-run basic test on load
-        window.addEventListener('load', () => {
-            addResult('Page loaded, testing runtime connection...', 'info');
-            testRuntimeConnection();
+          if (response && response.type === 'PONG') {
+            addResult(
+              `✅ Pong received! Version: ${response.version}, Status: ${response.status}`,
+              'success'
+            );
+          } else {
+            addResult(
+              `⚠️ Unexpected response: ${JSON.stringify(response)}`,
+              'error'
+            );
+          }
         });
+      }
+
+      function testAnalyzeUrl() {
+        addResult('Testing URL analysis...', 'info');
+
+        if (typeof chrome === 'undefined' || !chrome.runtime) {
+          addResult('❌ Chrome runtime not available', 'error');
+          return;
+        }
+
+        const testUrl = 'http://testing.tamethebots.com/metaredirect.html';
+
+        chrome.runtime.sendMessage(
+          {
+            type: 'WEB_APP_ANALYZE_URL',
+            url: testUrl,
+            options: { timeout: 10000 },
+          },
+          response => {
+            if (chrome.runtime.lastError) {
+              addResult(
+                `❌ Analysis failed: ${chrome.runtime.lastError.message}`,
+                'error'
+              );
+              return;
+            }
+
+            if (response && response.success) {
+              addResult(
+                `✅ Analysis successful! Final URL: ${response.result.finalUrl}`,
+                'success'
+              );
+              addResult(
+                `📊 Details: ${response.result.redirectCount} redirects, ${response.result.analysisTime}ms`,
+                'info'
+              );
+            } else {
+              addResult(
+                `❌ Analysis error: ${response?.error || 'Unknown error'}`,
+                'error'
+              );
+            }
+          }
+        );
+      }
+
+      // Auto-run basic test on load
+      window.addEventListener('load', () => {
+        addResult('Page loaded, testing runtime connection...', 'info');
+        testRuntimeConnection();
+      });
     </script>
-</body>
+  </body>
 </html>

@@ -6,14 +6,19 @@ interface ExportSectionProps {
   hasResults: boolean;
 }
 
-export const ExportSection: React.FC<ExportSectionProps> = ({ onExport, hasResults }) => {
+export const ExportSection: React.FC<ExportSectionProps> = ({
+  onExport,
+  hasResults,
+}) => {
   if (!hasResults) return null;
 
   return (
     <div className="card">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-tech-900">Export Results</h3>
+          <h3 className="text-lg font-semibold text-tech-900">
+            Export Results
+          </h3>
           <p className="text-sm text-tech-600">
             Download your analysis results in various formats
           </p>

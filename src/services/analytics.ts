@@ -38,14 +38,15 @@ export class AnalyticsService {
    * Track a custom event
    */
   public trackEvent(event: AnalyticsEvent): void {
-    if (!this.isEnabled || typeof window === 'undefined' || !window.gtag) return;
+    if (!this.isEnabled || typeof window === 'undefined' || !window.gtag)
+      return;
 
     try {
       window.gtag('event', event.action, {
         event_category: event.category,
         event_label: event.label,
         value: event.value,
-        ...event.custom_parameters
+        ...event.custom_parameters,
       });
     } catch (error) {
       console.warn('Analytics tracking failed:', error);
@@ -56,12 +57,13 @@ export class AnalyticsService {
    * Track page views
    */
   public trackPageView(page: string): void {
-    if (!this.isEnabled || typeof window === 'undefined' || !window.gtag) return;
+    if (!this.isEnabled || typeof window === 'undefined' || !window.gtag)
+      return;
 
     try {
       window.gtag('config', 'G-WL1D9YFCH9', {
         page_path: page,
-        page_title: `Redirectinator - ${page}`
+        page_title: `Redirectinator - ${page}`,
       });
     } catch (error) {
       console.warn('Analytics page view tracking failed:', error);
@@ -71,28 +73,31 @@ export class AnalyticsService {
   /**
    * Track feature usage with specific action names
    */
-  public trackFeatureUsage(feature: string, details?: Record<string, unknown>): void {
+  public trackFeatureUsage(
+    feature: string,
+    details?: Record<string, unknown>
+  ): void {
     // Use more specific action names for better analytics granularity
     const actionMap: Record<string, string> = {
-      'semrush_api_key_added': 'api_key_added',
-      'semrush_api_key_removed': 'api_key_removed',
-      'semrush_api_key_validation_failed': 'api_key_validation_failed',
-      'semrush_api_key_error': 'api_key_error',
-      'semrush_api_key_removal_error': 'api_key_removal_error',
-      'csv_upload': 'file_upload_csv',
-      'xml_sitemap_upload': 'file_upload_xml',
-      'input_method_selected': 'input_method_changed',
-      'setting_changed': 'settings_updated',
-      'tab_navigation': 'tab_switched',
-      'processing_stopped': 'processing_cancelled',
-      'results_cleared': 'results_reset',
-      'copy_to_clipboard': 'content_copied',
-      'search_performed': 'search_executed',
-      'filter_applied': 'filter_used',
-      'url_selected': 'url_interaction',
-      'bulk_action': 'bulk_operation',
-      'duplicate_removal': 'cleanup_duplicates',
-      'parameter_filter': 'parameter_filtered'
+      semrush_api_key_added: 'api_key_added',
+      semrush_api_key_removed: 'api_key_removed',
+      semrush_api_key_validation_failed: 'api_key_validation_failed',
+      semrush_api_key_error: 'api_key_error',
+      semrush_api_key_removal_error: 'api_key_removal_error',
+      csv_upload: 'file_upload_csv',
+      xml_sitemap_upload: 'file_upload_xml',
+      input_method_selected: 'input_method_changed',
+      setting_changed: 'settings_updated',
+      tab_navigation: 'tab_switched',
+      processing_stopped: 'processing_cancelled',
+      results_cleared: 'results_reset',
+      copy_to_clipboard: 'content_copied',
+      search_performed: 'search_executed',
+      filter_applied: 'filter_used',
+      url_selected: 'url_interaction',
+      bulk_action: 'bulk_operation',
+      duplicate_removal: 'cleanup_duplicates',
+      parameter_filter: 'parameter_filtered',
     };
 
     const action = actionMap[feature] || 'feature_used';
@@ -104,8 +109,8 @@ export class AnalyticsService {
       custom_parameters: {
         feature_name: feature,
         feature_category: this.getFeatureCategory(feature),
-        ...details
-      }
+        ...details,
+      },
     });
   }
 
@@ -125,7 +130,11 @@ export class AnalyticsService {
     if (feature.includes('processing') || feature.includes('url_')) {
       return 'data_processing';
     }
-    if (feature.includes('copy') || feature.includes('search') || feature.includes('filter')) {
+    if (
+      feature.includes('copy') ||
+      feature.includes('search') ||
+      feature.includes('filter')
+    ) {
       return 'data_interaction';
     }
     if (feature.includes('export') || feature.includes('download')) {
@@ -149,8 +158,8 @@ export class AnalyticsService {
       custom_parameters: {
         feature_used: 'url_processing',
         url_count: urlCount,
-        processing_method: method
-      }
+        processing_method: method,
+      },
     });
   }
 
@@ -166,8 +175,8 @@ export class AnalyticsService {
       custom_parameters: {
         feature_used: 'url_discovery',
         discovery_source: source,
-        url_count: urlCount
-      }
+        url_count: urlCount,
+      },
     });
   }
 
@@ -179,8 +188,8 @@ export class AnalyticsService {
       action: 'project_created',
       category: 'engagement',
       custom_parameters: {
-        feature_used: 'project_management'
-      }
+        feature_used: 'project_management',
+      },
     });
   }
 
@@ -196,8 +205,8 @@ export class AnalyticsService {
       custom_parameters: {
         feature_used: 'export',
         export_format: format,
-        result_count: resultCount
-      }
+        result_count: resultCount,
+      },
     });
   }
 
@@ -211,8 +220,8 @@ export class AnalyticsService {
       label: errorType,
       custom_parameters: {
         error_type: errorType,
-        error_context: context
-      }
+        error_context: context,
+      },
     });
   }
 
@@ -227,15 +236,19 @@ export class AnalyticsService {
       custom_parameters: {
         content_type: contentType,
         copy_context: context,
-        feature_category: 'data_interaction'
-      }
+        feature_category: 'data_interaction',
+      },
     });
   }
 
   /**
    * Track search actions
    */
-  public trackSearch(query: string, context: string, resultCount?: number): void {
+  public trackSearch(
+    query: string,
+    context: string,
+    resultCount?: number
+  ): void {
     this.trackEvent({
       action: 'search_executed',
       category: 'data_interaction',
@@ -245,15 +258,19 @@ export class AnalyticsService {
         search_query: query.length > 0 ? 'has_query' : 'empty_query',
         search_context: context,
         result_count: resultCount,
-        feature_category: 'data_interaction'
-      }
+        feature_category: 'data_interaction',
+      },
     });
   }
 
   /**
    * Track filtering actions
    */
-  public trackFilter(filterType: string, filterValue: string, resultCount?: number): void {
+  public trackFilter(
+    filterType: string,
+    filterValue: string,
+    resultCount?: number
+  ): void {
     this.trackEvent({
       action: 'filter_used',
       category: 'data_interaction',
@@ -263,15 +280,19 @@ export class AnalyticsService {
         filter_type: filterType,
         filter_value: filterValue,
         result_count: resultCount,
-        feature_category: 'data_interaction'
-      }
+        feature_category: 'data_interaction',
+      },
     });
   }
 
   /**
    * Track bulk operations
    */
-  public trackBulkAction(action: string, itemCount: number, context?: string): void {
+  public trackBulkAction(
+    action: string,
+    itemCount: number,
+    context?: string
+  ): void {
     this.trackEvent({
       action: 'bulk_operation',
       category: 'data_processing',
@@ -281,15 +302,19 @@ export class AnalyticsService {
         bulk_action_type: action,
         item_count: itemCount,
         bulk_context: context,
-        feature_category: 'data_processing'
-      }
+        feature_category: 'data_processing',
+      },
     });
   }
 
   /**
    * Track cleanup actions
    */
-  public trackCleanup(action: string, itemsAffected: number, context?: string): void {
+  public trackCleanup(
+    action: string,
+    itemsAffected: number,
+    context?: string
+  ): void {
     this.trackEvent({
       action: 'cleanup_operation',
       category: 'data_processing',
@@ -299,15 +324,19 @@ export class AnalyticsService {
         cleanup_action: action,
         items_affected: itemsAffected,
         cleanup_context: context,
-        feature_category: 'data_processing'
-      }
+        feature_category: 'data_processing',
+      },
     });
   }
 
   /**
    * Track user interface interactions
    */
-  public trackUIInteraction(interaction: string, element: string, context?: string): void {
+  public trackUIInteraction(
+    interaction: string,
+    element: string,
+    context?: string
+  ): void {
     this.trackEvent({
       action: 'ui_interaction',
       category: 'navigation',
@@ -316,8 +345,8 @@ export class AnalyticsService {
         interaction_type: interaction,
         ui_element: element,
         interaction_context: context,
-        feature_category: 'navigation'
-      }
+        feature_category: 'navigation',
+      },
     });
   }
 
@@ -332,8 +361,8 @@ export class AnalyticsService {
       value: Math.round(value),
       custom_parameters: {
         performance_metric: metric,
-        metric_value: value
-      }
+        metric_value: value,
+      },
     });
   }
 

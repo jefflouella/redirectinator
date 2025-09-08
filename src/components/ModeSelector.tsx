@@ -10,7 +10,7 @@ interface ModeSelectorProps {
 export const ModeSelector: React.FC<ModeSelectorProps> = ({
   mode,
   onModeChange,
-  disabled = false
+  disabled = false,
 }) => {
   return (
     <AdvancedModeSelector

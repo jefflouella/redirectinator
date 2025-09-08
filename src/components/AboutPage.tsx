@@ -1,5 +1,16 @@
 import React from 'react';
-import { ExternalLink, ArrowLeft, Code, Zap, Shield, Users, Award, Github, Linkedin, Globe } from 'lucide-react';
+import {
+  ExternalLink,
+  ArrowLeft,
+  Code,
+  Zap,
+  Shield,
+  Users,
+  Award,
+  Github,
+  Linkedin,
+  Globe,
+} from 'lucide-react';
 
 // ProjectCard component for displaying other projects
 interface ProjectCardProps {
@@ -9,13 +20,18 @@ interface ProjectCardProps {
   logoPath: string;
 }
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ url, title, description, logoPath }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({
+  url,
+  title,
+  description,
+  logoPath,
+}) => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
       <div className="flex items-center mb-4">
         <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center mr-4 p-2">
-          <img 
-            src={logoPath} 
+          <img
+            src={logoPath}
             alt={`${title} logo`}
             className="w-full h-full object-contain"
           />
@@ -25,9 +41,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ url, title, description, logo
           <p className="text-sm text-gray-600">Chrome Extension</p>
         </div>
       </div>
-      <p className="text-gray-600 mb-4">
-        {description}
-      </p>
+      <p className="text-gray-600 mb-4">{description}</p>
       <a
         href={url}
         target="_blank"
@@ -68,7 +82,8 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
             About Redirectinator
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            A professional-grade URL redirect checker and monitoring tool designed specifically for SEO professionals and technical marketers.
+            A professional-grade URL redirect checker and monitoring tool
+            designed specifically for SEO professionals and technical marketers.
           </p>
         </div>
 
@@ -77,30 +92,39 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center mb-4">
               <Zap className="w-8 h-8 text-blue-600 mr-3" />
-              <h3 className="text-lg font-semibold text-gray-900">Bulk Processing</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Bulk Processing
+              </h3>
             </div>
             <p className="text-gray-600">
-              Process hundreds of URLs simultaneously with intelligent batching and progress tracking.
+              Process hundreds of URLs simultaneously with intelligent batching
+              and progress tracking.
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center mb-4">
               <Shield className="w-8 h-8 text-green-600 mr-3" />
-              <h3 className="text-lg font-semibold text-gray-900">Advanced Detection</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Advanced Detection
+              </h3>
             </div>
             <p className="text-gray-600">
-              Detect redirect chains, loops, mixed redirect types, and domain changes with precision.
+              Detect redirect chains, loops, mixed redirect types, and domain
+              changes with precision.
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center mb-4">
               <Code className="w-8 h-8 text-purple-600 mr-3" />
-              <h3 className="text-lg font-semibold text-gray-900">Technical SEO</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Technical SEO
+              </h3>
             </div>
             <p className="text-gray-600">
-              Built specifically for SEO professionals with detailed analysis and export capabilities.
+              Built specifically for SEO professionals with detailed analysis
+              and export capabilities.
             </p>
           </div>
         </div>
@@ -109,16 +133,28 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-16">
           <div className="flex items-start space-x-3">
             <div className="flex-shrink-0">
-              <svg className="h-6 w-6 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              <svg
+                className="h-6 w-6 text-blue-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
               </svg>
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-medium text-blue-800 mb-2">Current Limitations & Future Plans</h3>
-              
+              <h3 className="text-lg font-medium text-blue-800 mb-2">
+                Current Limitations & Future Plans
+              </h3>
+
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-medium text-blue-700 mb-2">What We Detect Now (Default Mode)</h4>
+                  <h4 className="font-medium text-blue-700 mb-2">
+                    What We Detect Now (Default Mode)
+                  </h4>
                   <ul className="text-sm text-blue-600 space-y-1">
                     <li>✅ HTTP redirects (301, 302, 303, 307, 308)</li>
                     <li>✅ Redirect chains and loops</li>
@@ -126,9 +162,11 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
                     <li>✅ Affiliate link detection and blocking</li>
                   </ul>
                 </div>
-                
+
                 <div>
-                  <h4 className="font-medium text-blue-700 mb-2">What's Coming Soon (Advanced Mode)</h4>
+                  <h4 className="font-medium text-blue-700 mb-2">
+                    What's Coming Soon (Advanced Mode)
+                  </h4>
                   <ul className="text-sm text-blue-600 space-y-1">
                     <li>🔄 Meta Refresh redirects (HTML meta tags)</li>
                     <li>🟨 JavaScript redirects (window.location changes)</li>
@@ -136,15 +174,18 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
                     <li>🔗 Complete redirect chain visualization</li>
                   </ul>
                 </div>
-                
+
                 <div className="bg-blue-100 rounded p-3">
                   <p className="text-xs text-blue-700">
-                    <strong>Note:</strong> Advanced mode requires server hosting that supports browser automation (Puppeteer). 
-                    We're currently on Vercel which has limitations for this feature. 
-                    <a href="https://github.com/jefflouella/redirectinator/blob/main/FUTURE-PHASE.md" 
-                       target="_blank" 
-                       rel="noopener noreferrer" 
-                       className="underline ml-1">
+                    <strong>Note:</strong> Advanced mode requires server hosting
+                    that supports browser automation (Puppeteer). We're
+                    currently on Vercel which has limitations for this feature.
+                    <a
+                      href="https://github.com/jefflouella/redirectinator/blob/main/FUTURE-PHASE.md"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline ml-1"
+                    >
                       Learn more about our roadmap
                     </a>
                   </p>
@@ -156,27 +197,29 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
 
         {/* Other Projects */}
         <section className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Other Projects</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+            Other Projects
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <ProjectCard 
+            <ProjectCard
               url="https://www.quickclickseo.us/"
               title="Quick Click Website Audit"
               description="Transform your SEO workflow with one-click access to 25+ professional tools. Analyze any website instantly with comprehensive on-page analysis and real-time scoring."
               logoPath="/quick-click-logo.png"
             />
-            <ProjectCard 
+            <ProjectCard
               url="https://www.lazyspy.us/"
               title="Lazy Spy"
               description="Visually analyze image loading strategies on any webpage with color-coded overlays. Detect lazy loading libraries, identify performance issues, and get actionable optimization recommendations."
               logoPath="/lazyspylogo.png"
             />
-            <ProjectCard 
+            <ProjectCard
               url="https://www.gshoplens.com/"
               title="GShop Lens"
               description="Master Google Shopping SERPs with AI-powered insights, pricing analysis, and competitive intelligence. Perfect for e-commerce managers and marketers."
               logoPath="/gshoplens-icon.png"
             />
-            <ProjectCard 
+            <ProjectCard
               url="https://www.titletune.com/"
               title="Title Tune"
               description="Unleash AI-powered title perfection! Craft click-worthy, SEO-optimized page titles using live SERP analysis and multiple AI models (GPT, Claude, Gemini)."
@@ -187,7 +230,9 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
 
         {/* Technology Stack */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Built with Modern Technology</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+            Built with Modern Technology
+          </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div className="text-center">
               <div className="bg-blue-100 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-3">
@@ -197,19 +242,25 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
             </div>
             <div className="text-center">
               <div className="bg-green-100 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <span className="text-green-600 font-bold text-lg">Node.js</span>
+                <span className="text-green-600 font-bold text-lg">
+                  Node.js
+                </span>
               </div>
               <p className="text-sm text-gray-600">Backend Runtime</p>
             </div>
             <div className="text-center">
               <div className="bg-purple-100 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <span className="text-purple-600 font-bold text-lg">TypeScript</span>
+                <span className="text-purple-600 font-bold text-lg">
+                  TypeScript
+                </span>
               </div>
               <p className="text-sm text-gray-600">Type Safety</p>
             </div>
             <div className="text-center">
               <div className="bg-yellow-100 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <span className="text-yellow-600 font-bold text-lg">Tailwind</span>
+                <span className="text-yellow-600 font-bold text-lg">
+                  Tailwind
+                </span>
               </div>
               <p className="text-sm text-gray-600">Styling Framework</p>
             </div>

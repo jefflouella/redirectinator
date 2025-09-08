@@ -33,9 +33,7 @@
       "run_at": "document_start"
     }
   ],
-  "web_accessible_resources": [
-    "src/injected.js"
-  ],
+  "web_accessible_resources": ["src/injected.js"],
   "browser_action": {
     "default_title": "Redirectinator Advanced",
     "default_icon": {

@@ -18,7 +18,13 @@ interface RedirectinatorDB extends DBSchema {
   };
   exports: {
     key: string;
-    value: { id: string; projectId: string; timestamp: number; format: string; filename: string };
+    value: {
+      id: string;
+      projectId: string;
+      timestamp: number;
+      format: string;
+      filename: string;
+    };
     indexes: { 'by-projectId': string; 'by-timestamp': number };
   };
 }
@@ -34,7 +40,9 @@ class StorageService {
     this.db = await openDB<RedirectinatorDB>(this.DB_NAME, this.DB_VERSION, {
       upgrade(db) {
         // Projects store
-        const projectsStore = db.createObjectStore('projects', { keyPath: 'id' });
+        const projectsStore = db.createObjectStore('projects', {
+          keyPath: 'id',
+        });
         projectsStore.createIndex('by-createdAt', 'createdAt');
         projectsStore.createIndex('by-updatedAt', 'updatedAt');
 
@@ -58,47 +66,56 @@ class StorageService {
   async saveProject(project: Project): Promise<void> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
-    
+
     await this.db.put('projects', project);
   }
 
   async getProject(id: string): Promise<Project | undefined> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
-    
+
     return await this.db.get('projects', id);
   }
 
   async getAllProjects(): Promise<Project[]> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
-    
+
     return await this.db.getAll('projects');
   }
 
   async deleteProject(id: string): Promise<void> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
-    
+
     // Delete project and all associated results
     await this.db.delete('projects', id);
-    
+
     // Delete all results for this project
-    const results = await this.db.getAllFromIndex('results', 'by-projectId', id);
+    const results = await this.db.getAllFromIndex(
+      'results',
+      'by-projectId',
+      id
+    );
     for (const result of results) {
       await this.db.delete('results', result.id);
     }
   }
 
   // Results operations
-  async saveResults(results: RedirectResult[], projectId: string): Promise<void> {
+  async saveResults(
+    results: RedirectResult[],
+    projectId: string
+  ): Promise<void> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
 
     const tx = this.db.transaction('results', 'readwrite');
 
     // Clear existing results for this project before saving new ones
-    const existingResults = await tx.store.index('by-projectId').getAll(projectId);
+    const existingResults = await tx.store
+      .index('by-projectId')
+      .getAll(projectId);
     for (const result of existingResults) {
       await tx.store.delete(result.id);
     }
@@ -114,15 +131,19 @@ class StorageService {
   async getProjectResults(projectId: string): Promise<RedirectResult[]> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
-    
+
     return await this.db.getAllFromIndex('results', 'by-projectId', projectId);
   }
 
   async deleteProjectResults(projectId: string): Promise<void> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
-    
-    const results = await this.db.getAllFromIndex('results', 'by-projectId', projectId);
+
+    const results = await this.db.getAllFromIndex(
+      'results',
+      'by-projectId',
+      projectId
+    );
     for (const result of results) {
       await this.db.delete('results', result.id);
     }
@@ -132,23 +153,27 @@ class StorageService {
   async saveSettings(settings: AppSettings): Promise<void> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
-    
+
     await this.db.put('settings', { id: 'app-settings', ...settings });
   }
 
   async getSettings(): Promise<AppSettings | undefined> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
-    
+
     const settings = await this.db.get('settings', 'app-settings');
     return settings;
   }
 
   // Export tracking
-  async saveExport(projectId: string, format: string, filename: string): Promise<void> {
+  async saveExport(
+    projectId: string,
+    format: string,
+    filename: string
+  ): Promise<void> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
-    
+
     const exportRecord = {
       id: crypto.randomUUID(),
       projectId,
@@ -156,20 +181,22 @@ class StorageService {
       format,
       filename,
     };
-    
+
     await this.db.put('exports', exportRecord);
   }
 
-  async getProjectExports(projectId: string): Promise<Array<{
-    id: string;
-    projectId: string;
-    timestamp: number;
-    format: string;
-    filename: string;
-  }>> {
+  async getProjectExports(projectId: string): Promise<
+    Array<{
+      id: string;
+      projectId: string;
+      timestamp: number;
+      format: string;
+      filename: string;
+    }>
+  > {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
-    
+
     return await this.db.getAllFromIndex('exports', 'by-projectId', projectId);
   }
 
@@ -177,7 +204,7 @@ class StorageService {
   async clearAllData(): Promise<void> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
-    
+
     await this.db.clear('projects');
     await this.db.clear('results');
     await this.db.clear('settings');
@@ -187,13 +214,13 @@ class StorageService {
   async getDatabaseSize(): Promise<number> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
-    
+
     // This is a rough estimate - IndexedDB doesn't provide exact size
     const projects = await this.db.getAll('projects');
     const results = await this.db.getAll('results');
     const settings = await this.db.getAll('settings');
     const exports = await this.db.getAll('exports');
-    
+
     const data = JSON.stringify({ projects, results, settings, exports });
     return new Blob([data]).size;
   }
@@ -201,27 +228,27 @@ class StorageService {
   async exportProjectData(projectId: string): Promise<string> {
     const project = await this.getProject(projectId);
     const results = await this.getProjectResults(projectId);
-    
+
     if (!project) throw new Error('Project not found');
-    
+
     const exportData = {
       project,
       results,
       exportDate: new Date().toISOString(),
       version: '2.0.0',
     };
-    
+
     return JSON.stringify(exportData, null, 2);
   }
 
   async importProjectData(data: string): Promise<Project> {
     try {
       const importData = JSON.parse(data);
-      
+
       if (!importData.project || !importData.results) {
         throw new Error('Invalid project data format');
       }
-      
+
       // Generate new IDs to avoid conflicts
       const newProjectId = crypto.randomUUID();
       const project: Project = {
@@ -230,20 +257,24 @@ class StorageService {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-      
-      const results: RedirectResult[] = importData.results.map((result: Partial<RedirectResult>) => ({
-        ...result,
-        id: crypto.randomUUID(),
-        projectId: newProjectId,
-      }));
-      
+
+      const results: RedirectResult[] = importData.results.map(
+        (result: Partial<RedirectResult>) => ({
+          ...result,
+          id: crypto.randomUUID(),
+          projectId: newProjectId,
+        })
+      );
+
       // Save project and results
       await this.saveProject(project);
       await this.saveResults(results, newProjectId);
-      
+
       return project;
     } catch (error) {
-      throw new Error(`Failed to import project data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to import project data: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 }

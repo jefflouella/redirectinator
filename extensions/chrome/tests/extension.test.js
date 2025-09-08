@@ -19,8 +19,8 @@ describe('Redirectinator Advanced Chrome Extension', () => {
         '--no-first-run',
         '--no-zygote',
         '--single-process', // <- this one doesn't work in Windows
-        '--disable-gpu'
-      ]
+        '--disable-gpu',
+      ],
     });
   });
 

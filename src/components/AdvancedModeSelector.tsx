@@ -10,20 +10,27 @@ interface AdvancedModeSelectorProps {
 export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
   currentMode,
   onModeChange,
-  disabled = false
+  disabled = false,
 }) => {
   const [extensionAvailable, setExtensionAvailable] = useState(false);
   const [extensionVersion, setExtensionVersion] = useState<string | null>(null);
   const [checkingExtension, setCheckingExtension] = useState(true);
   const [showAdvancedBanner, setShowAdvancedBanner] = useState(true);
-  
+
   // Track previous state to only log changes
-  const prevExtensionState = useRef({ available: false, version: null as string | null });
+  const prevExtensionState = useRef({
+    available: false,
+    version: null as string | null,
+  });
   const isInitialCheck = useRef(true);
 
   // Only log props in development mode
   if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 AdvancedModeSelector props:', { currentMode, onModeChange: typeof onModeChange, disabled });
+    console.log('🔍 AdvancedModeSelector props:', {
+      currentMode,
+      onModeChange: typeof onModeChange,
+      disabled,
+    });
   }
 
   useEffect(() => {
@@ -33,16 +40,27 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
         const version = extensionService.getVersion();
 
         // Only log if this is the initial check or if the state actually changed
-        if (isInitialCheck.current || 
-            available !== prevExtensionState.current.available || 
-            version !== prevExtensionState.current.version) {
-          
+        if (
+          isInitialCheck.current ||
+          available !== prevExtensionState.current.available ||
+          version !== prevExtensionState.current.version
+        ) {
           if (isInitialCheck.current) {
-            console.log('🔍 AdvancedModeSelector: Initial extension check - available:', available, 'version:', version);
+            console.log(
+              '🔍 AdvancedModeSelector: Initial extension check - available:',
+              available,
+              'version:',
+              version
+            );
           } else {
-            console.log('🔄 AdvancedModeSelector: Extension state changed - available:', available, 'version:', version);
+            console.log(
+              '🔄 AdvancedModeSelector: Extension state changed - available:',
+              available,
+              'version:',
+              version
+            );
           }
-          
+
           // Update previous state
           prevExtensionState.current = { available, version };
           isInitialCheck.current = false;
@@ -53,7 +71,9 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
 
         // If extension becomes available and we're in default mode, we could auto-suggest advanced mode
         if (available && currentMode === 'default' && isInitialCheck.current) {
-          console.log('Advanced mode extension detected - user can now use advanced features');
+          console.log(
+            'Advanced mode extension detected - user can now use advanced features'
+          );
         }
       } catch (error) {
         console.warn('Error checking extension availability:', error);
@@ -75,7 +95,7 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
     const handleExtensionStateChange = () => {
       const available = extensionService.isAvailable();
       const version = extensionService.getVersion();
-      
+
       // Only update state if it actually changed
       if (available !== extensionAvailable || version !== extensionVersion) {
         setExtensionAvailable(available);
@@ -100,9 +120,16 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
 
   const handleModeToggle = () => {
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔘 Toggle clicked! Current mode:', currentMode, 'Extension available:', extensionAvailable, 'Disabled:', disabled);
+      console.log(
+        '🔘 Toggle clicked! Current mode:',
+        currentMode,
+        'Extension available:',
+        extensionAvailable,
+        'Disabled:',
+        disabled
+      );
     }
-    
+
     if (disabled) {
       console.log('❌ Toggle is disabled, cannot proceed');
       return;
@@ -150,17 +177,33 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
             {/* Mode Options with Info Icons */}
             <div className="flex items-center space-x-6 mb-3">
               <div className="flex items-center space-x-2">
-                <div className={`w-4 h-4 rounded-full border-2 ${
-                  currentMode === 'default' ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
-                }`} />
-                <span className={`text-sm font-medium ${
-                  currentMode === 'default' ? 'text-blue-700' : 'text-gray-500'
-                }`}>
+                <div
+                  className={`w-4 h-4 rounded-full border-2 ${
+                    currentMode === 'default'
+                      ? 'bg-blue-500 border-blue-500'
+                      : 'border-gray-300'
+                  }`}
+                />
+                <span
+                  className={`text-sm font-medium ${
+                    currentMode === 'default'
+                      ? 'text-blue-700'
+                      : 'text-gray-500'
+                  }`}
+                >
                   Default Mode
                 </span>
                 <div className="group relative">
-                  <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                  <svg
+                    className="w-4 h-4 text-gray-400 cursor-help"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                     <div className="font-medium mb-1">Default Mode</div>
@@ -173,17 +216,33 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
               </div>
 
               <div className="flex items-center space-x-2">
-                <div className={`w-4 h-4 rounded-full border-2 ${
-                  currentMode === 'advanced' ? 'bg-purple-500 border-purple-500' : 'border-gray-300'
-                }`} />
-                <span className={`text-sm font-medium ${
-                  currentMode === 'advanced' ? 'text-purple-700' : 'text-gray-500'
-                }`}>
+                <div
+                  className={`w-4 h-4 rounded-full border-2 ${
+                    currentMode === 'advanced'
+                      ? 'bg-purple-500 border-purple-500'
+                      : 'border-gray-300'
+                  }`}
+                />
+                <span
+                  className={`text-sm font-medium ${
+                    currentMode === 'advanced'
+                      ? 'text-purple-700'
+                      : 'text-gray-500'
+                  }`}
+                >
                   Advanced Mode
                 </span>
                 <div className="group relative">
-                  <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                  <svg
+                    className="w-4 h-4 text-gray-400 cursor-help"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                     <div className="font-medium mb-1">Advanced Mode</div>
@@ -199,7 +258,9 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
             {/* Extension Status */}
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-500">Extension Status:</span>
-              <span className={`text-sm font-medium ${getExtensionStatusColor()}`}>
+              <span
+                className={`text-sm font-medium ${getExtensionStatusColor()}`}
+              >
                 {getExtensionStatusText()}
               </span>
             </div>
@@ -212,11 +273,12 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
               disabled={disabled || !extensionAvailable}
               className={`
                 relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
-                ${currentMode === 'advanced'
-                  ? 'bg-purple-600'
-                  : extensionAvailable
-                    ? 'bg-blue-600'
-                    : 'bg-gray-300 cursor-not-allowed'
+                ${
+                  currentMode === 'advanced'
+                    ? 'bg-purple-600'
+                    : extensionAvailable
+                      ? 'bg-blue-600'
+                      : 'bg-gray-300 cursor-not-allowed'
                 }
                 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
               `}
@@ -231,9 +293,13 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
             </button>
 
             <div className="mt-2 text-center">
-              <span className={`text-xs font-medium ${
-                currentMode === 'advanced' ? 'text-purple-700' : 'text-blue-700'
-              }`}>
+              <span
+                className={`text-xs font-medium ${
+                  currentMode === 'advanced'
+                    ? 'text-purple-700'
+                    : 'text-blue-700'
+                }`}
+              >
                 {currentMode === 'advanced' ? 'ADVANCED' : 'DEFAULT'}
               </span>
             </div>
@@ -246,8 +312,16 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              <svg
+                className="h-5 w-5 text-yellow-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
               </svg>
             </div>
             <div className="ml-3">
@@ -256,14 +330,16 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
               </h4>
               <div className="mt-2 text-sm text-yellow-700">
                 <p>
-                  To use Advanced mode, install the Redirectinator Advanced browser extension:
+                  To use Advanced mode, install the Redirectinator Advanced
+                  browser extension:
                 </p>
                 <div className="mt-2 space-y-1">
                   <p className="text-yellow-600 font-medium mb-2">
                     ⚠️ Pre-release version - Manual installation required
                   </p>
                   <p className="mb-2">
-                    Download and manually install the extension until official launch:
+                    Download and manually install the extension until official
+                    launch:
                   </p>
                   <div className="space-y-2">
                     <a
@@ -291,8 +367,16 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                <svg
+                  className="h-5 w-5 text-green-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div className="flex-1">
@@ -305,19 +389,30 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
                     className="text-green-600 hover:text-green-500"
                     title="Dismiss banner"
                   >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </button>
                 </div>
                 <p className="text-sm text-green-700 mt-1">
-                  Advanced mode uses the browser extension to detect Meta Refresh and JavaScript redirects locally.
+                  Advanced mode uses the browser extension to detect Meta
+                  Refresh and JavaScript redirects locally.
                 </p>
                 <p className="text-sm text-green-700 mt-1">
-                  <strong>No server costs</strong> - all processing happens in your browser!
+                  <strong>No server costs</strong> - all processing happens in
+                  your browser!
                 </p>
                 <p className="text-sm text-green-600 mt-2">
-                  💡 <strong>Pre-release version:</strong> Extension loaded manually. Will be available in stores at launch.
+                  💡 <strong>Pre-release version:</strong> Extension loaded
+                  manually. Will be available in stores at launch.
                 </p>
               </div>
             </div>

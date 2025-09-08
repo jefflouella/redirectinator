@@ -14,11 +14,21 @@ function httpRedirect(code, destination) {
 }
 
 function metaRefresh(to) {
-  return (req, res) => res.status(200).send(`<!doctype html><meta http-equiv="refresh" content="0; url=${to}"><title>Meta</title>`);
+  return (req, res) =>
+    res
+      .status(200)
+      .send(
+        `<!doctype html><meta http-equiv="refresh" content="0; url=${to}"><title>Meta</title>`
+      );
 }
 
 function jsRedirect(to) {
-  return (req, res) => res.status(200).send(`<!doctype html><script>location.replace('${to}')</script><title>JS</title>`);
+  return (req, res) =>
+    res
+      .status(200)
+      .send(
+        `<!doctype html><script>location.replace('${to}')</script><title>JS</title>`
+      );
 }
 
 // Single hop examples
@@ -36,7 +46,13 @@ app.get('/307-2', httpRedirect(307, HOST + '/308-1'));
 app.get('/308-2', httpRedirect(308, HOST + '/301-1'));
 
 // Mixed two hops
-app.get('/meta-to-301', (req, res) => res.status(200).send(`<!doctype html><meta http-equiv="refresh" content="0; url=${HOST + '/301-1'}">`));
+app.get('/meta-to-301', (req, res) =>
+  res
+    .status(200)
+    .send(
+      `<!doctype html><meta http-equiv="refresh" content="0; url=${HOST + '/301-1'}">`
+    )
+);
 app.get('/js-to-302', jsRedirect(HOST + '/302-1'));
 
 // Six hops (cap at 10 overall)

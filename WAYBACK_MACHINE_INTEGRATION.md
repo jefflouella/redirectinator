@@ -7,12 +7,14 @@ This feature will add a fourth URL input method to the Redirectinator: **Wayback
 ## 🚀 **Business Value**
 
 ### **Problem Solved:**
+
 - ✅ **Lost URLs from site migrations** - Clients often lose track of old URLs during redesigns
 - ✅ **Missing redirects** - No way to identify what URLs need redirects
 - ✅ **Historical content recovery** - Find valuable content that was accidentally lost
 - ✅ **SEO audit completeness** - Ensure no valuable URLs are missed in redirect planning
 
 ### **Target Users:**
+
 - **SEO Consultants** - Helping clients recover from site migrations
 - **Web Developers** - Planning redirect strategies for site updates
 - **Content Managers** - Recovering lost content and URLs
@@ -23,6 +25,7 @@ This feature will add a fourth URL input method to the Redirectinator: **Wayback
 ### **API Selection: CDX Server API**
 
 We'll use the **CDX Server API** as it's specifically designed for:
+
 - ✅ **Bulk URL retrieval** - Can fetch thousands of URLs efficiently
 - ✅ **Time-based filtering** - Perfect for our timeframe selection
 - ✅ **MIME type filtering** - Can filter to HTML only
@@ -34,14 +37,14 @@ We'll use the **CDX Server API** as it's specifically designed for:
 
 ```javascript
 const cdxParams = {
-  url: 'domain.com/*',           // Domain with wildcard
-  from: '20230601',             // Start date (YYYYMMDD)
-  to: '20230731',               // End date (YYYYMMDD)
-  matchType: 'domain',          // Match entire domain
-  filter: 'mime:text/html',     // HTML only
-  collapse: 'urlkey',           // Remove duplicates
-  limit: 1000,                  // Number of URLs to retrieve
-  output: 'json'                // JSON response format
+  url: 'domain.com/*', // Domain with wildcard
+  from: '20230601', // Start date (YYYYMMDD)
+  to: '20230731', // End date (YYYYMMDD)
+  matchType: 'domain', // Match entire domain
+  filter: 'mime:text/html', // HTML only
+  collapse: 'urlkey', // Remove duplicates
+  limit: 1000, // Number of URLs to retrieve
+  output: 'json', // JSON response format
 };
 ```
 
@@ -50,6 +53,7 @@ const cdxParams = {
 ### **New Input Method: "Wayback Machine Discovery"**
 
 Add a fourth tab in the URL input overlay alongside:
+
 1. **Single URL**
 2. **Bulk Upload**
 3. **Copy/Paste**
@@ -119,6 +123,7 @@ Add a fourth tab in the URL input overlay alongside:
 ## 🔄 **Workflow Integration**
 
 ### **Step 1: Discovery**
+
 1. User selects "Wayback Machine Discovery" tab
 2. Enters domain and timeframe
 3. Clicks "Discover URLs"
@@ -126,18 +131,21 @@ Add a fourth tab in the URL input overlay alongside:
 5. Results are filtered and displayed
 
 ### **Step 2: Selection**
+
 1. User reviews discovered URLs
 2. Can preview sample URLs
 3. Can adjust filters and re-discover
 4. Clicks "Add All URLs" to import
 
 ### **Step 3: Processing**
+
 1. URLs are added to the project
 2. **No target URLs needed** - these are discovery URLs
 3. System processes each URL to find current status
 4. Results show what happened to each historical URL
 
 ### **Step 4: Analysis**
+
 1. Results table shows:
    - **Historical URL** (from Wayback Machine)
    - **Current Status** (200, 404, 301, etc.)
@@ -147,23 +155,25 @@ Add a fourth tab in the URL input overlay alongside:
 ## 📊 **Data Structure**
 
 ### **Wayback URL Object:**
+
 ```typescript
 interface WaybackUrl {
-  timestamp: string;        // YYYYMMDDHHMMSS
-  original: string;         // Original URL from Wayback
-  mimeType: string;         // text/html
-  statusCode: string;       // 200, 404, etc.
-  redirectUrl?: string;     // If redirected
-  digest: string;           // Content hash
-  length: string;           // Content length
+  timestamp: string; // YYYYMMDDHHMMSS
+  original: string; // Original URL from Wayback
+  mimeType: string; // text/html
+  statusCode: string; // 200, 404, etc.
+  redirectUrl?: string; // If redirected
+  digest: string; // Content hash
+  length: string; // Content length
 }
 ```
 
 ### **Enhanced RedirectResult:**
+
 ```typescript
 interface RedirectResult {
   // ... existing fields ...
-  source: 'manual' | 'bulk' | 'wayback';  // New field
+  source: 'manual' | 'bulk' | 'wayback'; // New field
   waybackData?: {
     timestamp: string;
     originalUrl: string;
@@ -193,11 +203,17 @@ interface RedirectResult {
 ### **Backend Services:**
 
 1. **waybackService.ts**
+
    ```typescript
    class WaybackService {
-     async discoverUrls(domain: string, from: string, to: string, limit: number): Promise<WaybackUrl[]>
-     async validateUrl(url: string): Promise<boolean>
-     async getUrlMetadata(url: string): Promise<WaybackMetadata>
+     async discoverUrls(
+       domain: string,
+       from: string,
+       to: string,
+       limit: number
+     ): Promise<WaybackUrl[]>;
+     async validateUrl(url: string): Promise<boolean>;
+     async getUrlMetadata(url: string): Promise<WaybackMetadata>;
    }
    ```
 
@@ -219,13 +235,14 @@ const waybackUrls = data.map(row => ({
   mimeType: row[3],
   statusCode: row[4],
   digest: row[5],
-  length: row[6]
+  length: row[6],
 }));
 ```
 
 ## 🎯 **User Experience Flow**
 
 ### **Discovery Process:**
+
 1. **Input Domain** → `example.com`
 2. **Select Timeframe** → June 2023 - July 2023
 3. **Set Limit** → 1000 URLs
@@ -235,6 +252,7 @@ const waybackUrls = data.map(row => ({
 7. **Import** → Add to project for processing
 
 ### **Processing Results:**
+
 1. **Historical URL** → `/old-product-page`
 2. **Current Status** → 404 (Not Found)
 3. **Action Needed** → Create redirect or 410 (Gone)
@@ -243,18 +261,21 @@ const waybackUrls = data.map(row => ({
 ## 🔍 **Advanced Features**
 
 ### **Smart Filtering:**
+
 - ✅ **Exclude system files** (robots.txt, sitemap.xml)
 - ✅ **Exclude admin areas** (/admin/, /wp-admin/)
 - ✅ **Focus on content pages** (blog, products, services)
 - ✅ **Remove query parameters** (optional)
 
 ### **Batch Processing:**
+
 - ✅ **Chunked API calls** (handle large domains)
 - ✅ **Progress indicators** (show discovery progress)
 - ✅ **Error handling** (retry failed requests)
 - ✅ **Rate limiting** (respect API limits)
 
 ### **Export Options:**
+
 - ✅ **CSV export** (for client reports)
 - ✅ **Redirect mapping** (old URL → new URL)
 - ✅ **Priority scoring** (based on archive frequency)
@@ -263,16 +284,19 @@ const waybackUrls = data.map(row => ({
 ## 📈 **Success Metrics**
 
 ### **User Adoption:**
+
 - 📊 **Feature usage** - How often is Wayback discovery used?
 - 📊 **URLs discovered** - Average URLs found per domain
 - 📊 **Processing completion** - How many discovered URLs get processed?
 
 ### **Business Impact:**
+
 - 📊 **Time saved** - vs. manual URL discovery
 - 📊 **Redirects identified** - URLs that need attention
 - 📊 **Client satisfaction** - Completeness of SEO audits
 
 ### **Technical Performance:**
+
 - 📊 **API response time** - CDX API performance
 - 📊 **Processing speed** - Time to process discovered URLs
 - 📊 **Error rates** - Failed discoveries or processing
@@ -280,24 +304,28 @@ const waybackUrls = data.map(row => ({
 ## 🚀 **Implementation Phases**
 
 ### **Phase 1: Core Discovery**
+
 - ✅ Basic CDX API integration
 - ✅ Simple form (domain, timeframe, limit)
 - ✅ Results preview and import
 - ✅ Basic filtering (HTML only)
 
 ### **Phase 2: Enhanced UX**
+
 - ✅ Advanced filtering options
 - ✅ Progress indicators
 - ✅ Error handling and retries
 - ✅ Batch processing for large domains
 
 ### **Phase 3: Advanced Features**
+
 - ✅ Priority scoring
 - ✅ Export options
 - ✅ Integration with redirect planning
 - ✅ Historical trend analysis
 
 ### **Phase 4: Optimization**
+
 - ✅ Caching discovered URLs
 - ✅ Rate limiting and optimization
 - ✅ Advanced analytics
@@ -306,16 +334,19 @@ const waybackUrls = data.map(row => ({
 ## 🔧 **Technical Considerations**
 
 ### **API Limitations:**
+
 - ⚠️ **Rate limiting** - CDX API has usage limits
 - ⚠️ **Response size** - Large domains may need chunking
 - ⚠️ **Data freshness** - Wayback data may be outdated
 
 ### **Performance:**
+
 - ⚡ **Caching** - Cache discovered URLs to avoid re-fetching
 - ⚡ **Chunking** - Process large URL lists in batches
 - ⚡ **Background processing** - Don't block UI during discovery
 
 ### **Error Handling:**
+
 - 🛡️ **API failures** - Graceful degradation
 - 🛡️ **Invalid domains** - Validation and user feedback
 - 🛡️ **Empty results** - Helpful messaging and suggestions
@@ -323,6 +354,7 @@ const waybackUrls = data.map(row => ({
 ## 📋 **Development Tasks**
 
 ### **Frontend Tasks:**
+
 1. Create `WaybackDiscoveryTab.tsx` component
 2. Create `WaybackResultsPreview.tsx` component
 3. Update `UrlInputOverlay.tsx` to include new tab
@@ -330,6 +362,7 @@ const waybackUrls = data.map(row => ({
 5. Implement form validation
 
 ### **Backend Tasks:**
+
 1. Create `waybackService.ts` service
 2. Add CDX API integration
 3. Implement URL filtering logic
@@ -337,6 +370,7 @@ const waybackUrls = data.map(row => ({
 5. Create data transformation utilities
 
 ### **Integration Tasks:**
+
 1. Update `RedirectResult` interface
 2. Modify `redirectChecker.ts` for Wayback URLs
 3. Update results table to show source
@@ -346,6 +380,7 @@ const waybackUrls = data.map(row => ({
 ## 🏛️ **Internet Archive Donation Integration**
 
 ### **Why Include Donations:**
+
 - ✅ **Support free services** - The CDX API is completely free to use
 - ✅ **Ensure sustainability** - Help keep the Internet Archive running
 - ✅ **Give back to the community** - Support digital preservation efforts
@@ -400,21 +435,21 @@ const InternetArchiveDonation = () => {
       <div className="donation-header">
         <h3>🏛️ Support the Internet Archive</h3>
       </div>
-      
+
       <div className="donation-content">
-        <img 
-          src="/wayback-logo.png" 
+        <img
+          src="/wayback-logo.png"
           alt="WayBack Machine by Internet Archive"
           className="wayback-logo"
           onClick={handleDonate}
         />
-        
+
         <p className="donation-message">
-          The Wayback Machine API is free to use. Help keep 
+          The Wayback Machine API is free to use. Help keep
           this invaluable service alive by making a donation.
         </p>
-        
-        <button 
+
+        <button
           onClick={handleDonate}
           className="donate-button"
         >
@@ -468,6 +503,7 @@ const InternetArchiveDonation = () => {
 ## 🎯 **Success Criteria**
 
 ### **Functional Requirements:**
+
 - ✅ Discover URLs from any domain within specified timeframe
 - ✅ Filter to HTML pages only
 - ✅ Remove duplicates and system files
@@ -477,12 +513,14 @@ const InternetArchiveDonation = () => {
 - ✅ **Include Internet Archive donation section**
 
 ### **Performance Requirements:**
+
 - ✅ Handle domains with 10,000+ URLs
 - ✅ Complete discovery within 30 seconds
 - ✅ Process discovered URLs efficiently
 - ✅ Provide real-time progress feedback
 
 ### **User Experience Requirements:**
+
 - ✅ Intuitive form design
 - ✅ Clear results preview
 - ✅ Helpful error messages
@@ -490,6 +528,7 @@ const InternetArchiveDonation = () => {
 - ✅ **Prominent donation section with clear call-to-action**
 
 ### **Social Responsibility Requirements:**
+
 - ✅ **Acknowledge free API usage**
 - ✅ **Encourage support for digital preservation**
 - ✅ **Provide easy donation access**

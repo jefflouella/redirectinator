@@ -1,257 +1,300 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Redirectinator Extension Debug</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f5f5f5;
-        }
-        .debug-panel {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        .status-green { background: #4CAF50; }
-        .status-red { background: #f44336; }
-        .status-yellow { background: #ff9800; }
-        button {
-            background: #4285f4;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        button:hover { background: #3367d6; }
-        button:disabled { background: #cccccc; cursor: not-allowed; }
-        .log-area {
-            background: #f8f8f8;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
-            height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 12px;
-            white-space: pre-wrap;
-        }
-        input[type="url"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin: 5px 0;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .debug-panel {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+      .status-green {
+        background: #4caf50;
+      }
+      .status-red {
+        background: #f44336;
+      }
+      .status-yellow {
+        background: #ff9800;
+      }
+      button {
+        background: #4285f4;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #3367d6;
+      }
+      button:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+      }
+      .log-area {
+        background: #f8f8f8;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        height: 200px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
+      input[type='url'] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin: 5px 0;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>🔍 Redirectinator Extension Debug</h1>
 
     <div class="debug-panel">
-        <h2>Extension Status</h2>
-        <div id="extension-status">
-            <span class="status-indicator status-yellow"></span>
-            Checking extension status...
-        </div>
-        <div id="extension-info" style="margin-top: 10px; display: none;">
-            <strong>Version:</strong> <span id="extension-version">-</span><br>
-            <strong>Available:</strong> <span id="extension-available">-</span>
-        </div>
+      <h2>Extension Status</h2>
+      <div id="extension-status">
+        <span class="status-indicator status-yellow"></span>
+        Checking extension status...
+      </div>
+      <div id="extension-info" style="margin-top: 10px; display: none">
+        <strong>Version:</strong> <span id="extension-version">-</span><br />
+        <strong>Available:</strong> <span id="extension-available">-</span>
+      </div>
     </div>
 
     <div class="debug-panel">
-        <h2>Test URL Analysis</h2>
-        <input type="url" id="test-url" placeholder="Enter URL to test" value="http://testing.tamethebots.com/metaredirect.html">
-        <button onclick="testUrlAnalysis()">Test URL Analysis</button>
-        <button onclick="testMetaRefresh()">Test Meta Refresh URL</button>
-        <button onclick="testJsRedirect()">Test JS Redirect URL</button>
-        <button onclick="testLocationOverride()">Test Location Override</button>
-        <div id="analysis-result" style="margin-top: 10px; display: none;">
-            <h3>Analysis Result:</h3>
-            <pre id="analysis-json"></pre>
-        </div>
+      <h2>Test URL Analysis</h2>
+      <input
+        type="url"
+        id="test-url"
+        placeholder="Enter URL to test"
+        value="http://testing.tamethebots.com/metaredirect.html"
+      />
+      <button onclick="testUrlAnalysis()">Test URL Analysis</button>
+      <button onclick="testMetaRefresh()">Test Meta Refresh URL</button>
+      <button onclick="testJsRedirect()">Test JS Redirect URL</button>
+      <button onclick="testLocationOverride()">Test Location Override</button>
+      <div id="analysis-result" style="margin-top: 10px; display: none">
+        <h3>Analysis Result:</h3>
+        <pre id="analysis-json"></pre>
+      </div>
     </div>
 
     <div class="debug-panel">
-        <h2>Debug Log</h2>
-        <div class="log-area" id="debug-log">Debug log will appear here...</div>
-        <button onclick="clearLog()">Clear Log</button>
+      <h2>Debug Log</h2>
+      <div class="log-area" id="debug-log">Debug log will appear here...</div>
+      <button onclick="clearLog()">Clear Log</button>
     </div>
 
     <script>
-        let debugLog = [];
+      let debugLog = [];
 
-        function log(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            const logMessage = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
-            debugLog.push(logMessage);
-            updateLogDisplay();
-            console.log(logMessage);
+      function log(message, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString();
+        const logMessage = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+        debugLog.push(logMessage);
+        updateLogDisplay();
+        console.log(logMessage);
+      }
+
+      function updateLogDisplay() {
+        const logArea = document.getElementById('debug-log');
+        logArea.textContent = debugLog.slice(-20).join('\n'); // Show last 20 entries
+        logArea.scrollTop = logArea.scrollHeight;
+      }
+
+      function clearLog() {
+        debugLog = [];
+        updateLogDisplay();
+      }
+
+      // Check extension status
+      function checkExtensionStatus() {
+        log('Checking extension status...');
+
+        const statusDiv = document.getElementById('extension-status');
+        const infoDiv = document.getElementById('extension-info');
+
+        // Check for global extension object
+        if (window.redirectinatorExtension) {
+          log('Extension found via global object');
+          statusDiv.innerHTML =
+            '<span class="status-indicator status-green"></span>Extension detected via global object';
+
+          document.getElementById('extension-version').textContent =
+            window.redirectinatorExtension.getVersion?.() || 'unknown';
+          document.getElementById('extension-available').textContent =
+            window.redirectinatorExtension.isAvailable?.() ? 'Yes' : 'No';
+          infoDiv.style.display = 'block';
+
+          return true;
         }
 
-        function updateLogDisplay() {
-            const logArea = document.getElementById('debug-log');
-            logArea.textContent = debugLog.slice(-20).join('\n'); // Show last 20 entries
-            logArea.scrollTop = logArea.scrollHeight;
-        }
-
-        function clearLog() {
-            debugLog = [];
-            updateLogDisplay();
-        }
-
-        // Check extension status
-        function checkExtensionStatus() {
-            log('Checking extension status...');
-
-            const statusDiv = document.getElementById('extension-status');
-            const infoDiv = document.getElementById('extension-info');
-
-            // Check for global extension object
-            if (window.redirectinatorExtension) {
-                log('Extension found via global object');
-                statusDiv.innerHTML = '<span class="status-indicator status-green"></span>Extension detected via global object';
-
-                document.getElementById('extension-version').textContent = window.redirectinatorExtension.getVersion?.() || 'unknown';
-                document.getElementById('extension-available').textContent = window.redirectinatorExtension.isAvailable?.() ? 'Yes' : 'No';
-                infoDiv.style.display = 'block';
-
-                return true;
-            }
-
-            // Check for postMessage communication
-            window.addEventListener('message', function(event) {
-                if (event.data?.type === 'REDIRECTINATOR_EXTENSION_READY') {
-                    log('Extension ready message received');
-                    statusDiv.innerHTML = '<span class="status-indicator status-green"></span>Extension detected via postMessage';
-                    document.getElementById('extension-version').textContent = event.data.version || 'unknown';
-                    document.getElementById('extension-available').textContent = 'Yes';
-                    infoDiv.style.display = 'block';
-                }
-            });
-
-            // Send a ping to check if extension is listening
-            setTimeout(() => {
-                window.postMessage({
-                    type: 'REDIRECTINATOR_PING',
-                    timestamp: Date.now()
-                }, '*');
-            }, 1000);
-
-            // If no extension detected after 2 seconds
-            setTimeout(() => {
-                if (!window.redirectinatorExtension) {
-                    statusDiv.innerHTML = '<span class="status-indicator status-red"></span>Extension not detected';
-                    log('Extension not detected after 2 seconds', 'error');
-                    infoDiv.style.display = 'none';
-                }
-            }, 2000);
-
-            return false;
-        }
-
-        // Test URL analysis
-        async function testUrlAnalysis() {
-            const url = document.getElementById('test-url').value;
-            if (!url) {
-                alert('Please enter a URL');
-                return;
-            }
-
-            log(`Testing URL analysis for: ${url}`);
-
-            try {
-                if (window.redirectinatorExtension?.analyzeUrl) {
-                    const result = await window.redirectinatorExtension.analyzeUrl(url);
-                    log('Analysis successful');
-                    displayResult(result);
-                } else {
-                    throw new Error('Extension API not available');
-                }
-            } catch (error) {
-                log(`Analysis failed: ${error.message}`, 'error');
-                alert(`Analysis failed: ${error.message}`);
-            }
-        }
-
-        // Test specific URLs
-        function testMetaRefresh() {
-            document.getElementById('test-url').value = 'http://testing.tamethebots.com/metaredirect.html';
-            testUrlAnalysis();
-        }
-
-        function testJsRedirect() {
-            document.getElementById('test-url').value = 'http://testing.tamethebots.com/jsredirect.html';
-            testUrlAnalysis();
-        }
-
-        function testLocationOverride() {
-            log('Testing location method override safety...');
-
-            try {
-                // Test if location methods can be accessed safely
-                const originalAssign = window.location.assign;
-                const originalReplace = window.location.replace;
-                const hrefDescriptor = Object.getOwnPropertyDescriptor(window.location, 'href');
-
-                log('Location methods accessible: assign=' + (typeof originalAssign === 'function') +
-                    ', replace=' + (typeof originalReplace === 'function') +
-                    ', href=' + (hrefDescriptor ? 'configurable' : 'not configurable'));
-
-                // Test Object.defineProperty approach
-                const testDescriptor = Object.getOwnPropertyDescriptor(window.location, 'assign');
-                if (testDescriptor) {
-                    log('location.assign descriptor: configurable=' + testDescriptor.configurable +
-                        ', writable=' + testDescriptor.writable);
-                } else {
-                    log('location.assign has no descriptor');
-                }
-
-            } catch (error) {
-                log('Location override test failed: ' + error.message, 'error');
-            }
-        }
-
-        // Display analysis result
-        function displayResult(result) {
-            const resultDiv = document.getElementById('analysis-result');
-            const jsonDiv = document.getElementById('analysis-json');
-
-            jsonDiv.textContent = JSON.stringify(result, null, 2);
-            resultDiv.style.display = 'block';
-        }
-
-        // Initialize
-        window.addEventListener('load', function() {
-            log('Debug page loaded');
-            checkExtensionStatus();
-
-            // Check for extension indicator
-            setTimeout(() => {
-                const indicator = document.getElementById('redirectinator-extension-indicator');
-                if (indicator) {
-                    log('Extension visual indicator found');
-                } else {
-                    log('Extension visual indicator not found', 'warning');
-                }
-            }, 1000);
+        // Check for postMessage communication
+        window.addEventListener('message', function (event) {
+          if (event.data?.type === 'REDIRECTINATOR_EXTENSION_READY') {
+            log('Extension ready message received');
+            statusDiv.innerHTML =
+              '<span class="status-indicator status-green"></span>Extension detected via postMessage';
+            document.getElementById('extension-version').textContent =
+              event.data.version || 'unknown';
+            document.getElementById('extension-available').textContent = 'Yes';
+            infoDiv.style.display = 'block';
+          }
         });
+
+        // Send a ping to check if extension is listening
+        setTimeout(() => {
+          window.postMessage(
+            {
+              type: 'REDIRECTINATOR_PING',
+              timestamp: Date.now(),
+            },
+            '*'
+          );
+        }, 1000);
+
+        // If no extension detected after 2 seconds
+        setTimeout(() => {
+          if (!window.redirectinatorExtension) {
+            statusDiv.innerHTML =
+              '<span class="status-indicator status-red"></span>Extension not detected';
+            log('Extension not detected after 2 seconds', 'error');
+            infoDiv.style.display = 'none';
+          }
+        }, 2000);
+
+        return false;
+      }
+
+      // Test URL analysis
+      async function testUrlAnalysis() {
+        const url = document.getElementById('test-url').value;
+        if (!url) {
+          alert('Please enter a URL');
+          return;
+        }
+
+        log(`Testing URL analysis for: ${url}`);
+
+        try {
+          if (window.redirectinatorExtension?.analyzeUrl) {
+            const result = await window.redirectinatorExtension.analyzeUrl(url);
+            log('Analysis successful');
+            displayResult(result);
+          } else {
+            throw new Error('Extension API not available');
+          }
+        } catch (error) {
+          log(`Analysis failed: ${error.message}`, 'error');
+          alert(`Analysis failed: ${error.message}`);
+        }
+      }
+
+      // Test specific URLs
+      function testMetaRefresh() {
+        document.getElementById('test-url').value =
+          'http://testing.tamethebots.com/metaredirect.html';
+        testUrlAnalysis();
+      }
+
+      function testJsRedirect() {
+        document.getElementById('test-url').value =
+          'http://testing.tamethebots.com/jsredirect.html';
+        testUrlAnalysis();
+      }
+
+      function testLocationOverride() {
+        log('Testing location method override safety...');
+
+        try {
+          // Test if location methods can be accessed safely
+          const originalAssign = window.location.assign;
+          const originalReplace = window.location.replace;
+          const hrefDescriptor = Object.getOwnPropertyDescriptor(
+            window.location,
+            'href'
+          );
+
+          log(
+            'Location methods accessible: assign=' +
+              (typeof originalAssign === 'function') +
+              ', replace=' +
+              (typeof originalReplace === 'function') +
+              ', href=' +
+              (hrefDescriptor ? 'configurable' : 'not configurable')
+          );
+
+          // Test Object.defineProperty approach
+          const testDescriptor = Object.getOwnPropertyDescriptor(
+            window.location,
+            'assign'
+          );
+          if (testDescriptor) {
+            log(
+              'location.assign descriptor: configurable=' +
+                testDescriptor.configurable +
+                ', writable=' +
+                testDescriptor.writable
+            );
+          } else {
+            log('location.assign has no descriptor');
+          }
+        } catch (error) {
+          log('Location override test failed: ' + error.message, 'error');
+        }
+      }
+
+      // Display analysis result
+      function displayResult(result) {
+        const resultDiv = document.getElementById('analysis-result');
+        const jsonDiv = document.getElementById('analysis-json');
+
+        jsonDiv.textContent = JSON.stringify(result, null, 2);
+        resultDiv.style.display = 'block';
+      }
+
+      // Initialize
+      window.addEventListener('load', function () {
+        log('Debug page loaded');
+        checkExtensionStatus();
+
+        // Check for extension indicator
+        setTimeout(() => {
+          const indicator = document.getElementById(
+            'redirectinator-extension-indicator'
+          );
+          if (indicator) {
+            log('Extension visual indicator found');
+          } else {
+            log('Extension visual indicator not found', 'warning');
+          }
+        }, 1000);
+      });
     </script>
-</body>
+  </body>
 </html>

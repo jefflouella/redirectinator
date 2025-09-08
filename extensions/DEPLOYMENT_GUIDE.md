@@ -58,12 +58,14 @@ npm run build:firefox
 ```
 
 This creates:
+
 - `redirectinator-advanced-chrome.zip` - Chrome extension package
 - `redirectinator-advanced-firefox.zip` - Firefox add-on package
 
 ### 2. Test Extensions Locally
 
 #### Chrome Extension
+
 1. Open `chrome://extensions/`
 2. Enable "Developer mode"
 3. Click "Load unpacked"
@@ -71,6 +73,7 @@ This creates:
 5. Visit Redirectinator web app to test
 
 #### Firefox Add-on
+
 1. Open `about:debugging#/runtime/this-firefox`
 2. Click "Load Temporary Add-on"
 3. Select `/extensions/firefox/manifest.json`
@@ -94,6 +97,7 @@ This creates:
    - Verify your account
 
 2. **Prepare Extension Package**
+
    ```bash
    cd /Users/jefflouella/projects/redirectinator/extensions
    npm run build:chrome
@@ -129,6 +133,7 @@ This creates:
    - Verify your email
 
 2. **Prepare Add-on Package**
+
    ```bash
    cd /Users/jefflouella/projects/redirectinator/extensions
    npm run build:firefox
@@ -167,20 +172,22 @@ convert extensions/chrome/icons/icon.svg -resize 128x128 extensions/chrome/icons
 Before deployment, update the manifests with production extension IDs:
 
 **Chrome Manifest:**
+
 ```json
 {
   "name": "Redirectinator Advanced",
   "version": "1.0.0",
-  "key": "YOUR_CHROME_EXTENSION_KEY"  // Add after first upload
+  "key": "YOUR_CHROME_EXTENSION_KEY" // Add after first upload
 }
 ```
 
 **Firefox Manifest:**
+
 ```json
 {
   "name": "Redirectinator Advanced",
   "version": "1.0.0",
-  "id": "redirectinator-advanced@yourdomain.com"  // Optional
+  "id": "redirectinator-advanced@yourdomain.com" // Optional
 }
 ```
 
@@ -204,30 +211,35 @@ npm run test:firefox
 ### Manual Testing Checklist
 
 #### Extension Installation
+
 - [ ] Chrome extension installs without errors
 - [ ] Firefox add-on installs without errors
 - [ ] Extension appears in browser toolbar
 - [ ] Extension permissions are reasonable
 
 #### Web App Integration
+
 - [ ] Extension is detected by web app
 - [ ] Advanced mode becomes available
 - [ ] Mode switching works correctly
 - [ ] Fallback to default mode works
 
 #### Redirect Detection
+
 - [ ] HTTP redirects detected in both modes
 - [ ] Meta refresh redirects detected in Advanced mode
 - [ ] JavaScript redirects detected in Advanced mode
 - [ ] Mixed redirect chains handled correctly
 
 #### Performance
+
 - [ ] Default mode: <500ms per URL
 - [ ] Advanced mode: <3 seconds per URL
 - [ ] Multiple URLs processed in parallel
 - [ ] Memory usage remains reasonable
 
 #### Error Handling
+
 - [ ] Invalid URLs handled gracefully
 - [ ] Network timeouts handled
 - [ ] Extension unavailable falls back to default mode
@@ -236,12 +248,14 @@ npm run test:firefox
 ## 📊 Success Metrics
 
 ### Technical Metrics
+
 - **Extension Installation Rate**: Target >15% of web app users
 - **Analysis Success Rate**: Target >95% successful analyses
 - **Performance**: Target <3 seconds average analysis time in Advanced mode
 - **Error Rate**: Target <5% analysis failures
 
 ### User Experience Metrics
+
 - **Mode Adoption**: Percentage of users who try Advanced mode
 - **Satisfaction**: User feedback and ratings on extension stores
 - **Retention**: Continued usage after installation
@@ -251,18 +265,21 @@ npm run test:firefox
 ### Common Issues
 
 **Extension not detected by web app:**
+
 ```javascript
 // Check browser console for these messages:
-"Redirectinator Advanced extension detected"
-"Advanced mode extension available"
+'Redirectinator Advanced extension detected';
+'Advanced mode extension available';
 ```
 
 **Analysis fails silently:**
+
 - Check extension permissions in browser settings
 - Verify content scripts are injecting properly
 - Check for CORS issues in background script
 
 **Performance issues:**
+
 - Monitor background script for memory leaks
 - Check tab cleanup is working properly
 - Verify caching is not causing stale results
@@ -270,6 +287,7 @@ npm run test:firefox
 ### Debug Mode
 
 Enable detailed logging:
+
 ```javascript
 // In extension background script console:
 localStorage.setItem('redirectinator_debug', 'true');
@@ -278,7 +296,9 @@ localStorage.setItem('redirectinator_debug', 'true');
 ## 🔒 Security Considerations
 
 ### Extension Permissions
+
 The extension requests minimal permissions:
+
 - `tabs`: Create background tabs for analysis
 - `activeTab`: Inject content scripts
 - `scripting`: Execute scripts in tabs
@@ -286,6 +306,7 @@ The extension requests minimal permissions:
 - `<all_urls>`: Access any website for analysis
 
 ### Privacy Compliance
+
 - All analysis happens locally in the user's browser
 - No data is sent to external servers
 - User data is automatically cleaned up
@@ -294,16 +315,20 @@ The extension requests minimal permissions:
 ## 📈 Monitoring & Analytics
 
 ### Extension Health Monitoring
+
 The extension includes built-in health monitoring:
+
 ```javascript
 // Access health metrics
-chrome.runtime.sendMessage({ type: 'GET_HEALTH_REPORT' }, (response) => {
+chrome.runtime.sendMessage({ type: 'GET_HEALTH_REPORT' }, response => {
   console.log('Extension Health:', response);
 });
 ```
 
 ### Usage Analytics
+
 Consider implementing:
+
 - Extension installation tracking
 - Feature usage statistics
 - Performance metrics collection
@@ -312,12 +337,14 @@ Consider implementing:
 ## 🎯 Next Steps
 
 ### Phase 2 Enhancements
+
 1. **Enhanced JavaScript Detection**: Detect more complex redirect patterns
 2. **User Preferences**: Allow users to configure extension behavior
 3. **Performance Optimization**: Further improve analysis speed
 4. **Advanced Analytics**: Track usage patterns and performance
 
 ### Phase 3 Expansion
+
 1. **Safari Extension**: Add Safari compatibility
 2. **Mobile Support**: Browser extensions for mobile browsers
 3. **API Integration**: Allow other tools to use the extension
@@ -326,12 +353,14 @@ Consider implementing:
 ## 📞 Support & Maintenance
 
 ### User Support
+
 - Provide clear installation instructions
 - Create troubleshooting guides
 - Monitor extension store reviews
 - Respond to user feedback promptly
 
 ### Technical Support
+
 - Monitor error logs and crash reports
 - Keep dependencies updated
 - Test with new browser versions
@@ -342,6 +371,7 @@ Consider implementing:
 You've successfully built and deployed the Redirectinator Advanced browser extensions! This revolutionary approach eliminates server costs while providing comprehensive redirect detection capabilities.
 
 ### Key Achievements
+
 - ✅ **Zero Server Costs**: All processing happens locally
 - ✅ **Infinite Scalability**: Each user's browser handles their own requests
 - ✅ **Privacy-First**: No external data transmission
@@ -351,6 +381,7 @@ You've successfully built and deployed the Redirectinator Advanced browser exten
 The extension approach represents a **business model innovation** that allows you to provide enterprise-grade redirect detection without traditional hosting and scaling challenges.
 
 **Next steps:**
+
 1. Deploy to extension stores
 2. Monitor adoption and performance
 3. Gather user feedback
@@ -358,19 +389,21 @@ The extension approach represents a **business model innovation** that allows yo
 
 ---
 
-*Built with ❤️ for the redirect detection community*
+_Built with ❤️ for the redirect detection community_
 
 ---
 
 ## 📝 Quick Reference
 
 ### File Locations
+
 - **Chrome Extension**: `/extensions/chrome/`
 - **Firefox Add-on**: `/extensions/firefox/`
 - **Web App Integration**: `/src/services/extensionService.ts`
 - **UI Components**: `/src/components/AdvancedModeSelector.tsx`
 
 ### Build Commands
+
 ```bash
 npm run build          # Build both extensions
 npm run build:chrome   # Build Chrome only
@@ -379,10 +412,12 @@ npm test              # Run all tests
 ```
 
 ### Test URLs
+
 - Meta Refresh: `http://testing.tamethebots.com/metaredirect.html`
 - JavaScript: `http://testing.tamethebots.com/jsredirect.html`
 
 ### Support Contacts
+
 - **Technical Issues**: Create GitHub issues
 - **Store Reviews**: Monitor and respond to reviews
 - **User Feedback**: Collect via web app or extension

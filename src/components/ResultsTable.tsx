@@ -12,7 +12,7 @@ import {
   Download,
   Copy,
   Eye,
-  EyeOff
+  EyeOff,
 } from 'lucide-react';
 
 interface ResultsTableProps {
@@ -20,20 +20,27 @@ interface ResultsTableProps {
   onExport: (format: 'csv' | 'json' | 'excel' | 'report') => void;
 }
 
-export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport }) => {
+export const ResultsTable: React.FC<ResultsTableProps> = ({
+  results,
+  onExport,
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showDetails, setShowDetails] = useState<Set<string>>(new Set());
-  const { trackCopyAction, trackSearch, trackFilter, trackUIInteraction } = useAnalytics();
+  const { trackCopyAction, trackSearch, trackFilter, trackUIInteraction } =
+    useAnalytics();
 
   const filteredResults = useMemo(() => {
     return results.filter(result => {
       const matchesSearch =
         result.startingUrl.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        result.targetRedirect.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        result.targetRedirect
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
         result.finalUrl.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesStatus = statusFilter === 'all' || result.result === statusFilter;
+      const matchesStatus =
+        statusFilter === 'all' || result.result === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
@@ -58,7 +65,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
     if (result.blockedReason) {
       return <AlertCircle className="w-4 h-4 text-orange-600" />;
     }
-    
+
     switch (result.result) {
       case 'redirect':
         return <CheckCircle className="w-4 h-4 text-success-600" />;
@@ -74,13 +81,13 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
   };
 
   const getStatusBadge = (result: RedirectResult) => {
-    const baseClasses = "status-badge";
-    
+    const baseClasses = 'status-badge';
+
     // Check if this is a blocked affiliate link
     if (result.blockedReason) {
       return `${baseClasses} status-warning`;
     }
-    
+
     switch (result.result) {
       case 'redirect':
         return `${baseClasses} status-success`;
@@ -104,31 +111,31 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
     // Extract the first status code from chains like "301 → 200"
     const firstCode = httpStatus.split(' ')[0];
     const code = parseInt(firstCode);
-    
+
     if (isNaN(code)) {
       return 'text-gray-600 bg-gray-100 px-2 py-1 rounded'; // Default color for invalid codes
     }
-    
+
     // 4xx errors - red
     if (code >= 400 && code < 500) {
       return 'text-red-700 bg-red-100 px-2 py-1 rounded font-semibold';
     }
-    
+
     // 5xx errors - purple
     if (code >= 500 && code < 600) {
       return 'text-purple-700 bg-purple-100 px-2 py-1 rounded font-semibold';
     }
-    
+
     // Temporary redirects (302, 307) - yellow
     if (code === 302 || code === 307) {
       return 'text-yellow-700 bg-yellow-100 px-2 py-1 rounded font-semibold';
     }
-    
+
     // 301 and 200 - default (keep same)
     if (code === 301 || code === 200) {
       return 'text-gray-600';
     }
-    
+
     // Other codes - default
     return 'text-gray-600';
   };
@@ -153,7 +160,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
         <h3 className="text-lg font-semibold text-tech-900">
           Results ({filteredResults.length} of {results.length})
         </h3>
-        
+
         <div className="flex items-center space-x-2">
           <button
             onClick={() => onExport('csv')}
@@ -174,17 +181,17 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
               type="text"
               placeholder="Search URLs..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="input-field pl-10"
             />
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Filter className="w-4 h-4 text-tech-400" />
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={e => setStatusFilter(e.target.value)}
             className="input-field"
           >
             <option value="all">All Results</option>
@@ -250,7 +257,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                       </span>
                     </div>
                   </td>
-                  
+
                   <td className="px-4 py-3">
                     <div className="max-w-xs">
                       <div className="text-sm font-medium text-tech-900 truncate">
@@ -258,7 +265,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                       </div>
                     </div>
                   </td>
-                  
+
                   <td className="px-4 py-3">
                     <div className="max-w-xs">
                       <div className="text-sm text-tech-600 truncate">
@@ -266,7 +273,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                       </div>
                     </div>
                   </td>
-                  
+
                   <td className="px-4 py-3">
                     <div className="max-w-xs">
                       <div className="text-sm text-tech-600 truncate">
@@ -274,29 +281,36 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                       </div>
                     </div>
                   </td>
-                  
+
                   <td className="px-4 py-3">
-                    <div className={`text-sm font-mono ${getStatusCodeColor(result.httpStatus)}`}>
+                    <div
+                      className={`text-sm font-mono ${getStatusCodeColor(result.httpStatus)}`}
+                    >
                       {result.httpStatus}
                     </div>
                   </td>
-                  
+
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
-                      {result.redirectTypes && result.redirectTypes.length > 0 ? (
+                      {result.redirectTypes &&
+                      result.redirectTypes.length > 0 ? (
                         result.redirectTypes.map((redirectType, idx) => (
                           <span
                             key={idx}
                             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              redirectType.type === 'http' 
-                                ? 'bg-blue-100 text-blue-800' 
-                                : redirectType.type === 'meta' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-purple-100 text-purple-800'
+                              redirectType.type === 'http'
+                                ? 'bg-blue-100 text-blue-800'
+                                : redirectType.type === 'meta'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-purple-100 text-purple-800'
                             }`}
                             title={`${redirectType.type.toUpperCase()} redirect${redirectType.delay ? ` (${redirectType.delay}s delay)` : ''}`}
                           >
-                            {redirectType.type === 'http' && redirectType.statusCode ? `${redirectType.statusCode}` : redirectType.type.charAt(0).toUpperCase() + redirectType.type.slice(1)}
+                            {redirectType.type === 'http' &&
+                            redirectType.statusCode
+                              ? `${redirectType.statusCode}`
+                              : redirectType.type.charAt(0).toUpperCase() +
+                                redirectType.type.slice(1)}
                           </span>
                         ))
                       ) : (
@@ -304,25 +318,29 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                       )}
                     </div>
                   </td>
-                  
+
                   <td className="px-4 py-3">
                     <div className="text-sm text-tech-600">
                       {result.numberOfRedirects}
                     </div>
                   </td>
-                  
+
                   <td className="px-4 py-3">
                     <div className="text-sm text-tech-600">
                       {result.responseTime}
                     </div>
                   </td>
-                  
+
                   <td className="px-4 py-3">
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => toggleDetails(result.id)}
                         className="p-1 text-tech-400 hover:text-tech-600 transition-colors"
-                        title={showDetails.has(result.id) ? 'Hide details' : 'Show details'}
+                        title={
+                          showDetails.has(result.id)
+                            ? 'Hide details'
+                            : 'Show details'
+                        }
                       >
                         {showDetails.has(result.id) ? (
                           <EyeOff className="w-4 h-4" />
@@ -330,7 +348,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                           <Eye className="w-4 h-4" />
                         )}
                       </button>
-                      
+
                       <button
                         onClick={() => copyToClipboard(result.startingUrl)}
                         className="p-1 text-tech-400 hover:text-tech-600 transition-colors"
@@ -338,7 +356,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                       >
                         <Copy className="w-4 h-4" />
                       </button>
-                      
+
                       {result.finalUrl && (
                         <a
                           href={result.finalUrl}
@@ -353,7 +371,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                     </div>
                   </td>
                 </tr>
-                
+
                 {/* Expanded Details */}
                 {showDetails.has(result.id) && (
                   <tr className="bg-gray-25">
@@ -362,50 +380,89 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                         {/* Left Column */}
                         <div className="space-y-3">
                           <div>
-                            <h4 className="text-sm font-medium text-tech-700 mb-2">Analysis Details</h4>
+                            <h4 className="text-sm font-medium text-tech-700 mb-2">
+                              Analysis Details
+                            </h4>
                             <div className="space-y-2 text-sm">
                               <div className="flex justify-between">
-                                <span className="text-tech-600">Has Redirect Loop:</span>
-                                <span className={result.hasRedirectLoop ? 'text-error-600' : 'text-success-600'}>
+                                <span className="text-tech-600">
+                                  Has Redirect Loop:
+                                </span>
+                                <span
+                                  className={
+                                    result.hasRedirectLoop
+                                      ? 'text-error-600'
+                                      : 'text-success-600'
+                                  }
+                                >
                                   {result.hasRedirectLoop ? 'Yes' : 'No'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-tech-600">Mixed Redirect Types:</span>
-                                <span className={result.mixedRedirectTypes ? 'text-warning-600' : 'text-success-600'}>
+                                <span className="text-tech-600">
+                                  Mixed Redirect Types:
+                                </span>
+                                <span
+                                  className={
+                                    result.mixedRedirectTypes
+                                      ? 'text-warning-600'
+                                      : 'text-success-600'
+                                  }
+                                >
                                   {result.mixedRedirectTypes ? 'Yes' : 'No'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-tech-600">Domain Changes:</span>
-                                <span className={result.domainChanges ? 'text-warning-600' : 'text-success-600'}>
+                                <span className="text-tech-600">
+                                  Domain Changes:
+                                </span>
+                                <span
+                                  className={
+                                    result.domainChanges
+                                      ? 'text-warning-600'
+                                      : 'text-success-600'
+                                  }
+                                >
                                   {result.domainChanges ? 'Yes' : 'No'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-tech-600">HTTPS Upgrade:</span>
-                                <span className={result.httpsUpgrade ? 'text-success-600' : 'text-tech-600'}>
+                                <span className="text-tech-600">
+                                  HTTPS Upgrade:
+                                </span>
+                                <span
+                                  className={
+                                    result.httpsUpgrade
+                                      ? 'text-success-600'
+                                      : 'text-tech-600'
+                                  }
+                                >
                                   {result.httpsUpgrade ? 'Yes' : 'No'}
                                 </span>
                               </div>
                             </div>
                           </div>
-                          
+
                           {result.error && (
                             <div>
-                              <h4 className="text-sm font-medium text-error-700 mb-2">Error</h4>
+                              <h4 className="text-sm font-medium text-error-700 mb-2">
+                                Error
+                              </h4>
                               <div className="text-sm text-error-600 bg-error-50 p-2 rounded border border-error-200">
                                 {result.error}
                               </div>
                             </div>
                           )}
-                          
+
                           {result.blockedReason && (
                             <div>
-                              <h4 className="text-sm font-medium text-orange-700 mb-2">Affiliate Link Blocked</h4>
+                              <h4 className="text-sm font-medium text-orange-700 mb-2">
+                                Affiliate Link Blocked
+                              </h4>
                               <div className="text-sm text-orange-600 bg-orange-50 p-3 rounded border border-orange-200">
                                 <div className="mb-2">
-                                  <strong>Service:</strong> {result.affiliateService}
+                                  <strong>Service:</strong>{' '}
+                                  {result.affiliateService}
                                 </div>
                                 <div className="mb-2">
                                   {result.blockedReason}
@@ -422,114 +479,177 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
                             </div>
                           )}
                         </div>
-                        
+
                         {/* Right Column */}
                         <div>
-                          <h4 className="text-sm font-medium text-tech-700 mb-2">Redirect Chain</h4>
-                          {result.fullRedirectChain && Array.isArray(result.fullRedirectChain) && result.fullRedirectChain.length > 0 ? (
+                          <h4 className="text-sm font-medium text-tech-700 mb-2">
+                            Redirect Chain
+                          </h4>
+                          {result.fullRedirectChain &&
+                          Array.isArray(result.fullRedirectChain) &&
+                          result.fullRedirectChain.length > 0 ? (
                             <div className="space-y-1">
                               {result.fullRedirectChain.map((url, index) => {
-                                const statusCode = result.statusChain && Array.isArray(result.statusChain) ? result.statusChain[index] : undefined;
+                                const statusCode =
+                                  result.statusChain &&
+                                  Array.isArray(result.statusChain)
+                                    ? result.statusChain[index]
+                                    : undefined;
                                 const getStatusColor = (code: string) => {
                                   const numCode = parseInt(code);
                                   if (numCode === 200) return 'text-green-600';
-                                  if (numCode >= 400 && numCode < 500) return 'text-red-600';
+                                  if (numCode >= 400 && numCode < 500)
+                                    return 'text-red-600';
                                   if (numCode >= 500) return 'text-red-600';
                                   if (numCode === 301) return 'text-blue-600';
-                                  if (numCode >= 300 && numCode < 400) return 'text-yellow-600';
+                                  if (numCode >= 300 && numCode < 400)
+                                    return 'text-yellow-600';
                                   return 'text-gray-600';
                                 };
-                                
+
                                 return (
-                                  <div key={index} className="text-sm font-mono text-gray-600 bg-gray-50 p-2 rounded border">
-                                    {index + 1}. {url} <span className={`font-medium ${getStatusColor(statusCode || 'N/A')}`}>({statusCode || 'N/A'})</span>
+                                  <div
+                                    key={index}
+                                    className="text-sm font-mono text-gray-600 bg-gray-50 p-2 rounded border"
+                                  >
+                                    {index + 1}. {url}{' '}
+                                    <span
+                                      className={`font-medium ${getStatusColor(statusCode || 'N/A')}`}
+                                    >
+                                      ({statusCode || 'N/A'})
+                                    </span>
                                   </div>
                                 );
                               })}
                               {/* Final URL */}
                               <div className="text-sm font-mono text-green-700 bg-green-50 p-2 rounded border border-green-200 font-medium">
-                                {result.fullRedirectChain && Array.isArray(result.fullRedirectChain) ? result.fullRedirectChain.length + 1 : 1}. {result.finalUrl} <span className="text-green-800">({result.finalStatusCode})</span> = final
+                                {result.fullRedirectChain &&
+                                Array.isArray(result.fullRedirectChain)
+                                  ? result.fullRedirectChain.length + 1
+                                  : 1}
+                                . {result.finalUrl}{' '}
+                                <span className="text-green-800">
+                                  ({result.finalStatusCode})
+                                </span>{' '}
+                                = final
                               </div>
                             </div>
                           ) : (
-                            <div className="text-sm text-tech-500 italic">No redirects</div>
+                            <div className="text-sm text-tech-500 italic">
+                              No redirects
+                            </div>
                           )}
-                          
+
                           {/* Enhanced Redirect Chain Details */}
-                          {result.redirectChainDetails && result.redirectChainDetails.length > 0 && (
-                            <div className="mt-4">
-                              <h4 className="text-sm font-medium text-tech-700 mb-2">Detailed Redirect Analysis</h4>
-                              <div className="space-y-2">
-                                {result.redirectChainDetails.map((step, index) => (
-                                  <div key={index} className="text-sm bg-gray-50 p-3 rounded border">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="font-medium text-tech-700">Step {step.step}</span>
-                                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                        step.type === 'http' 
-                                          ? 'bg-blue-100 text-blue-800' 
-                                          : step.type === 'meta' 
-                                          ? 'bg-green-100 text-green-800' 
-                                          : step.type === 'javascript'
-                                          ? 'bg-purple-100 text-purple-800'
-                                          : 'bg-gray-100 text-gray-800'
-                                      }`}>
-                                        {step.type === 'http' && step.statusCode ? `HTTP ${step.statusCode}` : 
-                                         step.type === 'meta' ? 'Meta Refresh' :
-                                         step.type === 'javascript' ? 'JavaScript' :
-                                         step.type === 'final' ? 'Final' : step.type}
-                                      </span>
-                                    </div>
-                                    <div className="text-gray-600 mb-1">
-                                      <strong>URL:</strong> {step.url}
-                                    </div>
-                                    {step.targetUrl && (
-                                      <div className="text-gray-600 mb-1">
-                                        <strong>Target:</strong> {step.targetUrl}
+                          {result.redirectChainDetails &&
+                            result.redirectChainDetails.length > 0 && (
+                              <div className="mt-4">
+                                <h4 className="text-sm font-medium text-tech-700 mb-2">
+                                  Detailed Redirect Analysis
+                                </h4>
+                                <div className="space-y-2">
+                                  {result.redirectChainDetails.map(
+                                    (step, index) => (
+                                      <div
+                                        key={index}
+                                        className="text-sm bg-gray-50 p-3 rounded border"
+                                      >
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="font-medium text-tech-700">
+                                            Step {step.step}
+                                          </span>
+                                          <span
+                                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                              step.type === 'http'
+                                                ? 'bg-blue-100 text-blue-800'
+                                                : step.type === 'meta'
+                                                  ? 'bg-green-100 text-green-800'
+                                                  : step.type === 'javascript'
+                                                    ? 'bg-purple-100 text-purple-800'
+                                                    : 'bg-gray-100 text-gray-800'
+                                            }`}
+                                          >
+                                            {step.type === 'http' &&
+                                            step.statusCode
+                                              ? `HTTP ${step.statusCode}`
+                                              : step.type === 'meta'
+                                                ? 'Meta Refresh'
+                                                : step.type === 'javascript'
+                                                  ? 'JavaScript'
+                                                  : step.type === 'final'
+                                                    ? 'Final'
+                                                    : step.type}
+                                          </span>
+                                        </div>
+                                        <div className="text-gray-600 mb-1">
+                                          <strong>URL:</strong> {step.url}
+                                        </div>
+                                        {step.targetUrl && (
+                                          <div className="text-gray-600 mb-1">
+                                            <strong>Target:</strong>{' '}
+                                            {step.targetUrl}
+                                          </div>
+                                        )}
+                                        {step.delay !== undefined &&
+                                          step.delay > 0 && (
+                                            <div className="text-gray-600 mb-1">
+                                              <strong>Delay:</strong>{' '}
+                                              {step.delay}s
+                                            </div>
+                                          )}
+                                        {step.method && (
+                                          <div className="text-gray-600">
+                                            <strong>Method:</strong>{' '}
+                                            {step.method}
+                                          </div>
+                                        )}
                                       </div>
-                                    )}
-                                    {step.delay !== undefined && step.delay > 0 && (
-                                      <div className="text-gray-600 mb-1">
-                                        <strong>Delay:</strong> {step.delay}s
-                                      </div>
-                                    )}
-                                    {step.method && (
-                                      <div className="text-gray-600">
-                                        <strong>Method:</strong> {step.method}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
+                                    )
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                          
+                            )}
+
                           {/* Redirect Type Summary */}
-                          {result.redirectTypes && Array.isArray(result.redirectTypes) && result.redirectTypes.length > 0 && (
-                            <div className="mt-4">
-                              <h4 className="text-sm font-medium text-tech-700 mb-2">Redirect Type Summary</h4>
-                              <div className="flex flex-wrap gap-2">
-                                {result.redirectTypes.map((redirectType, idx) => (
-                                  <div
-                                    key={idx}
-                                    className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${
-                                      redirectType.type === 'http' 
-                                        ? 'bg-blue-100 text-blue-800 border border-blue-200' 
-                                        : redirectType.type === 'meta' 
-                                        ? 'bg-green-100 text-green-800 border border-green-200' 
-                                        : 'bg-purple-100 text-purple-800 border border-purple-200'
-                                    }`}>
-                                    <span className="mr-2">
-                                      {redirectType.type === 'http' ? '🌐' : 
-                                       redirectType.type === 'meta' ? '⏰' : '⚡'}
-                                    </span>
-                                    {redirectType.type === 'http' && redirectType.statusCode ? `HTTP ${redirectType.statusCode}` : 
-                                     redirectType.type === 'meta' ? `Meta Refresh${redirectType.delay ? ` (${redirectType.delay}s)` : ''}` :
-                                     'JavaScript'}
-                                  </div>
-                                ))}
+                          {result.redirectTypes &&
+                            Array.isArray(result.redirectTypes) &&
+                            result.redirectTypes.length > 0 && (
+                              <div className="mt-4">
+                                <h4 className="text-sm font-medium text-tech-700 mb-2">
+                                  Redirect Type Summary
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {result.redirectTypes.map(
+                                    (redirectType, idx) => (
+                                      <div
+                                        key={idx}
+                                        className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${
+                                          redirectType.type === 'http'
+                                            ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                            : redirectType.type === 'meta'
+                                              ? 'bg-green-100 text-green-800 border border-green-200'
+                                              : 'bg-purple-100 text-purple-800 border border-purple-200'
+                                        }`}
+                                      >
+                                        <span className="mr-2">
+                                          {redirectType.type === 'http'
+                                            ? '🌐'
+                                            : redirectType.type === 'meta'
+                                              ? '⏰'
+                                              : '⚡'}
+                                        </span>
+                                        {redirectType.type === 'http' &&
+                                        redirectType.statusCode
+                                          ? `HTTP ${redirectType.statusCode}`
+                                          : redirectType.type === 'meta'
+                                            ? `Meta Refresh${redirectType.delay ? ` (${redirectType.delay}s)` : ''}`
+                                            : 'JavaScript'}
+                                      </div>
+                                    )
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
                         </div>
                       </div>
                     </td>
@@ -547,12 +667,13 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ results, onExport })
           <div className="text-tech-400 mb-4">
             <Search className="w-12 h-12 mx-auto" />
           </div>
-          <h3 className="text-lg font-medium text-tech-900 mb-2">No results found</h3>
+          <h3 className="text-lg font-medium text-tech-900 mb-2">
+            No results found
+          </h3>
           <p className="text-tech-600">
-            {searchTerm || statusFilter !== 'all' 
+            {searchTerm || statusFilter !== 'all'
               ? 'Try adjusting your search or filter criteria.'
-              : 'No results available. Process some URLs to see results here.'
-            }
+              : 'No results available. Process some URLs to see results here.'}
           </p>
         </div>
       )}

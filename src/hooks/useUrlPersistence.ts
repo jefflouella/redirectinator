@@ -19,7 +19,10 @@ interface UseUrlPersistenceProps {
   onProjectUpdate?: (updatedProject: Project) => void;
 }
 
-export const useUrlPersistence = ({ currentProject, onProjectUpdate }: UseUrlPersistenceProps) => {
+export const useUrlPersistence = ({
+  currentProject,
+  onProjectUpdate,
+}: UseUrlPersistenceProps) => {
   const [urls, setUrls] = useState<UrlData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -46,61 +49,69 @@ export const useUrlPersistence = ({ currentProject, onProjectUpdate }: UseUrlPer
   }, [currentProject, currentProject?.urls?.length, currentProject?.updatedAt]); // Also depend on URLs length and updatedAt to refresh when URLs are added
 
   // Auto-save URLs to project
-  const saveUrlsToProject = useCallback(async (newUrls: UrlData[]) => {
-    if (!currentProject) return;
+  const saveUrlsToProject = useCallback(
+    async (newUrls: UrlData[]) => {
+      if (!currentProject) return;
 
-    try {
-      const updatedProject = {
-        ...currentProject,
-        updatedAt: Date.now(),
-        urls: newUrls.map((url, index) => ({
-          id: `url_${index}_${Date.now()}`,
-          startingUrl: url.startingUrl,
-          targetRedirect: url.targetRedirect,
-        })),
-      };
+      try {
+        const updatedProject = {
+          ...currentProject,
+          updatedAt: Date.now(),
+          urls: newUrls.map((url, index) => ({
+            id: `url_${index}_${Date.now()}`,
+            startingUrl: url.startingUrl,
+            targetRedirect: url.targetRedirect,
+          })),
+        };
 
-      await storageService.saveProject(updatedProject);
-      console.log(`Auto-saved ${newUrls.length} URLs to project: ${currentProject.name}`);
-      
-      // Notify parent component about the project update
-      onProjectUpdate?.(updatedProject);
-    } catch (error) {
-      console.error('Failed to auto-save URLs:', error);
-    }
-  }, [currentProject, onProjectUpdate]);
+        await storageService.saveProject(updatedProject);
+        console.log(
+          `Auto-saved ${newUrls.length} URLs to project: ${currentProject.name}`
+        );
+
+        // Notify parent component about the project update
+        onProjectUpdate?.(updatedProject);
+      } catch (error) {
+        console.error('Failed to auto-save URLs:', error);
+      }
+    },
+    [currentProject, onProjectUpdate]
+  );
 
   // Detect duplicates
-  const detectDuplicates = useCallback((urlList: UrlData[] = urls): DuplicateInfo => {
-    const seen = new Set<string>();
-    const duplicates = new Set<string>();
-    
-    urlList.forEach(url => {
-      const normalizedUrl = url.startingUrl.toLowerCase().trim();
-      if (seen.has(normalizedUrl)) {
-        duplicates.add(normalizedUrl);
-      } else {
-        seen.add(normalizedUrl);
-      }
-    });
+  const detectDuplicates = useCallback(
+    (urlList: UrlData[] = urls): DuplicateInfo => {
+      const seen = new Set<string>();
+      const duplicates = new Set<string>();
 
-    const uniqueCount = seen.size;
-    const duplicateCount = duplicates.size;
-    const totalCount = urlList.length;
+      urlList.forEach(url => {
+        const normalizedUrl = url.startingUrl.toLowerCase().trim();
+        if (seen.has(normalizedUrl)) {
+          duplicates.add(normalizedUrl);
+        } else {
+          seen.add(normalizedUrl);
+        }
+      });
 
-    return {
-      hasDuplicates: duplicateCount > 0,
-      duplicateCount,
-      uniqueCount,
-      totalCount
-    };
-  }, [urls]);
+      const uniqueCount = seen.size;
+      const duplicateCount = duplicates.size;
+      const totalCount = urlList.length;
+
+      return {
+        hasDuplicates: duplicateCount > 0,
+        duplicateCount,
+        uniqueCount,
+        totalCount,
+      };
+    },
+    [urls]
+  );
 
   // Clean duplicates - keep the first occurrence of each URL
   const cleanDuplicates = useCallback(() => {
     const seen = new Set<string>();
     const cleanedUrls: UrlData[] = [];
-    
+
     urls.forEach(url => {
       const normalizedUrl = url.startingUrl.toLowerCase().trim();
       if (!seen.has(normalizedUrl)) {
@@ -117,30 +128,39 @@ export const useUrlPersistence = ({ currentProject, onProjectUpdate }: UseUrlPer
   }, [urls, saveUrlsToProject]);
 
   // Add URL with auto-save
-  const addUrl = useCallback((url: UrlData) => {
-    setUrls(prev => {
-      const newUrls = [...prev, url];
-      // Auto-save after adding
-      saveUrlsToProject(newUrls);
-      return newUrls;
-    });
-  }, [saveUrlsToProject]);
+  const addUrl = useCallback(
+    (url: UrlData) => {
+      setUrls(prev => {
+        const newUrls = [...prev, url];
+        // Auto-save after adding
+        saveUrlsToProject(newUrls);
+        return newUrls;
+      });
+    },
+    [saveUrlsToProject]
+  );
 
   // Remove URL with auto-save
-  const removeUrl = useCallback((index: number) => {
-    setUrls(prev => {
-      const newUrls = prev.filter((_, i) => i !== index);
-      // Auto-save after removing
-      saveUrlsToProject(newUrls);
-      return newUrls;
-    });
-  }, [saveUrlsToProject]);
+  const removeUrl = useCallback(
+    (index: number) => {
+      setUrls(prev => {
+        const newUrls = prev.filter((_, i) => i !== index);
+        // Auto-save after removing
+        saveUrlsToProject(newUrls);
+        return newUrls;
+      });
+    },
+    [saveUrlsToProject]
+  );
 
   // Update all URLs with auto-save
-  const setAllUrls = useCallback((newUrls: UrlData[]) => {
-    setUrls(newUrls);
-    saveUrlsToProject(newUrls);
-  }, [saveUrlsToProject]);
+  const setAllUrls = useCallback(
+    (newUrls: UrlData[]) => {
+      setUrls(newUrls);
+      saveUrlsToProject(newUrls);
+    },
+    [saveUrlsToProject]
+  );
 
   // Clear all URLs
   const clearUrls = useCallback(() => {

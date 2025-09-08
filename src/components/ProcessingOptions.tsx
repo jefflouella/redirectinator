@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Play, RefreshCw, Trash2, Plus, Square } from 'lucide-react';
 import { Project } from '@/types';
+import { ConfirmationOverlay } from './ConfirmationOverlay';
 
 interface ProcessingOptionsProps {
   currentProject: Project | null;
@@ -11,6 +12,7 @@ interface ProcessingOptionsProps {
     currentBatch: number;
     totalBatches: number;
     currentUrl?: string;
+    isStopping?: boolean;
   };
   onRunAllUrls: () => void;
   onRunNewUrls: () => void;
@@ -36,12 +38,24 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
   onContinueProcessing,
   onStopProcessing,
   onClearResults,
-  progressStats
+  progressStats,
 }) => {
+  const [showClearConfirmation, setShowClearConfirmation] = useState(false);
+  
   const newUrlCount = urlCount - resultCount;
   const hasNewUrls = newUrlCount > 0;
   const hasResults = resultCount > 0;
-  const hasIncompleteProcessing = progressStats && !progressStats.isComplete && progressStats.remaining > 0;
+  const hasIncompleteProcessing =
+    progressStats && !progressStats.isComplete && progressStats.remaining > 0;
+
+  const handleClearResults = () => {
+    setShowClearConfirmation(true);
+  };
+
+  const handleConfirmClear = () => {
+    onClearResults();
+    setShowClearConfirmation(false);
+  };
 
   if (!currentProject) {
     return null;
@@ -50,12 +64,15 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Processing Options</h3>
+        <h3 className="text-lg font-semibold text-gray-900">
+          Processing Options
+        </h3>
         <div className="text-sm text-gray-600">
           {urlCount} URLs • {resultCount} Results
           {progressStats && (
             <span className="ml-2 text-blue-600">
-              • {progressStats.processed}/{urlCount} processed ({progressStats.percentage}%)
+              • {progressStats.processed}/{urlCount} processed (
+              {progressStats.percentage}%)
             </span>
           )}
         </div>
@@ -71,7 +88,9 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
             <Square className="w-5 h-5 text-red-600" />
             <div className="text-left">
               <div className="font-medium text-gray-900">Stop Processing</div>
-              <div className="text-sm text-gray-600">Interrupt current batch</div>
+              <div className="text-sm text-gray-600">
+                Interrupt current batch
+              </div>
             </div>
           </button>
         )}
@@ -84,8 +103,12 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
           >
             <Play className="w-5 h-5 text-orange-600" />
             <div className="text-left">
-              <div className="font-medium text-gray-900">Continue Processing</div>
-              <div className="text-sm text-gray-600">{progressStats?.remaining} URLs remaining</div>
+              <div className="font-medium text-gray-900">
+                Continue Processing
+              </div>
+              <div className="text-sm text-gray-600">
+                {progressStats?.remaining} URLs remaining
+              </div>
             </div>
           </button>
         )}
@@ -99,7 +122,9 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
           <RefreshCw className="w-5 h-5 text-blue-600" />
           <div className="text-left">
             <div className="font-medium text-gray-900">Run All URLs Again</div>
-            <div className="text-sm text-gray-600">Process all {urlCount} URLs</div>
+            <div className="text-sm text-gray-600">
+              Process all {urlCount} URLs
+            </div>
           </div>
         </button>
 
@@ -120,7 +145,7 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
 
         {/* Clear Results */}
         <button
-          onClick={onClearResults}
+          onClick={handleClearResults}
           disabled={isProcessing || !hasResults}
           className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:border-red-300 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -134,15 +159,6 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
         </button>
       </div>
 
-      {/* Processing Status */}
-      {isProcessing && (
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center space-x-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-            <span className="text-sm text-blue-800">Processing URLs...</span>
-          </div>
-        </div>
-      )}
 
       {/* Info Messages */}
       {!isProcessing && (
@@ -154,39 +170,43 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
           )}
           {urlCount > 0 && !hasResults && (
             <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
-              Ready to process {urlCount} URLs. Click "Run All URLs Again" to start.
+              Ready to process {urlCount} URLs. Click "Run All URLs Again" to
+              start.
             </div>
           )}
           {hasIncompleteProcessing && (
             <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
-              Processing was interrupted. {progressStats?.remaining} URLs remaining. Click "Continue Processing" to resume.
+              Processing was interrupted. {progressStats?.remaining} URLs
+              remaining. Click "Continue Processing" to resume.
             </div>
           )}
           {hasNewUrls && hasResults && !hasIncompleteProcessing && (
             <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
-              {newUrlCount} new URLs available. Click "Run New URLs Only" to process just the new ones.
+              {newUrlCount} new URLs available. Click "Run New URLs Only" to
+              process just the new ones.
             </div>
           )}
           {!hasNewUrls && hasResults && !hasIncompleteProcessing && (
             <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-              All URLs have been processed. Click "Run All URLs Again" to re-process everything.
+              All URLs have been processed. Click "Run All URLs Again" to
+              re-process everything.
             </div>
           )}
         </div>
       )}
-      
-      {/* Processing Status */}
-      {isProcessing && (
-        <div className="mt-4 space-y-2">
-          <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
-            Processing batch {processingStatus.currentBatch} of {processingStatus.totalBatches} • 
-            {processingStatus.currentUrl && ` Currently: ${processingStatus.currentUrl}`}
-          </div>
-          <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-            You can stop processing at any time using the "Stop Processing" button above, or press <kbd className="px-1 py-0.5 bg-gray-200 rounded text-xs">Esc</kbd> or <kbd className="px-1 py-0.5 bg-gray-200 rounded text-xs">Ctrl+C</kbd>.
-          </div>
-        </div>
-      )}
+
+
+      {/* Clear Results Confirmation Overlay */}
+      <ConfirmationOverlay
+        isOpen={showClearConfirmation}
+        onClose={() => setShowClearConfirmation(false)}
+        onConfirm={handleConfirmClear}
+        title="Clear All Results"
+        message={`Are you sure you want to clear all ${resultCount} results? This action cannot be undone and will remove all processed data for this project.`}
+        confirmText="Clear Results"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };

@@ -1,165 +1,221 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Extension Verification</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f8ff; }
-        .step { background: white; border-radius: 8px; padding: 15px; margin: 10px 0; border-left: 4px solid #4285f4; }
-        .success { border-left-color: #4CAF50; background: #e8f5e8; }
-        .error { border-left-color: #f44336; background: #ffeaea; }
-        .warning { border-left-color: #ff9800; background: #fff3e0; }
-        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #4285f4; color: white; border: none; border-radius: 4px; }
-        button:hover { background: #3367d6; }
-        .code { background: #f5f5f5; padding: 10px; border-radius: 4px; font-family: monospace; margin: 10px 0; }
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f0f8ff;
+      }
+      .step {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+        border-left: 4px solid #4285f4;
+      }
+      .success {
+        border-left-color: #4caf50;
+        background: #e8f5e8;
+      }
+      .error {
+        border-left-color: #f44336;
+        background: #ffeaea;
+      }
+      .warning {
+        border-left-color: #ff9800;
+        background: #fff3e0;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 5px;
+        cursor: pointer;
+        background: #4285f4;
+        color: white;
+        border: none;
+        border-radius: 4px;
+      }
+      button:hover {
+        background: #3367d6;
+      }
+      .code {
+        background: #f5f5f5;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: monospace;
+        margin: 10px 0;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>🔧 Extension Verification Steps</h1>
 
     <div class="step" id="step1">
-        <h3>Step 1: Check Extension Loading</h3>
-        <p>Open <code>chrome://extensions/</code> and verify:</p>
-        <ul>
-            <li>✅ "Redirectinator Advanced" is listed</li>
-            <li>✅ Extension is <strong>enabled</strong> (toggle is blue)</li>
-            <li>✅ No errors shown</li>
-        </ul>
-        <button onclick="checkStep1()">Verify Extension Loaded</button>
+      <h3>Step 1: Check Extension Loading</h3>
+      <p>Open <code>chrome://extensions/</code> and verify:</p>
+      <ul>
+        <li>✅ "Redirectinator Advanced" is listed</li>
+        <li>✅ Extension is <strong>enabled</strong> (toggle is blue)</li>
+        <li>✅ No errors shown</li>
+      </ul>
+      <button onclick="checkStep1()">Verify Extension Loaded</button>
     </div>
 
     <div class="step" id="step2">
-        <h3>Step 2: Reload Extension</h3>
-        <p>If extension shows errors or isn't working:</p>
-        <ul>
-            <li>Click the reload button (circular arrow) on the extension</li>
-            <li>Wait for reload to complete</li>
-            <li>Check for any error messages</li>
-        </ul>
-        <button onclick="markStep2Complete()">Mark as Complete</button>
+      <h3>Step 2: Reload Extension</h3>
+      <p>If extension shows errors or isn't working:</p>
+      <ul>
+        <li>Click the reload button (circular arrow) on the extension</li>
+        <li>Wait for reload to complete</li>
+        <li>Check for any error messages</li>
+      </ul>
+      <button onclick="markStep2Complete()">Mark as Complete</button>
     </div>
 
     <div class="step" id="step3">
-        <h3>Step 3: Test Extension Context</h3>
-        <p>This page should have access to Chrome APIs:</p>
-        <div id="context-test"></div>
-        <button onclick="testExtensionContext()">Test Context</button>
+      <h3>Step 3: Test Extension Context</h3>
+      <p>This page should have access to Chrome APIs:</p>
+      <div id="context-test"></div>
+      <button onclick="testExtensionContext()">Test Context</button>
     </div>
 
     <div class="step" id="step4">
-        <h3>Step 4: Test Extension Communication</h3>
-        <p>Test if we can communicate with the extension:</p>
-        <div id="communication-test"></div>
-        <button onclick="testCommunication()">Test Communication</button>
+      <h3>Step 4: Test Extension Communication</h3>
+      <p>Test if we can communicate with the extension:</p>
+      <div id="communication-test"></div>
+      <button onclick="testCommunication()">Test Communication</button>
     </div>
 
     <div class="step" id="step5">
-        <h3>Step 5: Test Your Web App</h3>
-        <p>Once extension works here, test your actual web app:</p>
-        <div class="code">http://localhost:[YOUR_PORT]/</div>
-        <p>Look for these console messages:</p>
-        <div class="code">
-        ✅ Extension detected via global object: 1.0.0-local<br>
+      <h3>Step 5: Test Your Web App</h3>
+      <p>Once extension works here, test your actual web app:</p>
+      <div class="code">http://localhost:[YOUR_PORT]/</div>
+      <p>Look for these console messages:</p>
+      <div class="code">
+        ✅ Extension detected via global object: 1.0.0-local<br />
         ✅ Advanced Mode toggle enabled
-        </div>
+      </div>
     </div>
 
     <script>
-        function checkStep1() {
-            const step = document.getElementById('step1');
-            step.className = 'step success';
-            step.innerHTML = '<h3>✅ Step 1 Complete</h3><p>Extension should be loaded and enabled in chrome://extensions/</p>';
-        }
+      function checkStep1() {
+        const step = document.getElementById('step1');
+        step.className = 'step success';
+        step.innerHTML =
+          '<h3>✅ Step 1 Complete</h3><p>Extension should be loaded and enabled in chrome://extensions/</p>';
+      }
 
-        function markStep2Complete() {
-            const step = document.getElementById('step2');
-            step.className = 'step success';
-            step.innerHTML = '<h3>✅ Step 2 Complete</h3><p>Extension has been reloaded</p>';
-        }
+      function markStep2Complete() {
+        const step = document.getElementById('step2');
+        step.className = 'step success';
+        step.innerHTML =
+          '<h3>✅ Step 2 Complete</h3><p>Extension has been reloaded</p>';
+      }
 
-        function testExtensionContext() {
-            const result = document.getElementById('context-test');
-            const step = document.getElementById('step3');
+      function testExtensionContext() {
+        const result = document.getElementById('context-test');
+        const step = document.getElementById('step3');
 
-            let html = '<h4>Extension Context Test:</h4>';
+        let html = '<h4>Extension Context Test:</h4>';
 
-            // Test 1: Chrome API availability
-            if (typeof chrome !== 'undefined') {
-                html += '<div>✅ Chrome API available</div>';
+        // Test 1: Chrome API availability
+        if (typeof chrome !== 'undefined') {
+          html += '<div>✅ Chrome API available</div>';
 
-                // Test 2: Runtime API
-                if (chrome.runtime) {
-                    html += '<div>✅ chrome.runtime available</div>';
+          // Test 2: Runtime API
+          if (chrome.runtime) {
+            html += '<div>✅ chrome.runtime available</div>';
 
-                    // Test 3: Extension ID
-                    if (chrome.runtime.id) {
-                        html += '<div>✅ Extension ID: ' + chrome.runtime.id + '</div>';
-                        step.className = 'step success';
-                    } else {
-                        html += '<div>⚠️ No extension ID (may be expected)</div>';
-                        step.className = 'step warning';
-                    }
-
-                    // Test 4: Manifest
-                    if (chrome.runtime.getManifest) {
-                        try {
-                            const manifest = chrome.runtime.getManifest();
-                            html += '<div>✅ Manifest: ' + manifest.name + ' v' + manifest.version + '</div>';
-                        } catch (e) {
-                            html += '<div>❌ Manifest error: ' + e.message + '</div>';
-                            step.className = 'step error';
-                        }
-                    }
-                } else {
-                    html += '<div>❌ chrome.runtime NOT available</div>';
-                    html += '<div><strong>Solution:</strong> Extension not loaded or wrong context</div>';
-                    step.className = 'step error';
-                }
+            // Test 3: Extension ID
+            if (chrome.runtime.id) {
+              html += '<div>✅ Extension ID: ' + chrome.runtime.id + '</div>';
+              step.className = 'step success';
             } else {
-                html += '<div>❌ Chrome API NOT available</div>';
-                html += '<div><strong>Solution:</strong> Open this file with file:// protocol</div>';
-                step.className = 'step error';
+              html += '<div>⚠️ No extension ID (may be expected)</div>';
+              step.className = 'step warning';
             }
 
-            result.innerHTML = html;
-        }
-
-        function testCommunication() {
-            const result = document.getElementById('communication-test');
-            const step = document.getElementById('step4');
-
-            if (typeof chrome === 'undefined' || !chrome.runtime) {
-                result.innerHTML = '<div>❌ Cannot test - chrome.runtime not available</div>';
+            // Test 4: Manifest
+            if (chrome.runtime.getManifest) {
+              try {
+                const manifest = chrome.runtime.getManifest();
+                html +=
+                  '<div>✅ Manifest: ' +
+                  manifest.name +
+                  ' v' +
+                  manifest.version +
+                  '</div>';
+              } catch (e) {
+                html += '<div>❌ Manifest error: ' + e.message + '</div>';
                 step.className = 'step error';
-                return;
+              }
             }
-
-            result.innerHTML = '<div>🏓 Sending ping to extension...</div>';
-
-            chrome.runtime.sendMessage({ type: 'PING' }, (response) => {
-                if (chrome.runtime.lastError) {
-                    result.innerHTML += '<div>❌ Communication failed: ' + chrome.runtime.lastError.message + '</div>';
-                    step.className = 'step error';
-                    return;
-                }
-
-                if (response && response.type === 'PONG') {
-                    result.innerHTML += '<div>✅ Pong received! Version: ' + response.version + ', Status: ' + response.status + '</div>';
-                    step.className = 'step success';
-                } else {
-                    result.innerHTML += '<div>⚠️ Unexpected response: ' + JSON.stringify(response) + '</div>';
-                    step.className = 'step warning';
-                }
-            });
+          } else {
+            html += '<div>❌ chrome.runtime NOT available</div>';
+            html +=
+              '<div><strong>Solution:</strong> Extension not loaded or wrong context</div>';
+            step.className = 'step error';
+          }
+        } else {
+          html += '<div>❌ Chrome API NOT available</div>';
+          html +=
+            '<div><strong>Solution:</strong> Open this file with file:// protocol</div>';
+          step.className = 'step error';
         }
 
-        // Auto-test on page load
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                testExtensionContext();
-            }, 500);
+        result.innerHTML = html;
+      }
+
+      function testCommunication() {
+        const result = document.getElementById('communication-test');
+        const step = document.getElementById('step4');
+
+        if (typeof chrome === 'undefined' || !chrome.runtime) {
+          result.innerHTML =
+            '<div>❌ Cannot test - chrome.runtime not available</div>';
+          step.className = 'step error';
+          return;
+        }
+
+        result.innerHTML = '<div>🏓 Sending ping to extension...</div>';
+
+        chrome.runtime.sendMessage({ type: 'PING' }, response => {
+          if (chrome.runtime.lastError) {
+            result.innerHTML +=
+              '<div>❌ Communication failed: ' +
+              chrome.runtime.lastError.message +
+              '</div>';
+            step.className = 'step error';
+            return;
+          }
+
+          if (response && response.type === 'PONG') {
+            result.innerHTML +=
+              '<div>✅ Pong received! Version: ' +
+              response.version +
+              ', Status: ' +
+              response.status +
+              '</div>';
+            step.className = 'step success';
+          } else {
+            result.innerHTML +=
+              '<div>⚠️ Unexpected response: ' +
+              JSON.stringify(response) +
+              '</div>';
+            step.className = 'step warning';
+          }
         });
+      }
+
+      // Auto-test on page load
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          testExtensionContext();
+        }, 500);
+      });
     </script>
-</body>
+  </body>
 </html>

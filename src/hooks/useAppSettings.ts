@@ -27,11 +27,14 @@ export const useAppSettings = () => {
     }
   }, []);
 
-  const updateSettings = useCallback(async (newSettings: Partial<AppSettings>) => {
-    const updatedSettings = { ...settings, ...newSettings };
-    setSettings(updatedSettings);
-    await storageService.saveSettings(updatedSettings);
-  }, [settings]);
+  const updateSettings = useCallback(
+    async (newSettings: Partial<AppSettings>) => {
+      const updatedSettings = { ...settings, ...newSettings };
+      setSettings(updatedSettings);
+      await storageService.saveSettings(updatedSettings);
+    },
+    [settings]
+  );
 
   useEffect(() => {
     loadSettings();

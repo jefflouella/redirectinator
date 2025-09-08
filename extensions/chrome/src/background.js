@@ -12,8 +12,10 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // Get extension info
-chrome.management.getSelf((info) => {
-  console.log('🔧 Redirectinator Advanced Background Script Loaded Successfully');
+chrome.management.getSelf(info => {
+  console.log(
+    '🔧 Redirectinator Advanced Background Script Loaded Successfully'
+  );
   console.log('🔧 Extension ID:', info.id);
   console.log('🔧 Manifest:', info.manifest);
 });
@@ -29,15 +31,19 @@ const tabs = {};
 
 // Record client details (like Redirect Path extension)
 function recordClientDetails(request, sender) {
-  var tabId = sender.tab.id;
-  var tab = getTab(tabId);
+  const tabId = sender.tab.id;
+  const tab = getTab(tabId);
 
   if (request.userClicked) {
     tab.userClicked = true;
     console.log('🔍 User click recorded for tab:', tabId);
   } else if (request.metaRefreshDetails) {
     tab.meta[sender.tab.url] = request.metaRefreshDetails;
-    console.log('🔍 Meta refresh recorded for tab:', tabId, request.metaRefreshDetails);
+    console.log(
+      '🔍 Meta refresh recorded for tab:',
+      tabId,
+      request.metaRefreshDetails
+    );
   }
 
   setTab(tabId, tab);
@@ -45,7 +51,7 @@ function recordClientDetails(request, sender) {
 
 // Get tab data (like Redirect Path extension)
 function getTab(tabId) {
-  if (typeof(tabs[tabId]) != 'undefined') {
+  if (typeof tabs[tabId] != 'undefined') {
     return tabs[tabId];
   }
 
@@ -55,10 +61,10 @@ function getTab(tabId) {
     meta: {},
     serverClientSyncPath: {
       client: {},
-      server: {}
+      server: {},
     },
     previousClientRequest: null,
-    userClicked: false
+    userClicked: false,
   };
 }
 
@@ -69,26 +75,26 @@ function setTab(tabId, tab) {
 
 // Get client request by URL (like Redirect Path extension)
 function getClientRequestByUrl(tabId, url) {
-  var tab = getTab(tabId);
+  const tab = getTab(tabId);
   return tab.serverClientSyncPath.client[url] || null;
 }
 
 // Get server request by URL (like Redirect Path extension)
 function getServerRequestByUrl(tabId, url) {
-  var tab = getTab(tabId);
+  const tab = getTab(tabId);
   return tab.serverClientSyncPath.server[url] || null;
 }
 
 // Set client request by URL (like Redirect Path extension)
 function setClientRequestByUrl(tabId, request) {
-  var tab = getTab(tabId);
+  const tab = getTab(tabId);
   tab.serverClientSyncPath.client[request.url] = request;
   setTab(tabId, tab);
 }
 
 // Set server request by URL (like Redirect Path extension)
 function setServerRequestByUrl(tabId, request) {
-  var tab = getTab(tabId);
+  const tab = getTab(tabId);
   tab.serverClientSyncPath.server[request.url] = request;
   setTab(tabId, tab);
 }
@@ -98,35 +104,46 @@ function onServerClientPathSync(tabId, url) {
   // This "event" will execute when both final client (webNavigation) and server (webRequest) events have been received.
   // We need data from both of the callbacks to determine what type of redirect this was, and if we need to reset the path etc.
 
-  var currentClientRequestDetails = getClientRequestByUrl(tabId, url);
-  var currentServerRequestDetails = getServerRequestByUrl(tabId, url);
+  const currentClientRequestDetails = getClientRequestByUrl(tabId, url);
+  const currentServerRequestDetails = getServerRequestByUrl(tabId, url);
 
   // Both populated, we're clear to proceed.
   if (currentClientRequestDetails && currentServerRequestDetails) {
     console.log('🔍 Server-client sync for URL:', url);
-    
+
     // Build the pathItem object with what we know so far
-    var pathItem = {
+    const pathItem = {
       type: 'normal',
       redirect_type: 'none',
       status_code: currentServerRequestDetails.statusCode,
       url: currentServerRequestDetails.url,
-      ip: (currentServerRequestDetails.ip) ? currentServerRequestDetails.ip : '(not available)',
+      ip: currentServerRequestDetails.ip
+        ? currentServerRequestDetails.ip
+        : '(not available)',
       headers: currentServerRequestDetails.responseHeaders,
-      status_line: currentServerRequestDetails.statusLine
+      status_line: currentServerRequestDetails.statusLine,
     };
 
-    var tab = getTab(tabId);
+    let tab = getTab(tabId);
 
     // Forward/back can get trapped by JS (pushState) so if we pick up that
     // qualifier mark it as user generated (which it is)
-    if (currentClientRequestDetails.transitionQualifiers.indexOf('forward_back') !== -1) {
+    if (
+      currentClientRequestDetails.transitionQualifiers.indexOf(
+        'forward_back'
+      ) !== -1
+    ) {
       tab.userClicked = true;
     }
 
     // We got here from a client redirect, so the path hasn't ended yet. Also the user hasn't fired any click events
     // on this page.
-    if (currentClientRequestDetails.transitionQualifiers.indexOf('client_redirect') !== -1 && tab.userClicked !== true) {
+    if (
+      currentClientRequestDetails.transitionQualifiers.indexOf(
+        'client_redirect'
+      ) !== -1 &&
+      tab.userClicked !== true
+    ) {
       tab = setClientRedirectData(tab, currentClientRequestDetails);
     }
 
@@ -136,7 +153,7 @@ function onServerClientPathSync(tabId, url) {
     // the previous URLs in the path, we will "render" it down in to the path anyway.
     tab.serverClientSyncPath = {
       client: {},
-      server: {}
+      server: {},
     };
 
     recordPathItem(tabId, pathItem);
@@ -151,14 +168,16 @@ function setClientRedirectData(tab, currentClientRequestDetails) {
   // client request it initiated. Get the path, as well as the previous client
   // request to match urls and what not.
   if (tab.previousClientRequest) {
-    var indexToModify = tab.path.map(function (el, idx) {
-      return el.url;
-    }).lastIndexOf(tab.previousClientRequest.url);
+    const indexToModify = tab.path
+      .map(function (el, idx) {
+        return el.url;
+      })
+      .lastIndexOf(tab.previousClientRequest.url);
 
     // lastIndexOf above so we get the most recent client url. This only matters
     // in a refresh scenario where using indexOf doesn't work.
 
-    var pathItemToModify = tab.path[indexToModify];
+    const pathItemToModify = tab.path[indexToModify];
 
     pathItemToModify.type = 'client_redirect';
     pathItemToModify.redirect_type = 'javascript';
@@ -171,14 +190,14 @@ function setClientRedirectData(tab, currentClientRequestDetails) {
     // Set the redirect URL to the URL that came right after the last
     // client request in the path if there is such a thing. Picks up
     // client > server redirects.
-    if (tab.path[(indexToModify + 1)]) {
-      pathItemToModify.redirect_url = tab.path[(indexToModify + 1)].url;
+    if (tab.path[indexToModify + 1]) {
+      pathItemToModify.redirect_url = tab.path[indexToModify + 1].url;
     }
 
-    if (typeof(tab.meta[tab.previousClientRequest.url]) !== 'undefined') {
-      var metaInformation = tab.meta[tab.previousClientRequest.url];
+    if (typeof tab.meta[tab.previousClientRequest.url] !== 'undefined') {
+      const metaInformation = tab.meta[tab.previousClientRequest.url];
 
-      pathItemToModify.redirect_type = 'meta'
+      pathItemToModify.redirect_type = 'meta';
       pathItemToModify.redirect_url = metaInformation.url;
       pathItemToModify.meta_timer = metaInformation.timer;
     }
@@ -192,7 +211,7 @@ function setClientRedirectData(tab, currentClientRequestDetails) {
 // Record path item (like Redirect Path extension)
 function recordPathItem(tabId, pathItem) {
   if (tabId > 0) {
-    var tab = getTab(tabId);
+    const tab = getTab(tabId);
 
     tab.lastactive = new Date().getTime();
 
@@ -204,12 +223,16 @@ function recordPathItem(tabId, pathItem) {
 
     // Limit the path to 20 steps.
     if (tab.path.length > 20) {
-      var step = tab.path.shift();
-      console.info(tabId, 'Path was too long - removed the first step on the path', step);
+      const step = tab.path.shift();
+      console.info(
+        tabId,
+        'Path was too long - removed the first step on the path',
+        step
+      );
     }
 
     setTab(tabId, tab);
-    
+
     console.log('🔍 Path item recorded:', pathItem);
   }
 }
@@ -219,57 +242,76 @@ console.log('🔍 Setting up WebRequest API listeners for redirect detection...'
 
 try {
   // Define request filter for main frame requests only
-  const REQUEST_FILTER = {'urls': ['<all_urls>'], 'types': ['main_frame']};
+  const REQUEST_FILTER = { urls: ['<all_urls>'], types: ['main_frame'] };
   const EXTRA_INFO = ['responseHeaders'];
 
   // Listen for redirects using webRequest API (like Redirect Path extension)
-  chrome.webRequest.onBeforeRedirect.addListener((details) => {
-    if (details.frameType == "outermost_frame") { 
-      console.log('🔍 HTTP redirect detected via webRequest:', {
-        from: details.url,
-        to: details.redirectUrl,
-        statusCode: details.statusCode,
-        type: details.type,
-        tabId: details.tabId
-      });
-      
-      recordPathItem(details.tabId, {
-        type: 'server_redirect',
-        redirect_type: details.statusCode,
-        status_code: details.statusCode,
-        url: details.url,
-        redirect_url: details.redirectUrl,
-        ip: (details.ip) ? details.ip : '(not available)',
-        headers: details.responseHeaders,
-        status_line: details.statusLine
-      });
-    }
-  }, REQUEST_FILTER, EXTRA_INFO);
+  chrome.webRequest.onBeforeRedirect.addListener(
+    details => {
+      if (details.frameType == 'outermost_frame') {
+        console.log('🔍 HTTP redirect detected via webRequest:', {
+          from: details.url,
+          to: details.redirectUrl,
+          statusCode: details.statusCode,
+          type: details.type,
+          tabId: details.tabId,
+        });
+
+        recordPathItem(details.tabId, {
+          type: 'server_redirect',
+          redirect_type: details.statusCode,
+          status_code: details.statusCode,
+          url: details.url,
+          redirect_url: details.redirectUrl,
+          ip: details.ip ? details.ip : '(not available)',
+          headers: details.responseHeaders,
+          status_line: details.statusLine,
+        });
+      }
+    },
+    REQUEST_FILTER,
+    EXTRA_INFO
+  );
 
   // Listen for completed requests (like Redirect Path extension)
-  chrome.webRequest.onCompleted.addListener((details) => {
-    if (details.frameType == "outermost_frame") {
-      console.log('🔍 Request completed:', details.url, 'Status:', details.statusCode);
-      setServerRequestByUrl(details.tabId, details);
-      onServerClientPathSync(details.tabId, details.url);
-    }
-  }, REQUEST_FILTER, EXTRA_INFO);
+  chrome.webRequest.onCompleted.addListener(
+    details => {
+      if (details.frameType == 'outermost_frame') {
+        console.log(
+          '🔍 Request completed:',
+          details.url,
+          'Status:',
+          details.statusCode
+        );
+        setServerRequestByUrl(details.tabId, details);
+        onServerClientPathSync(details.tabId, details.url);
+      }
+    },
+    REQUEST_FILTER,
+    EXTRA_INFO
+  );
 
   // Also use webNavigation for additional navigation events (like Redirect Path extension)
   if (chrome.webNavigation && chrome.webNavigation.onCommitted) {
-    chrome.webNavigation.onCommitted.addListener(async (details) => {
-      if (details.frameId === 0) { // Main frame only
-        console.log('🔍 Navigation committed:', details.url, 'Type:', details.transitionType);
-        
+    chrome.webNavigation.onCommitted.addListener(async details => {
+      if (details.frameId === 0) {
+        // Main frame only
+        console.log(
+          '🔍 Navigation committed:',
+          details.url,
+          'Type:',
+          details.transitionType
+        );
+
         // Set client request by URL (like Redirect Path extension)
         setClientRequestByUrl(details.tabId, details);
-        
+
         // Sync server and client data (like Redirect Path extension)
         onServerClientPathSync(details.tabId, details.url);
       }
     });
   }
-  
+
   console.log('✅ WebRequest API listeners initialized successfully');
 } catch (error) {
   console.warn('⚠️ Error setting up WebRequest API listeners:', error);
@@ -318,7 +360,8 @@ class AnalysisCache {
 
   get(key) {
     const item = this.cache.get(key);
-    if (item && Date.now() - item.timestamp < 300000) { // 5 minutes
+    if (item && Date.now() - item.timestamp < 300000) {
+      // 5 minutes
       return item.data;
     }
     this.cache.delete(key);
@@ -333,7 +376,7 @@ class AnalysisCache {
 
     this.cache.set(key, {
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -350,7 +393,7 @@ class ExtensionHealthMonitor {
       successfulAnalyses: 0,
       failedAnalyses: 0,
       averageAnalysisTime: 0,
-      lastAnalysisTime: null
+      lastAnalysisTime: null,
     };
   }
 
@@ -367,18 +410,20 @@ class ExtensionHealthMonitor {
     // Update average analysis time
     const currentAvg = this.metrics.averageAnalysisTime;
     const total = this.metrics.totalAnalyses;
-    this.metrics.averageAnalysisTime = (currentAvg * (total - 1) + analysisTime) / total;
+    this.metrics.averageAnalysisTime =
+      (currentAvg * (total - 1) + analysisTime) / total;
   }
 
   getHealthReport() {
-    const successRate = this.metrics.totalAnalyses > 0
-      ? (this.metrics.successfulAnalyses / this.metrics.totalAnalyses) * 100
-      : 0;
+    const successRate =
+      this.metrics.totalAnalyses > 0
+        ? (this.metrics.successfulAnalyses / this.metrics.totalAnalyses) * 100
+        : 0;
 
     return {
       ...this.metrics,
       successRate: Math.round(successRate * 100) / 100,
-      uptime: Date.now() - this.startTime
+      uptime: Date.now() - this.startTime,
     };
   }
 }
@@ -401,7 +446,7 @@ async function waitForTabLoad(tabId, timeout = 10000) {
     }, timeout);
 
     function checkTab() {
-      chrome.tabs.get(tabId, (tab) => {
+      chrome.tabs.get(tabId, tab => {
         if (chrome.runtime.lastError) {
           clearTimeout(timeoutId);
           reject(new Error('Tab no longer exists'));
@@ -443,7 +488,9 @@ async function analyzeUrlComprehensive(url, options = {}) {
   }
 
   // All attempts failed
-  throw new Error(`Failed to analyze ${url} after ${maxRetries} attempts: ${lastError.message}`);
+  throw new Error(
+    `Failed to analyze ${url} after ${maxRetries} attempts: ${lastError.message}`
+  );
 }
 
 /**
@@ -451,7 +498,7 @@ async function analyzeUrlComprehensive(url, options = {}) {
  */
 async function performAnalysis(url, options = {}) {
   console.log('🔍 performAnalysis called with:', url, options);
-  
+
   try {
     const cacheKey = `${url}_${JSON.stringify(options)}`;
     console.log('🔍 Cache key created:', cacheKey);
@@ -466,12 +513,12 @@ async function performAnalysis(url, options = {}) {
 
     const startTime = Date.now();
     // Helper function to clean malformed URLs
-    const cleanUrl = (url) => {
+    const cleanUrl = url => {
       if (!url || typeof url !== 'string') return null;
-      
+
       // Remove malformed patterns like "https://www.https://www.https://www."
       const cleaned = url.replace(/^(https?:\/\/[^\/]*?)(\1)+/g, '$1');
-      
+
       try {
         new URL(cleaned);
         return cleaned;
@@ -481,7 +528,7 @@ async function performAnalysis(url, options = {}) {
     };
 
     const cleanOriginalUrl = cleanUrl(url) || url;
-    
+
     const results = {
       originalUrl: cleanOriginalUrl,
       startTime,
@@ -494,7 +541,7 @@ async function performAnalysis(url, options = {}) {
       analysisTime: 0,
       status: 'pending',
       detectionMode: 'advanced',
-      extensionVersion: '1.0.0'
+      extensionVersion: '1.0.0',
     };
     console.log('🔍 Results object created');
 
@@ -506,40 +553,56 @@ async function performAnalysis(url, options = {}) {
 
       // Step 1: Follow HTTP redirects first to get the full chain
       console.log('🔍 Step 1: Following HTTP redirects...');
-      const httpRedirects = await followHttpRedirects(url, options.maxRedirects || 10);
+      const httpRedirects = await followHttpRedirects(
+        url,
+        options.maxRedirects || 10
+      );
       console.log('🔍 HTTP redirects found:', httpRedirects);
 
       // Step 2: Create tab with ORIGINAL URL to capture meta refresh and JavaScript redirects
-      console.log('🔍 Step 2: Creating tab with original URL for early detection...');
+      console.log(
+        '🔍 Step 2: Creating tab with original URL for early detection...'
+      );
       try {
         tab = await chrome.tabs.create({
           url: url, // Use original URL, not final URL
-          active: false
+          active: false,
         });
-        console.log('🔍 Tab created with ID:', tab.id, 'and original URL:', url);
+        console.log(
+          '🔍 Tab created with ID:',
+          tab.id,
+          'and original URL:',
+          url
+        );
       } catch (tabError) {
         console.error('❌ Failed to create tab:', tabError);
         throw new Error(`Failed to create analysis tab: ${tabError.message}`);
       }
-      
+
       // Store analysis reference
       activeAnalyses.set(tab.id, results);
 
       // Inject content script IMMEDIATELY after tab creation to ensure it runs on original page
-      console.log('🔍 Injecting content script IMMEDIATELY after tab creation for original page detection...');
+      console.log(
+        '🔍 Injecting content script IMMEDIATELY after tab creation for original page detection...'
+      );
       try {
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
-          files: ['src/content.js']
+          files: ['src/content.js'],
         });
-        console.log('✅ Content script injected successfully into original page');
+        console.log(
+          '✅ Content script injected successfully into original page'
+        );
       } catch (injectError) {
         console.error('❌ Failed to inject content script:', injectError);
         // Continue without content script analysis
       }
 
       // Wait for page to load and navigate through redirects
-      console.log('🔍 Waiting for tab to load and navigate through redirects...');
+      console.log(
+        '🔍 Waiting for tab to load and navigate through redirects...'
+      );
       try {
         await waitForTabLoad(tab.id, options.timeout || 15000);
         console.log('✅ Tab loaded successfully');
@@ -558,240 +621,270 @@ async function performAnalysis(url, options = {}) {
       results.httpRedirects = httpRedirects.redirects || [];
       console.log('🔍 HTTP redirects stored:', results.httpRedirects.length);
 
-    // Wait for content script to initialize and analyze the original page
-    console.log('🔍 Waiting for content script to analyze original page...');
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Give more time for detection
+      // Wait for content script to initialize and analyze the original page
+      console.log('🔍 Waiting for content script to analyze original page...');
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Give more time for detection
 
-    // Get analysis results from content script BEFORE navigation
-    console.log('🔍 Requesting analysis from content script on original page...');
-    let analysisResults = {};
-    try {
-      analysisResults = await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          console.warn('⏰ Content script analysis timeout on original page');
-          resolve({}); // Resolve with empty results instead of rejecting
-        }, 10000);
+      // Get analysis results from content script BEFORE navigation
+      console.log(
+        '🔍 Requesting analysis from content script on original page...'
+      );
+      let analysisResults = {};
+      try {
+        analysisResults = await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            console.warn('⏰ Content script analysis timeout on original page');
+            resolve({}); // Resolve with empty results instead of rejecting
+          }, 10000);
 
-        function messageHandler(message) {
-          if (message.type === 'CONTENT_ANALYSIS_COMPLETE' && message.tabId === tab.id) {
-            console.log('✅ Content script analysis complete on original page:', message.data);
-            clearTimeout(timeout);
-            chrome.runtime.onMessage.removeListener(messageHandler);
-            resolve(message.data);
-          }
-        }
-
-        chrome.runtime.onMessage.addListener(messageHandler);
-
-        // Request analysis from content script
-        try {
-          chrome.tabs.sendMessage(tab.id, {
-            type: 'START_ANALYSIS',
-            tabId: tab.id,
-            originalUrl: url
-          });
-        } catch (sendError) {
-          console.error('❌ Failed to send message to content script:', sendError);
-          clearTimeout(timeout);
-          resolve({}); // Continue with empty analysis results
-        }
-      });
-    } catch (analysisError) {
-      console.error('❌ Content script analysis failed:', analysisError);
-      analysisResults = {}; // Continue with empty analysis results
-    }
-
-    // Store the analysis results from the original page
-    console.log('🔍 Analysis results from original page:', analysisResults);
-
-    // Build comprehensive redirect chain
-    console.log('🔍 Building comprehensive redirect chain...');
-    const redirectChain = [];
-    
-    // Add original URL
-    redirectChain.push({
-      step: 0,
-      url: url,
-      type: 'original',
-      statusCode: null,
-      timestamp: startTime
-    });
-
-    // Add HTTP redirects from the chain following
-    if (results.httpRedirects && results.httpRedirects.length > 0) {
-      results.httpRedirects.forEach((redirect, index) => {
-        redirectChain.push({
-          step: redirectChain.length,
-          url: redirect.url,
-          type: 'http_redirect',
-          statusCode: redirect.statusCode,
-          method: redirect.method || 'GET',
-          from: redirect.from || redirect.url,
-          targetUrl: redirect.targetUrl || redirect.to,
-          timestamp: redirect.timestamp || Date.now()
-        });
-      });
-    }
-
-    // Add HTTP redirects captured during navigation via webRequest
-    const tabNavigationRedirects = navigationRedirects.get(tab.id) || [];
-    if (tabNavigationRedirects.length > 0) {
-      console.log('🔍 Adding webRequest-captured redirects:', tabNavigationRedirects.length);
-      tabNavigationRedirects.forEach((redirect, index) => {
-        redirectChain.push({
-          step: redirectChain.length,
-          url: redirect.url,
-          type: 'http_redirect',
-          statusCode: redirect.statusCode,
-          method: redirect.method || 'GET',
-          from: redirect.url,
-          targetUrl: redirect.targetUrl,
-          timestamp: redirect.timestamp
-        });
-      });
-    }
-
-    // Add redirects derived from Redirect Path style tab path data
-    try {
-      const tabData = getTab(tab.id);
-      if (tabData && Array.isArray(tabData.path) && tabData.path.length > 0) {
-        console.log('🔍 Merging Redirect Path tab path items:', tabData.path.length);
-        tabData.path.forEach((item) => {
-          const cleanItemUrl = cleanUrl(item.url);
-          const cleanRedirectUrl = cleanUrl(item.redirect_url);
-          
-          if (item.type === 'server_redirect' && cleanItemUrl) {
-            redirectChain.push({
-              step: redirectChain.length,
-              url: cleanItemUrl,
-              type: 'http_redirect',
-              statusCode: item.status_code,
-              method: 'GET',
-              from: cleanItemUrl,
-              targetUrl: cleanRedirectUrl || undefined,
-              timestamp: Date.now()
-            });
-          } else if (item.type === 'client_redirect') {
-            const clientUrl = cleanRedirectUrl || cleanItemUrl;
-            if (clientUrl) {
-              if (item.redirect_type === 'meta') {
-                redirectChain.push({
-                  step: redirectChain.length,
-                  url: clientUrl,
-                  type: 'meta_refresh',
-                  method: 'meta',
-                  from: cleanItemUrl || clientUrl,
-                  targetUrl: cleanRedirectUrl || undefined,
-                  delay: item.meta_timer ? parseInt(item.meta_timer) || 0 : undefined,
-                  timestamp: Date.now()
-                });
-              } else {
-                // javascript
-                redirectChain.push({
-                  step: redirectChain.length,
-                  url: clientUrl,
-                  type: 'javascript',
-                  method: 'javascript',
-                  from: cleanItemUrl || clientUrl,
-                  targetUrl: cleanRedirectUrl || undefined,
-                  timestamp: Date.now()
-                });
-              }
+          function messageHandler(message) {
+            if (
+              message.type === 'CONTENT_ANALYSIS_COMPLETE' &&
+              message.tabId === tab.id
+            ) {
+              console.log(
+                '✅ Content script analysis complete on original page:',
+                message.data
+              );
+              clearTimeout(timeout);
+              chrome.runtime.onMessage.removeListener(messageHandler);
+              resolve(message.data);
             }
           }
+
+          chrome.runtime.onMessage.addListener(messageHandler);
+
+          // Request analysis from content script
+          try {
+            chrome.tabs.sendMessage(tab.id, {
+              type: 'START_ANALYSIS',
+              tabId: tab.id,
+              originalUrl: url,
+            });
+          } catch (sendError) {
+            console.error(
+              '❌ Failed to send message to content script:',
+              sendError
+            );
+            clearTimeout(timeout);
+            resolve({}); // Continue with empty analysis results
+          }
         });
+      } catch (analysisError) {
+        console.error('❌ Content script analysis failed:', analysisError);
+        analysisResults = {}; // Continue with empty analysis results
       }
-    } catch (mergeErr) {
-      console.warn('⚠️ Failed to merge tab path items:', mergeErr);
-    }
 
-    // Add meta refresh redirects from content script
-    if (analysisResults.metaRefreshRedirects && analysisResults.metaRefreshRedirects.length > 0) {
-      analysisResults.metaRefreshRedirects.forEach(redirect => {
-        redirectChain.push({
-          step: redirectChain.length,
-          url: redirect.to,
-          type: 'meta_refresh',
-          method: redirect.method,
-          from: redirect.from,
-          targetUrl: redirect.targetUrl,
-          delay: redirect.delay,
-          timestamp: redirect.timestamp
-        });
-      });
-    }
+      // Store the analysis results from the original page
+      console.log('🔍 Analysis results from original page:', analysisResults);
 
-    // Add JavaScript redirects from content script
-    if (analysisResults.javascriptRedirects && analysisResults.javascriptRedirects.length > 0) {
-      analysisResults.javascriptRedirects.forEach(redirect => {
-        redirectChain.push({
-          step: redirectChain.length,
-          url: redirect.to,
-          type: 'javascript',
-          method: redirect.method,
-          from: redirect.from,
-          timestamp: redirect.timestamp
-        });
-      });
-    }
+      // Build comprehensive redirect chain
+      console.log('🔍 Building comprehensive redirect chain...');
+      const redirectChain = [];
 
-    // Add final URL if not already included
-    if (!redirectChain.some(step => step.url === results.finalUrl)) {
+      // Add original URL
       redirectChain.push({
-        step: redirectChain.length,
-        url: results.finalUrl,
-        type: 'final',
-        statusCode: 200, // Assume successful final load
-        timestamp: Date.now()
+        step: 0,
+        url: url,
+        type: 'original',
+        statusCode: null,
+        timestamp: startTime,
       });
-    }
 
-    // Process results
-    results.redirectChain = redirectChain;
-    results.metaRefresh = analysisResults.metaRefresh;
-    results.javascriptRedirects = analysisResults.javascriptRedirects || [];
-    results.metaRefreshRedirects = analysisResults.metaRefreshRedirects || [];
-    results.hasMetaRefresh = !!(results.metaRefresh || (results.metaRefreshRedirects && results.metaRefreshRedirects.length > 0));
-    results.hasJavaScriptRedirect = results.javascriptRedirects.length > 0;
-    results.status = 'success';
-
-    console.log('✅ Analysis complete. Chain length:', redirectChain.length);
-    console.log('🔗 Final redirect chain:', redirectChain);
-
-  } catch (error) {
-    console.error('❌ Analysis error:', error);
-    results.status = 'error';
-    results.error = error.message;
-  } finally {
-    // Clean up tab
-    if (tab?.id) {
-      try {
-        await chrome.tabs.remove(tab.id);
-        console.log('🔍 Analysis tab removed');
-      } catch (e) {
-        console.warn('Could not remove tab:', e);
+      // Add HTTP redirects from the chain following
+      if (results.httpRedirects && results.httpRedirects.length > 0) {
+        results.httpRedirects.forEach((redirect, index) => {
+          redirectChain.push({
+            step: redirectChain.length,
+            url: redirect.url,
+            type: 'http_redirect',
+            statusCode: redirect.statusCode,
+            method: redirect.method || 'GET',
+            from: redirect.from || redirect.url,
+            targetUrl: redirect.targetUrl || redirect.to,
+            timestamp: redirect.timestamp || Date.now(),
+          });
+        });
       }
-      activeAnalyses.delete(tab.id);
-      navigationRedirects.delete(tab.id); // Clean up navigation redirects
+
+      // Add HTTP redirects captured during navigation via webRequest
+      const tabNavigationRedirects = navigationRedirects.get(tab.id) || [];
+      if (tabNavigationRedirects.length > 0) {
+        console.log(
+          '🔍 Adding webRequest-captured redirects:',
+          tabNavigationRedirects.length
+        );
+        tabNavigationRedirects.forEach((redirect, index) => {
+          redirectChain.push({
+            step: redirectChain.length,
+            url: redirect.url,
+            type: 'http_redirect',
+            statusCode: redirect.statusCode,
+            method: redirect.method || 'GET',
+            from: redirect.url,
+            targetUrl: redirect.targetUrl,
+            timestamp: redirect.timestamp,
+          });
+        });
+      }
+
+      // Add redirects derived from Redirect Path style tab path data
+      try {
+        const tabData = getTab(tab.id);
+        if (tabData && Array.isArray(tabData.path) && tabData.path.length > 0) {
+          console.log(
+            '🔍 Merging Redirect Path tab path items:',
+            tabData.path.length
+          );
+          tabData.path.forEach(item => {
+            const cleanItemUrl = cleanUrl(item.url);
+            const cleanRedirectUrl = cleanUrl(item.redirect_url);
+
+            if (item.type === 'server_redirect' && cleanItemUrl) {
+              redirectChain.push({
+                step: redirectChain.length,
+                url: cleanItemUrl,
+                type: 'http_redirect',
+                statusCode: item.status_code,
+                method: 'GET',
+                from: cleanItemUrl,
+                targetUrl: cleanRedirectUrl || undefined,
+                timestamp: Date.now(),
+              });
+            } else if (item.type === 'client_redirect') {
+              const clientUrl = cleanRedirectUrl || cleanItemUrl;
+              if (clientUrl) {
+                if (item.redirect_type === 'meta') {
+                  redirectChain.push({
+                    step: redirectChain.length,
+                    url: clientUrl,
+                    type: 'meta_refresh',
+                    method: 'meta',
+                    from: cleanItemUrl || clientUrl,
+                    targetUrl: cleanRedirectUrl || undefined,
+                    delay: item.meta_timer
+                      ? parseInt(item.meta_timer) || 0
+                      : undefined,
+                    timestamp: Date.now(),
+                  });
+                } else {
+                  // javascript
+                  redirectChain.push({
+                    step: redirectChain.length,
+                    url: clientUrl,
+                    type: 'javascript',
+                    method: 'javascript',
+                    from: cleanItemUrl || clientUrl,
+                    targetUrl: cleanRedirectUrl || undefined,
+                    timestamp: Date.now(),
+                  });
+                }
+              }
+            }
+          });
+        }
+      } catch (mergeErr) {
+        console.warn('⚠️ Failed to merge tab path items:', mergeErr);
+      }
+
+      // Add meta refresh redirects from content script
+      if (
+        analysisResults.metaRefreshRedirects &&
+        analysisResults.metaRefreshRedirects.length > 0
+      ) {
+        analysisResults.metaRefreshRedirects.forEach(redirect => {
+          redirectChain.push({
+            step: redirectChain.length,
+            url: redirect.to,
+            type: 'meta_refresh',
+            method: redirect.method,
+            from: redirect.from,
+            targetUrl: redirect.targetUrl,
+            delay: redirect.delay,
+            timestamp: redirect.timestamp,
+          });
+        });
+      }
+
+      // Add JavaScript redirects from content script
+      if (
+        analysisResults.javascriptRedirects &&
+        analysisResults.javascriptRedirects.length > 0
+      ) {
+        analysisResults.javascriptRedirects.forEach(redirect => {
+          redirectChain.push({
+            step: redirectChain.length,
+            url: redirect.to,
+            type: 'javascript',
+            method: redirect.method,
+            from: redirect.from,
+            timestamp: redirect.timestamp,
+          });
+        });
+      }
+
+      // Add final URL if not already included
+      if (!redirectChain.some(step => step.url === results.finalUrl)) {
+        redirectChain.push({
+          step: redirectChain.length,
+          url: results.finalUrl,
+          type: 'final',
+          statusCode: 200, // Assume successful final load
+          timestamp: Date.now(),
+        });
+      }
+
+      // Process results
+      results.redirectChain = redirectChain;
+      results.metaRefresh = analysisResults.metaRefresh;
+      results.javascriptRedirects = analysisResults.javascriptRedirects || [];
+      results.metaRefreshRedirects = analysisResults.metaRefreshRedirects || [];
+      results.hasMetaRefresh = !!(
+        results.metaRefresh ||
+        (results.metaRefreshRedirects &&
+          results.metaRefreshRedirects.length > 0)
+      );
+      results.hasJavaScriptRedirect = results.javascriptRedirects.length > 0;
+      results.status = 'success';
+
+      console.log('✅ Analysis complete. Chain length:', redirectChain.length);
+      console.log('🔗 Final redirect chain:', redirectChain);
+    } catch (error) {
+      console.error('❌ Analysis error:', error);
+      results.status = 'error';
+      results.error = error.message;
+    } finally {
+      // Clean up tab
+      if (tab?.id) {
+        try {
+          await chrome.tabs.remove(tab.id);
+          console.log('🔍 Analysis tab removed');
+        } catch (e) {
+          console.warn('Could not remove tab:', e);
+        }
+        activeAnalyses.delete(tab.id);
+        navigationRedirects.delete(tab.id); // Clean up navigation redirects
+      }
+
+      results.analysisTime = Date.now() - startTime;
+
+      // Record metrics
+      healthMonitor.recordAnalysis(
+        results.status === 'success',
+        results.analysisTime
+      );
+
+      // Cache successful results
+      if (results.status === 'success') {
+        analysisCache.set(cacheKey, results);
+      }
     }
-
-    results.analysisTime = Date.now() - startTime;
-
-    // Record metrics
-    healthMonitor.recordAnalysis(results.status === 'success', results.analysisTime);
-
-    // Cache successful results
-    if (results.status === 'success') {
-      analysisCache.set(cacheKey, results);
-    }
-  }
 
     return results;
-  
   } catch (outerError) {
     console.error('❌ CRITICAL: Outer error in performAnalysis:', outerError);
     console.error('❌ CRITICAL: Outer error stack:', outerError.stack);
-    
+
     // Return a basic error result instead of throwing
     return {
       originalUrl: url,
@@ -806,7 +899,7 @@ async function performAnalysis(url, options = {}) {
       status: 'error',
       error: `Critical error: ${outerError.message}`,
       detectionMode: 'advanced',
-      extensionVersion: '1.0.0'
+      extensionVersion: '1.0.0',
     };
   }
 }
@@ -817,12 +910,17 @@ async function performAnalysis(url, options = {}) {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('🔍 Background script received message:', request.type, request);
   console.log('🔍 Sender:', sender);
-  console.log('🔍 Message details:', { type: request.type, hasType: !!request.type, keys: Object.keys(request) });
+  console.log('🔍 Message details:', {
+    type: request.type,
+    hasType: !!request.type,
+    keys: Object.keys(request),
+  });
 
   if (request.type === 'WEB_APP_ANALYZE_URL') {
     console.log('Processing URL analysis request:', request.url);
     // Handle web app analysis request
-    analysisQueue.add(request.url, request.options || {})
+    analysisQueue
+      .add(request.url, request.options || {})
       .then(result => {
         console.log('Analysis completed successfully:', result);
         sendResponse({ success: true, result });
@@ -880,7 +978,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       version: '1.0.0-local',
       timestamp: Date.now(),
       status: 'active',
-      extensionId: chrome.runtime.id
+      extensionId: chrome.runtime.id,
     };
     console.log('🏓 Sending PONG response:', response);
     sendResponse(response);
@@ -889,8 +987,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   // Handle ANALYZE_URL_REQUEST (for main app communication)
   if (request.type === 'ANALYZE_URL_REQUEST') {
-    console.log('🔍 Runtime: Received ANALYZE_URL_REQUEST from main app:', request.url);
-    
+    console.log(
+      '🔍 Runtime: Received ANALYZE_URL_REQUEST from main app:',
+      request.url
+    );
+
     const responseTabId = sender?.tab?.id;
     const requestId = request.requestId;
 
@@ -900,33 +1001,38 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // Perform the analysis
       performAnalysis(request.url, request.options || {})
         .then(result => {
-          console.log('🔍 Runtime: Analysis completed successfully for main app');
-          
+          console.log(
+            '🔍 Runtime: Analysis completed successfully for main app'
+          );
+
           // Send response via sendResponse for runtime messages
           sendResponse({
             success: true,
-            result: result
+            result: result,
           });
         })
         .catch(error => {
           console.error('❌ Runtime: Analysis failed for main app:', error);
-          
+
           // Send error response via sendResponse for runtime messages
           sendResponse({
             success: false,
-            error: error.message
+            error: error.message,
           });
         });
 
       // Return true to keep message channel open for async response
       return true;
     } catch (syncError) {
-      console.error('❌ Runtime: Synchronous error in ANALYZE_URL_REQUEST handler:', syncError);
-      
+      console.error(
+        '❌ Runtime: Synchronous error in ANALYZE_URL_REQUEST handler:',
+        syncError
+      );
+
       // Send synchronous error response
       sendResponse({
         success: false,
-        error: `Synchronous error: ${syncError.message}`
+        error: `Synchronous error: ${syncError.message}`,
       });
       return true;
     }
@@ -938,13 +1044,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       version: '1.0.0-local',
       status: 'active',
       extensionId: chrome.runtime.id,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
     return true;
   }
 
   if (request.type === 'CONTENT_SCRIPT_ANALYZE_URL') {
-    console.log('🔍 Received URL analysis request from content script:', request.url);
+    console.log(
+      '🔍 Received URL analysis request from content script:',
+      request.url
+    );
     console.log('🔍 Request details:', request);
     console.log('🔍 Sender:', sender);
 
@@ -953,12 +1062,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     console.log('🔍 Starting performAdvancedUrlAnalysis...');
     performAdvancedUrlAnalysis(request.url, request.options || {})
-      .then((result) => {
-        console.log('🔍 Analysis completed successfully, sending response:', result);
+      .then(result => {
+        console.log(
+          '🔍 Analysis completed successfully, sending response:',
+          result
+        );
         sendResponse({ success: true, result });
         console.log('🔍 Response sent successfully');
       })
-      .catch((error) => {
+      .catch(error => {
         console.error('❌ Advanced URL analysis failed:', error);
         console.error('❌ Error details:', error.message, error.stack);
         sendResponse({ success: false, error: error.message });
@@ -976,7 +1088,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({
       type: 'CONNECTION_OK',
       message: 'Background script is responding',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
     return true;
   }
@@ -989,31 +1101,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  */
 async function followHttpRedirects(url, maxRedirects = 10) {
   console.log('🔍 Following HTTP redirects for:', url);
-  
+
   const redirects = [];
   let currentUrl = url;
   let redirectCount = 0;
   let finalUrl = url;
   let finalStatusCode = 200;
-  
+
   try {
     // Follow redirects step by step
     while (redirectCount < maxRedirects) {
       console.log(`🔍 Checking redirect ${redirectCount + 1}: ${currentUrl}`);
-      
+
       try {
         // Make a HEAD request to check for redirects
         const response = await fetch(currentUrl, {
           method: 'HEAD',
           redirect: 'manual',
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-          }
+            'User-Agent':
+              'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
         });
-        
+
         const status = response.status;
         console.log(`🔍 Response status: ${status} for ${currentUrl}`);
-        
+
         if (status >= 300 && status < 400) {
           // This is a redirect
           const location = response.headers.get('location');
@@ -1021,11 +1134,13 @@ async function followHttpRedirects(url, maxRedirects = 10) {
             console.log('⚠️ Redirect response missing Location header');
             break;
           }
-          
+
           // Resolve relative URLs
           const resolvedUrl = new URL(location, currentUrl).href;
-          console.log(`🔍 Redirect ${status} from ${currentUrl} to ${resolvedUrl}`);
-          
+          console.log(
+            `🔍 Redirect ${status} from ${currentUrl} to ${resolvedUrl}`
+          );
+
           // Add to redirect chain
           redirects.push({
             step: redirectCount + 1,
@@ -1035,18 +1150,19 @@ async function followHttpRedirects(url, maxRedirects = 10) {
             method: 'http',
             statusCode: status,
             redirectType: status === 301 ? 'permanent' : 'temporary',
-            timestamp: Date.now()
+            timestamp: Date.now(),
           });
-          
+
           // Update current URL and continue
           currentUrl = resolvedUrl;
           redirectCount++;
           finalUrl = resolvedUrl;
           finalStatusCode = status;
-          
         } else if (status >= 200 && status < 300) {
           // Success - no more redirects
-          console.log(`✅ Final page reached: ${currentUrl} with status ${status}`);
+          console.log(
+            `✅ Final page reached: ${currentUrl} with status ${status}`
+          );
           finalUrl = currentUrl;
           finalStatusCode = status;
           break;
@@ -1057,26 +1173,26 @@ async function followHttpRedirects(url, maxRedirects = 10) {
           finalStatusCode = status;
           break;
         }
-        
       } catch (error) {
         console.error(`❌ Error checking ${currentUrl}:`, error);
         break;
       }
     }
-    
-    console.log(`🏁 HTTP redirect following complete. Found ${redirects.length} redirects`);
+
+    console.log(
+      `🏁 HTTP redirect following complete. Found ${redirects.length} redirects`
+    );
     return {
       redirects: redirects,
       finalUrl: finalUrl,
-      finalStatusCode: finalStatusCode
+      finalStatusCode: finalStatusCode,
     };
-    
   } catch (error) {
     console.error('❌ Error following HTTP redirects:', error);
     return {
       redirects: redirects,
       finalUrl: currentUrl,
-      finalStatusCode: 0
+      finalStatusCode: 0,
     };
   }
 }
@@ -1089,24 +1205,27 @@ async function performAdvancedUrlAnalysis(url, options = {}) {
   console.log('🔍 Options:', options);
   console.log('🔍 Function called successfully');
   const startTime = Date.now();
-  
+
   try {
     // Step 1: Follow HTTP redirects to get the full server-side chain
     console.log('🔍 Step 1: Following HTTP redirects...');
-    const httpRedirects = await followHttpRedirects(url, options.maxRedirects || 10);
+    const httpRedirects = await followHttpRedirects(
+      url,
+      options.maxRedirects || 10
+    );
     console.log('🔍 HTTP redirects found:', httpRedirects);
-    
+
     // Step 2: Create a tab to analyze the final page for client-side redirects
     console.log('🔍 Step 2: Analyzing final page for client-side redirects...');
     const tab = await chrome.tabs.create({
       url: httpRedirects.finalUrl,
-      active: false
+      active: false,
     });
-    
+
     console.log('📑 Created analysis tab:', tab.id);
-    
+
     // Wait for the page to load
-    await new Promise((resolve) => {
+    await new Promise(resolve => {
       chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
         if (tabId === tab.id && changeInfo.status === 'complete') {
           chrome.tabs.onUpdated.removeListener(listener);
@@ -1114,17 +1233,19 @@ async function performAdvancedUrlAnalysis(url, options = {}) {
         }
       });
     });
-    
-    console.log('✅ Page loaded, waiting for JavaScript redirects to execute...');
-    
+
+    console.log(
+      '✅ Page loaded, waiting for JavaScript redirects to execute...'
+    );
+
     // Wait additional time for JavaScript redirects to execute
     await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-    
+
     // Check if the URL has changed due to JavaScript redirects
     const tabInfo = await chrome.tabs.get(tab.id);
     const currentUrl = tabInfo.url;
     console.log('🔍 Current tab URL after waiting:', currentUrl);
-    
+
     // If URL changed, wait a bit more for any additional redirects
     if (currentUrl !== httpRedirects.finalUrl) {
       console.log('🔄 URL changed, waiting for additional redirects...');
@@ -1132,28 +1253,28 @@ async function performAdvancedUrlAnalysis(url, options = {}) {
       const finalTabInfo = await chrome.tabs.get(tab.id);
       console.log('🔍 Final tab URL:', finalTabInfo.url);
     }
-    
+
     console.log('🔍 Injecting analysis script...');
-    
+
     // Inject the analysis script to detect client-side redirects
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       function: analyzePageForRedirects,
-      args: [httpRedirects.finalUrl]
+      args: [httpRedirects.finalUrl],
     });
-    
+
     const analysisResult = results[0]?.result;
     console.log('📊 Client-side analysis results:', analysisResult);
-    
+
     // Close the analysis tab
     await chrome.tabs.remove(tab.id);
-    
+
     // Step 3: Build comprehensive redirect chain
     const comprehensiveChain = [];
     let stepCounter = 0;
-    
+
     // Add all HTTP redirects first
-    httpRedirects.redirects.forEach((redirect) => {
+    httpRedirects.redirects.forEach(redirect => {
       comprehensiveChain.push({
         step: ++stepCounter,
         url: redirect.url,
@@ -1162,10 +1283,10 @@ async function performAdvancedUrlAnalysis(url, options = {}) {
         targetUrl: redirect.targetUrl,
         method: 'HTTP',
         redirectType: redirect.redirectType,
-        timestamp: redirect.timestamp
+        timestamp: redirect.timestamp,
       });
     });
-    
+
     // Add meta refresh redirects
     if (analysisResult?.hasMetaRefresh && analysisResult.metaRefresh) {
       comprehensiveChain.push({
@@ -1176,15 +1297,20 @@ async function performAdvancedUrlAnalysis(url, options = {}) {
         targetUrl: analysisResult.metaRefresh.targetUrl,
         method: 'Meta Refresh',
         delay: analysisResult.metaRefresh.delay,
-        timestamp: analysisResult.metaRefresh.detectedAt || Date.now()
+        timestamp: analysisResult.metaRefresh.detectedAt || Date.now(),
       });
-      
+
       // If meta refresh target is different from current final URL, check for more redirects
       if (analysisResult.metaRefresh.targetUrl !== analysisResult.finalUrl) {
-        console.log('🔍 Checking for additional redirects after meta refresh...');
+        console.log(
+          '🔍 Checking for additional redirects after meta refresh...'
+        );
         try {
-          const metaTargetRedirects = await followHttpRedirects(analysisResult.metaRefresh.targetUrl, 5);
-          metaTargetRedirects.redirects.forEach((redirect) => {
+          const metaTargetRedirects = await followHttpRedirects(
+            analysisResult.metaRefresh.targetUrl,
+            5
+          );
+          metaTargetRedirects.redirects.forEach(redirect => {
             comprehensiveChain.push({
               step: ++stepCounter,
               url: redirect.url,
@@ -1193,18 +1319,24 @@ async function performAdvancedUrlAnalysis(url, options = {}) {
               targetUrl: redirect.targetUrl,
               method: 'HTTP',
               redirectType: redirect.redirectType,
-              timestamp: redirect.timestamp
+              timestamp: redirect.timestamp,
             });
           });
         } catch (error) {
-          console.error('❌ Error checking meta refresh target redirects:', error);
+          console.error(
+            '❌ Error checking meta refresh target redirects:',
+            error
+          );
         }
       }
     }
-    
+
     // Add JavaScript redirects
-    if (analysisResult?.hasJavaScriptRedirect && analysisResult.javascriptRedirects) {
-      analysisResult.javascriptRedirects.forEach((jsRedirect) => {
+    if (
+      analysisResult?.hasJavaScriptRedirect &&
+      analysisResult.javascriptRedirects
+    ) {
+      analysisResult.javascriptRedirects.forEach(jsRedirect => {
         comprehensiveChain.push({
           step: ++stepCounter,
           url: jsRedirect.from,
@@ -1212,54 +1344,57 @@ async function performAdvancedUrlAnalysis(url, options = {}) {
           statusCode: 200,
           targetUrl: jsRedirect.to,
           method: 'JavaScript',
-          timestamp: jsRedirect.timestamp
+          timestamp: jsRedirect.timestamp,
         });
       });
     }
-    
+
     // Determine final URL and status
     let finalUrl = httpRedirects.finalUrl;
     let finalStatusCode = httpRedirects.finalStatusCode;
-    
-    if (analysisResult?.finalUrl && analysisResult.finalUrl !== httpRedirects.finalUrl) {
+
+    if (
+      analysisResult?.finalUrl &&
+      analysisResult.finalUrl !== httpRedirects.finalUrl
+    ) {
       finalUrl = analysisResult.finalUrl;
       finalStatusCode = 200; // Client-side redirects typically result in 200
     }
-    
+
     // Build redirect types summary
     const redirectTypes = [];
     const statusCodes = new Set();
-    
+
     comprehensiveChain.forEach(step => {
       if (step.statusCode) {
         statusCodes.add(step.statusCode);
       }
-      
+
       if (step.type === 'server_redirect') {
         redirectTypes.push({
           type: 'http',
           statusCode: step.statusCode,
           url: step.url,
-          targetUrl: step.targetUrl
+          targetUrl: step.targetUrl,
         });
       } else if (step.type === 'client_redirect') {
         redirectTypes.push({
           type: 'meta',
           url: step.url,
           targetUrl: step.targetUrl,
-          delay: step.delay
+          delay: step.delay,
         });
       } else if (step.type === 'javascript_redirect') {
         redirectTypes.push({
           type: 'javascript',
           url: step.url,
-          targetUrl: step.targetUrl
+          targetUrl: step.targetUrl,
         });
       }
     });
-    
+
     const analysisTime = Date.now() - startTime;
-    
+
     return {
       originalUrl: url,
       finalUrl: finalUrl,
@@ -1274,9 +1409,8 @@ async function performAdvancedUrlAnalysis(url, options = {}) {
       detectionMode: 'advanced',
       extensionVersion: '1.0.0-local',
       analysisTime: analysisTime,
-      status: 'success'
+      status: 'success',
     };
-    
   } catch (error) {
     console.error('❌ Advanced analysis failed:', error);
     throw error;
@@ -1288,7 +1422,7 @@ async function performAdvancedUrlAnalysis(url, options = {}) {
  */
 async function analyzePageForRedirects(originalUrl) {
   console.log('🔍 Analyzing page for redirects:', originalUrl);
-  
+
   const results = {
     originalUrl: originalUrl,
     finalUrl: window.location.href,
@@ -1297,9 +1431,9 @@ async function analyzePageForRedirects(originalUrl) {
     redirectChain: [],
     hasMetaRefresh: false,
     hasJavaScriptRedirect: false,
-    javascriptRedirects: []
+    javascriptRedirects: [],
   };
-  
+
   // Enhanced Meta Refresh detection with execution monitoring
   const metaRefresh = document.querySelector('meta[http-equiv="refresh"]');
   if (metaRefresh) {
@@ -1308,26 +1442,34 @@ async function analyzePageForRedirects(originalUrl) {
       const parts = content.split(';');
       if (parts.length > 1) {
         const delay = parseInt(parts[0]) || 0;
-        const urlPart = parts.find(part => part.toLowerCase().startsWith('url='));
-        
+        const urlPart = parts.find(part =>
+          part.toLowerCase().startsWith('url=')
+        );
+
         if (urlPart) {
           const targetUrl = urlPart.substring(4); // Remove "url=" prefix
-          
-          console.log('🔍 Meta refresh detected:', { delay, targetUrl, originalUrl });
-          
+
+          console.log('🔍 Meta refresh detected:', {
+            delay,
+            targetUrl,
+            originalUrl,
+          });
+
           // Wait for the meta refresh to potentially execute
           if (delay > 0) {
             // If there's a delay, wait for it plus some buffer time
-            await new Promise(resolve => setTimeout(resolve, (delay * 1000) + 2000));
+            await new Promise(resolve =>
+              setTimeout(resolve, delay * 1000 + 2000)
+            );
           } else {
             // If no delay, wait a bit for immediate redirects
             await new Promise(resolve => setTimeout(resolve, 3000));
           }
-          
+
           // Check if the location changed due to meta refresh
           const currentLocation = window.location.href;
           console.log('🔍 Location after meta refresh wait:', currentLocation);
-          
+
           if (currentLocation !== originalUrl) {
             results.hasMetaRefresh = true;
             results.redirectCount++;
@@ -1338,10 +1480,10 @@ async function analyzePageForRedirects(originalUrl) {
               targetUrl: currentLocation,
               method: 'meta_refresh',
               delay: delay,
-              timestamp: Date.now()
+              timestamp: Date.now(),
             });
             results.finalUrl = currentLocation;
-            
+
             console.log('✅ Meta refresh redirect confirmed:', currentLocation);
           } else {
             // Meta refresh was detected but didn't execute yet
@@ -1354,30 +1496,36 @@ async function analyzePageForRedirects(originalUrl) {
               targetUrl: targetUrl,
               method: 'meta_refresh',
               delay: delay,
-              timestamp: Date.now()
+              timestamp: Date.now(),
             });
             results.finalUrl = targetUrl;
-            
-            console.log('⚠️ Meta refresh detected but not yet executed:', targetUrl);
+
+            console.log(
+              '⚠️ Meta refresh detected but not yet executed:',
+              targetUrl
+            );
           }
         }
       }
     }
   }
-  
+
   // Enhanced JavaScript redirect detection
-  let initialLocation = window.location.href;
+  const initialLocation = window.location.href;
   let finalLocation = initialLocation;
   let redirectDetected = false;
-  
+
   // Monitor for location changes over time
   const checkForRedirects = () => {
     const currentLocation = window.location.href;
-    if (currentLocation !== initialLocation && currentLocation !== finalLocation) {
+    if (
+      currentLocation !== initialLocation &&
+      currentLocation !== finalLocation
+    ) {
       console.log('🔍 JavaScript redirect detected:', currentLocation);
       finalLocation = currentLocation;
       redirectDetected = true;
-      
+
       results.hasJavaScriptRedirect = true;
       results.redirectCount++;
       results.javascriptRedirects.push({
@@ -1385,22 +1533,22 @@ async function analyzePageForRedirects(originalUrl) {
         method: 'javascript',
         from: initialLocation,
         to: currentLocation,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
-      
+
       results.finalUrl = currentLocation;
     }
   };
-  
+
   // Check immediately
   checkForRedirects();
-  
+
   // Check after a short delay to catch delayed redirects
   setTimeout(checkForRedirects, 1000);
-  
+
   // Check after a longer delay for very delayed redirects
   setTimeout(checkForRedirects, 3000);
-  
+
   // Also check for any existing location differences
   if (window.location.href !== originalUrl) {
     results.hasJavaScriptRedirect = true;
@@ -1410,11 +1558,11 @@ async function analyzePageForRedirects(originalUrl) {
       method: 'javascript',
       from: originalUrl,
       to: window.location.href,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
     results.finalUrl = window.location.href;
   }
-  
+
   console.log('📊 Page analysis complete:', results);
   return results;
 }
@@ -1422,68 +1570,72 @@ async function analyzePageForRedirects(originalUrl) {
 /**
  * Handle web app communication via postMessage
  */
-chrome.runtime.onConnect.addListener((port) => {
+chrome.runtime.onConnect.addListener(port => {
   if (port.name === 'REDIRECTINATOR_WEB_APP') {
-    port.onMessage.addListener(async (message) => {
+    port.onMessage.addListener(async message => {
       if (message.type === 'REDIRECTINATOR_REQUEST') {
         try {
-          const result = await analysisQueue.add(message.url, message.options || {});
+          const result = await analysisQueue.add(
+            message.url,
+            message.options || {}
+          );
           port.postMessage({
             type: 'REDIRECTINATOR_RESPONSE',
             requestId: message.requestId,
-            result: result
+            result: result,
           });
         } catch (error) {
           port.postMessage({
             type: 'REDIRECTINATOR_RESPONSE',
             requestId: message.requestId,
-            error: error.message
+            error: error.message,
           });
         }
       }
     });
   }
-  
+
   if (port.name === 'CONTENT_SCRIPT_ANALYZE') {
     console.log('🔗 Content script port connected for analysis');
-    
-    port.onMessage.addListener(async (message) => {
+
+    port.onMessage.addListener(async message => {
       if (message.type === 'CONTENT_SCRIPT_ANALYZE_URL') {
         console.log('🔍 Port: Received URL analysis request:', message.url);
-        
+
         try {
           console.log('🔍 Port: Starting analysis...');
-          const result = await performAdvancedUrlAnalysis(message.url, message.options || {});
+          const result = await performAdvancedUrlAnalysis(
+            message.url,
+            message.options || {}
+          );
           console.log('🔍 Port: Analysis completed, sending response');
-          
+
           port.postMessage({
             type: 'ANALYSIS_RESPONSE',
             success: true,
-            result: result
+            result: result,
           });
-          
+
           console.log('🔍 Port: Response sent successfully');
         } catch (error) {
           console.error('❌ Port: Analysis failed:', error);
-          
+
           port.postMessage({
             type: 'ANALYSIS_RESPONSE',
             success: false,
-            error: error.message
+            error: error.message,
           });
-          
+
           console.log('🔍 Port: Error response sent');
         }
       }
     });
-    
+
     port.onDisconnect.addListener(() => {
       console.log('🔗 Content script port disconnected');
     });
   }
 });
-
-
 
 // Clean up on extension unload
 chrome.runtime.onSuspend.addListener(() => {

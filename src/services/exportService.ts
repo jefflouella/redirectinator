@@ -8,7 +8,7 @@ export class ExportService {
       'Starting URL': result.startingUrl,
       'Target Redirect': result.targetRedirect,
       'Final URL': result.finalUrl,
-      'Result': result.result,
+      Result: result.result,
       'HTTP Status': result.httpStatus,
       'Final Status Code': result.finalStatusCode,
       'Number of Redirects': result.numberOfRedirects,
@@ -19,18 +19,21 @@ export class ExportService {
       'Full Redirect Chain': result.fullRedirectChain.join(' → '),
       'Domain Changes': result.domainChanges ? 'Yes' : 'No',
       'HTTPS Upgrade': result.httpsUpgrade ? 'Yes' : 'No',
-      'Error': result.error || '',
-      'Timestamp': new Date(result.timestamp).toISOString(),
+      Error: result.error || '',
+      Timestamp: new Date(result.timestamp).toISOString(),
     }));
 
     const csv = Papa.unparse(csvData);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const filename = `redirectinator-export-${new Date().toISOString().split('T')[0]}.csv`;
-    
+
     saveAs(blob, filename);
   }
 
-  static exportToJSON(results: RedirectResult[], _options: ExportOptions): void {
+  static exportToJSON(
+    results: RedirectResult[],
+    _options: ExportOptions
+  ): void {
     const exportData = {
       metadata: {
         exportDate: new Date().toISOString(),
@@ -43,17 +46,20 @@ export class ExportService {
     const json = JSON.stringify(exportData, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const filename = `redirectinator-export-${new Date().toISOString().split('T')[0]}.json`;
-    
+
     saveAs(blob, filename);
   }
 
-  static exportToExcel(results: RedirectResult[], _options: ExportOptions): void {
+  static exportToExcel(
+    results: RedirectResult[],
+    _options: ExportOptions
+  ): void {
     // For Excel export, we'll create a CSV with Excel-compatible formatting
     const csvData = results.map(result => ({
       'Starting URL': result.startingUrl,
       'Target Redirect': result.targetRedirect,
       'Final URL': result.finalUrl,
-      'Result': result.result,
+      Result: result.result,
       'HTTP Status': result.httpStatus,
       'Final Status Code': result.finalStatusCode,
       'Number of Redirects': result.numberOfRedirects,
@@ -64,14 +70,14 @@ export class ExportService {
       'Full Redirect Chain': result.fullRedirectChain.join(' → '),
       'Domain Changes': result.domainChanges ? 'Yes' : 'No',
       'HTTPS Upgrade': result.httpsUpgrade ? 'Yes' : 'No',
-      'Error': result.error || '',
-      'Timestamp': new Date(result.timestamp).toISOString(),
+      Error: result.error || '',
+      Timestamp: new Date(result.timestamp).toISOString(),
     }));
 
     const csv = Papa.unparse(csvData);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const filename = `redirectinator-export-${new Date().toISOString().split('T')[0]}.xlsx`;
-    
+
     saveAs(blob, filename);
   }
 
@@ -80,7 +86,7 @@ export class ExportService {
       'Starting URL': result.startingUrl,
       'Target Redirect': result.targetRedirect,
       'Final URL': result.finalUrl,
-      'Result': result.result,
+      Result: result.result,
       'HTTP Status': result.httpStatus,
       'Final Status Code': result.finalStatusCode,
       'Number of Redirects': result.numberOfRedirects,
@@ -91,12 +97,12 @@ export class ExportService {
       'Full Redirect Chain': result.fullRedirectChain.join(' → '),
       'Domain Changes': result.domainChanges ? 'Yes' : 'No',
       'HTTPS Upgrade': result.httpsUpgrade ? 'Yes' : 'No',
-      'Error': result.error || '',
-      'Timestamp': new Date(result.timestamp).toISOString(),
+      Error: result.error || '',
+      Timestamp: new Date(result.timestamp).toISOString(),
     }));
 
     const csv = Papa.unparse(csvData);
-    
+
     return navigator.clipboard.writeText(csv);
   }
 
@@ -107,7 +113,8 @@ export class ExportService {
     const loops = results.filter(r => r.result === 'loop').length;
     const direct = results.filter(r => r.result === 'direct').length;
 
-    const avgResponseTime = results.reduce((sum, r) => sum + r.responseTime, 0) / total;
+    const avgResponseTime =
+      results.reduce((sum, r) => sum + r.responseTime, 0) / total;
     const maxRedirects = Math.max(...results.map(r => r.numberOfRedirects));
     const httpsUpgrades = results.filter(r => r.httpsUpgrade).length;
     const domainChanges = results.filter(r => r.domainChanges).length;
@@ -118,10 +125,10 @@ Generated: ${new Date().toLocaleString()}
 
 ## Summary
 - Total URLs: ${total}
-- Successful Redirects: ${successful} (${((successful/total)*100).toFixed(1)}%)
-- Errors: ${errors} (${((errors/total)*100).toFixed(1)}%)
-- Redirect Loops: ${loops} (${((loops/total)*100).toFixed(1)}%)
-- Direct URLs: ${direct} (${((direct/total)*100).toFixed(1)}%)
+- Successful Redirects: ${successful} (${((successful / total) * 100).toFixed(1)}%)
+- Errors: ${errors} (${((errors / total) * 100).toFixed(1)}%)
+- Redirect Loops: ${loops} (${((loops / total) * 100).toFixed(1)}%)
+- Direct URLs: ${direct} (${((direct / total) * 100).toFixed(1)}%)
 
 ## Performance
 - Average Response Time: ${avgResponseTime.toFixed(2)}ms
@@ -130,7 +137,9 @@ Generated: ${new Date().toLocaleString()}
 - Domain Changes: ${domainChanges}
 
 ## Detailed Results
-${results.map(r => `
+${results
+  .map(
+    r => `
 ### ${r.startingUrl}
 - **Result:** ${r.result}
 - **Final URL:** ${r.finalUrl}
@@ -138,7 +147,9 @@ ${results.map(r => `
 - **Response Time:** ${r.responseTime}ms
 - **Redirects:** ${r.numberOfRedirects}
 ${r.error ? `- **Error:** ${r.error}` : ''}
-`).join('')}
+`
+  )
+  .join('')}
     `.trim();
   }
 
@@ -146,7 +157,7 @@ ${r.error ? `- **Error:** ${r.error}` : ''}
     const report = this.generateReport(results);
     const blob = new Blob([report], { type: 'text/markdown' });
     const filename = `redirectinator-report-${new Date().toISOString().split('T')[0]}.md`;
-    
+
     saveAs(blob, filename);
   }
 }

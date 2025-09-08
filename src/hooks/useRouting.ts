@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 
-type TabType = 'dashboard' | 'projects' | 'settings' | 'about' | 'privacy' | 'terms';
+type TabType =
+  | 'dashboard'
+  | 'projects'
+  | 'settings'
+  | 'about'
+  | 'privacy'
+  | 'terms';
 
 export const useRouting = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -15,7 +21,7 @@ export const useRouting = () => {
     const handleRouteChange = () => {
       const path = window.location.pathname;
       let newTab: TabType = 'dashboard';
-      
+
       if (path === '/about') {
         newTab = 'about';
       } else if (path === '/privacy') {
@@ -29,7 +35,7 @@ export const useRouting = () => {
       } else {
         newTab = 'dashboard';
       }
-      
+
       setActiveTab(newTab);
     };
 
@@ -38,7 +44,7 @@ export const useRouting = () => {
 
     // Listen for popstate events (browser back/forward)
     window.addEventListener('popstate', handleRouteChange);
-    
+
     return () => {
       window.removeEventListener('popstate', handleRouteChange);
     };

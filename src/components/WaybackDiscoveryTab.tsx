@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
-import { Search, Filter, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
-import { WaybackService, WaybackDiscoveryParams, WaybackDiscoveryResult } from '@/services/waybackService';
+import {
+  Search,
+  Filter,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+} from 'lucide-react';
+import {
+  WaybackService,
+  WaybackDiscoveryParams,
+  WaybackDiscoveryResult,
+} from '@/services/waybackService';
 import { InternetArchiveDonation } from './InternetArchiveDonation';
 import { DateRangePicker } from './DateRangePicker';
 
@@ -11,7 +21,7 @@ interface WaybackDiscoveryTabProps {
 
 export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
   onUrlsDiscovered,
-  onClose
+  onClose,
 }) => {
   const [domain, setDomain] = useState('');
   const [fromDate, setFromDate] = useState(new Date(2023, 5, 1)); // June 1, 2023
@@ -22,9 +32,10 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
     removeDuplicates: true,
     excludeSystemFiles: true,
   });
-  
+
   const [isDiscovering, setIsDiscovering] = useState(false);
-  const [discoveryResult, setDiscoveryResult] = useState<WaybackDiscoveryResult | null>(null);
+  const [discoveryResult, setDiscoveryResult] =
+    useState<WaybackDiscoveryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const waybackService = new WaybackService();
@@ -39,7 +50,9 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
     }
 
     if (!waybackService.validateDomain(domain)) {
-      setError('Please enter a valid domain or subfolder (e.g., example.com or example.com/electronics)');
+      setError(
+        'Please enter a valid domain or subfolder (e.g., example.com or example.com/electronics)'
+      );
       return;
     }
 
@@ -62,11 +75,14 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
       const result = await waybackService.discoverUrls(params);
       setDiscoveryResult(result);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to discover URLs';
-      
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to discover URLs';
+
       // Handle specific timeout errors
       if (errorMessage.includes('timeout') || errorMessage.includes('408')) {
-        setError('The Wayback Machine API is taking too long to respond. Large datasets may take 30-60 seconds. Try reducing the date range or URL limit, or wait and try again.');
+        setError(
+          'The Wayback Machine API is taking too long to respond. Large datasets may take 30-60 seconds. Try reducing the date range or URL limit, or wait and try again.'
+        );
       } else {
         setError(errorMessage);
       }
@@ -109,22 +125,38 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
           <input
             type="text"
             value={domain}
-            onChange={(e) => setDomain(e.target.value)}
+            onChange={e => setDomain(e.target.value)}
             placeholder="example.com or example.com/electronics"
             className="input-field w-full"
             disabled={isDiscovering}
           />
           <div className="mt-2 text-xs text-gray-600 space-y-1">
-            <p>💡 <strong>Examples:</strong></p>
+            <p>
+              💡 <strong>Examples:</strong>
+            </p>
             <ul className="ml-4 space-y-1">
-              <li><code className="bg-gray-100 px-1 rounded">example.com</code> - All pages from the domain</li>
-              <li><code className="bg-gray-100 px-1 rounded">example.com/electronics</code> - Only electronics section</li>
-              <li><code className="bg-gray-100 px-1 rounded">example.com/blog/2023</code> - Blog posts from 2023</li>
+              <li>
+                <code className="bg-gray-100 px-1 rounded">example.com</code> -
+                All pages from the domain
+              </li>
+              <li>
+                <code className="bg-gray-100 px-1 rounded">
+                  example.com/electronics
+                </code>{' '}
+                - Only electronics section
+              </li>
+              <li>
+                <code className="bg-gray-100 px-1 rounded">
+                  example.com/blog/2023
+                </code>{' '}
+                - Blog posts from 2023
+              </li>
             </ul>
             {domain && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-blue-800">
-                  <strong>Type:</strong> {domainType === 'subfolder' ? 'Subfolder' : 'Domain'} 
+                  <strong>Type:</strong>{' '}
+                  {domainType === 'subfolder' ? 'Subfolder' : 'Domain'}
                   {domainType === 'subfolder' && (
                     <span className="ml-2 text-blue-600">
                       (Will search only within this specific section)
@@ -160,7 +192,11 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
           <input
             type="number"
             value={urlLimit}
-            onChange={(e) => setUrlLimit(Math.min(10000, Math.max(1, parseInt(e.target.value) || 1)))}
+            onChange={e =>
+              setUrlLimit(
+                Math.min(10000, Math.max(1, parseInt(e.target.value) || 1))
+              )
+            }
             min="1"
             max="10000"
             className="input-field w-full"
@@ -168,7 +204,8 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
           />
           {urlLimit > 1000 && (
             <p className="text-xs text-amber-600 mt-1">
-              ⏱️ Large datasets ({urlLimit.toLocaleString()} URLs) may take 30-60 seconds to process
+              ⏱️ Large datasets ({urlLimit.toLocaleString()} URLs) may take
+              30-60 seconds to process
             </p>
           )}
         </div>
@@ -184,17 +221,26 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
               <input
                 type="checkbox"
                 checked={filters.htmlOnly}
-                onChange={(e) => setFilters(prev => ({ ...prev, htmlOnly: e.target.checked }))}
+                onChange={e =>
+                  setFilters(prev => ({ ...prev, htmlOnly: e.target.checked }))
+                }
                 className="mr-2"
                 disabled={isDiscovering}
               />
-              <span className="text-sm text-gray-700">HTML pages only (exclude images, CSS, JS, PDFs)</span>
+              <span className="text-sm text-gray-700">
+                HTML pages only (exclude images, CSS, JS, PDFs)
+              </span>
             </label>
             <label className="flex items-center">
               <input
                 type="checkbox"
                 checked={filters.removeDuplicates}
-                onChange={(e) => setFilters(prev => ({ ...prev, removeDuplicates: e.target.checked }))}
+                onChange={e =>
+                  setFilters(prev => ({
+                    ...prev,
+                    removeDuplicates: e.target.checked,
+                  }))
+                }
                 className="mr-2"
                 disabled={isDiscovering}
               />
@@ -204,11 +250,18 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
               <input
                 type="checkbox"
                 checked={filters.excludeSystemFiles}
-                onChange={(e) => setFilters(prev => ({ ...prev, excludeSystemFiles: e.target.checked }))}
+                onChange={e =>
+                  setFilters(prev => ({
+                    ...prev,
+                    excludeSystemFiles: e.target.checked,
+                  }))
+                }
                 className="mr-2"
                 disabled={isDiscovering}
               />
-              <span className="text-sm text-gray-700">Exclude robots.txt, sitemap.xml, admin areas</span>
+              <span className="text-sm text-gray-700">
+                Exclude robots.txt, sitemap.xml, admin areas
+              </span>
             </label>
           </div>
         </div>
@@ -247,30 +300,44 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
 
       {/* Discovery Results */}
       {discoveryResult && (
-        <div className={`border rounded-lg p-4 ${
-          discoveryResult.demo 
-            ? 'bg-blue-50 border-blue-200' 
-            : 'bg-green-50 border-green-200'
-        }`}>
-          <div className={`flex items-center space-x-2 mb-3 ${
-            discoveryResult.demo ? 'text-blue-800' : 'text-green-800'
-          }`}>
+        <div
+          className={`border rounded-lg p-4 ${
+            discoveryResult.demo
+              ? 'bg-blue-50 border-blue-200'
+              : 'bg-green-50 border-green-200'
+          }`}
+        >
+          <div
+            className={`flex items-center space-x-2 mb-3 ${
+              discoveryResult.demo ? 'text-blue-800' : 'text-green-800'
+            }`}
+          >
             <CheckCircle className="w-5 h-5" />
             <h4 className="font-semibold">
               {discoveryResult.demo ? 'Demo Results' : 'Discovery Results'}
             </h4>
           </div>
-          
-          <div className={`space-y-2 text-sm ${
-            discoveryResult.demo ? 'text-blue-700' : 'text-green-700'
-          }`}>
-            <p><strong>Domain:</strong> {discoveryResult.domain}</p>
-            <p><strong>Timeframe:</strong> {waybackService.getReadableTimeframe(
-              discoveryResult.timeframe.split(' to ')[0],
-              discoveryResult.timeframe.split(' to ')[1]
-            )}</p>
-            <p><strong>URLs Found:</strong> {discoveryResult.totalFound.toLocaleString()}</p>
-            
+
+          <div
+            className={`space-y-2 text-sm ${
+              discoveryResult.demo ? 'text-blue-700' : 'text-green-700'
+            }`}
+          >
+            <p>
+              <strong>Domain:</strong> {discoveryResult.domain}
+            </p>
+            <p>
+              <strong>Timeframe:</strong>{' '}
+              {waybackService.getReadableTimeframe(
+                discoveryResult.timeframe.split(' to ')[0],
+                discoveryResult.timeframe.split(' to ')[1]
+              )}
+            </p>
+            <p>
+              <strong>URLs Found:</strong>{' '}
+              {discoveryResult.totalFound.toLocaleString()}
+            </p>
+
             {discoveryResult.demo && (
               <div className="bg-blue-100 border border-blue-200 rounded p-2 mt-2">
                 <p className="text-xs text-blue-800">
@@ -278,7 +345,7 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
                 </p>
               </div>
             )}
-            
+
             {discoveryResult.filtersApplied.length > 0 && (
               <div>
                 <strong>Filters Applied:</strong>
@@ -295,7 +362,10 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
                 <strong>Sample URLs:</strong>
                 <div className="bg-white rounded border p-2 mt-1 max-h-32 overflow-y-auto">
                   {discoveryResult.urls.slice(0, 5).map((url, index) => (
-                    <div key={index} className="text-xs font-mono text-gray-600 truncate">
+                    <div
+                      key={index}
+                      className="text-xs font-mono text-gray-600 truncate"
+                    >
                       {url.original}
                     </div>
                   ))}
@@ -315,7 +385,9 @@ export const WaybackDiscoveryTab: React.FC<WaybackDiscoveryTabProps> = ({
               className="btn-primary flex items-center space-x-2"
             >
               <CheckCircle className="w-4 h-4" />
-              <span>Add All URLs ({discoveryResult.totalFound.toLocaleString()})</span>
+              <span>
+                Add All URLs ({discoveryResult.totalFound.toLocaleString()})
+              </span>
             </button>
           </div>
         </div>

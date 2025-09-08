@@ -15,11 +15,12 @@ import {
   Info,
   Download,
   Filter,
-  ArrowRight
+  ArrowRight,
 } from 'lucide-react';
 import Papa from 'papaparse';
 import { SEMrushDiscoveryTab } from './SEMrushDiscoveryTab';
 import { WaybackDiscoveryTab } from './WaybackDiscoveryTab';
+import { ConfirmationOverlay } from './ConfirmationOverlay';
 
 interface UrlInputOverlayProps {
   isOpen: boolean;
@@ -34,25 +35,38 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
   onClose,
   currentProject,
   onUrlsAdded,
-  onProjectUpdate
+  onProjectUpdate,
 }) => {
-  const [inputMethod, setInputMethod] = useState<'single' | 'bulk' | 'paste' | 'wayback' | 'semrush'>('single');
+  const [inputMethod, setInputMethod] = useState<
+    'single' | 'bulk' | 'paste' | 'wayback' | 'semrush'
+  >('single');
   const [singleStartingUrl, setSingleStartingUrl] = useState('');
   const [singleTargetUrl, setSingleTargetUrl] = useState('');
   const [bulkText, setBulkText] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [authentication, setAuthentication] = useState({ username: '', password: '' });
+  const [authentication, setAuthentication] = useState({
+    username: '',
+    password: '',
+  });
   const [isClosing, setIsClosing] = useState(false);
   const [showSingleUrlInfo, setShowSingleUrlInfo] = useState(false);
   const [showBulkInfo, setShowBulkInfo] = useState(false);
   const [showPasteInfo, setShowPasteInfo] = useState(false);
+  const [showClearConfirmation, setShowClearConfirmation] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Use persistent URL storage
-  const { urls, isLoading: urlsLoading, addUrl, removeUrl, setAllUrls, clearUrls } = useUrlPersistence({ 
-    currentProject, 
-    onProjectUpdate 
+  const {
+    urls,
+    isLoading: urlsLoading,
+    addUrl,
+    removeUrl,
+    setAllUrls,
+    clearUrls,
+  } = useUrlPersistence({
+    currentProject,
+    onProjectUpdate,
   });
 
   // Analytics tracking
@@ -88,7 +102,10 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
   // Handle click outside to close
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (overlayRef.current && !overlayRef.current.contains(e.target as Node)) {
+      if (
+        overlayRef.current &&
+        !overlayRef.current.contains(e.target as Node)
+      ) {
         handleClose();
       }
     };
@@ -116,13 +133,16 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
     }
   };
 
-  const parseXmlSitemap = (xmlText: string): Array<{ startingUrl: string; targetRedirect: string }> => {
+  const parseXmlSitemap = (
+    xmlText: string
+  ): Array<{ startingUrl: string; targetRedirect: string }> => {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
     const urls = xmlDoc.querySelectorAll('url');
-    const parsedUrls: Array<{ startingUrl: string; targetRedirect: string }> = [];
+    const parsedUrls: Array<{ startingUrl: string; targetRedirect: string }> =
+      [];
 
-    urls.forEach((urlElement) => {
+    urls.forEach(urlElement => {
       const locElement = urlElement.querySelector('loc');
       if (locElement && locElement.textContent) {
         parsedUrls.push({
@@ -140,53 +160,57 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
     if (!file) return;
 
     const fileExtension = file.name.toLowerCase().split('.').pop();
-    
+
     if (fileExtension === 'csv') {
       // Handle CSV files
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
-        complete: (results) => {
+        complete: results => {
           const parsedUrls = (results.data as Record<string, unknown>[])
-            .filter((row) => row['Starting URL']) // Only require starting URL
-            .map((row) => ({
+            .filter(row => row['Starting URL']) // Only require starting URL
+            .map(row => ({
               startingUrl: String(row['Starting URL']).trim(),
               targetRedirect: String(row['Target Redirect'] || '').trim(), // Make target optional
             }));
 
           setAllUrls(parsedUrls);
           setInputMethod('bulk');
-          
+
           // Track CSV upload
           trackFeatureUsage('csv_upload', { url_count: parsedUrls.length });
-          
+
           // Notify parent that URLs were added
           onUrlsAdded?.();
         },
-        error: (error) => {
+        error: error => {
           console.error('CSV parsing error:', error);
           alert('Error parsing CSV file. Please check the format.');
-        }
+        },
       });
     } else if (fileExtension === 'xml') {
       // Handle XML sitemap files
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = e => {
         try {
           const xmlText = e.target?.result as string;
           const parsedUrls = parseXmlSitemap(xmlText);
-          
+
           if (parsedUrls.length === 0) {
-            alert('No URLs found in the XML sitemap. Please check the file format.');
+            alert(
+              'No URLs found in the XML sitemap. Please check the file format.'
+            );
             return;
           }
 
           setAllUrls(parsedUrls);
           setInputMethod('bulk');
-          
+
           // Track XML sitemap upload
-          trackFeatureUsage('xml_sitemap_upload', { url_count: parsedUrls.length });
-          
+          trackFeatureUsage('xml_sitemap_upload', {
+            url_count: parsedUrls.length,
+          });
+
           // Notify parent that URLs were added
           onUrlsAdded?.();
         } catch (error) {
@@ -205,7 +229,8 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
 
     // Auto-parse URLs from text
     const lines = text.split('\n').filter(line => line.trim());
-    const parsedUrls: Array<{ startingUrl: string; targetRedirect: string }> = [];
+    const parsedUrls: Array<{ startingUrl: string; targetRedirect: string }> =
+      [];
 
     for (const line of lines) {
       const parts = line.split(',').map(part => part.trim());
@@ -232,20 +257,33 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
     }
   };
 
+  const handleClearAll = () => {
+    setShowClearConfirmation(true);
+  };
+
+  const handleConfirmClear = () => {
+    clearAll();
+    setShowClearConfirmation(false);
+  };
+
   const copyToClipboard = () => {
-    const csvContent = urls.map(url => `${url.startingUrl},${url.targetRedirect}`).join('\n');
+    const csvContent = urls
+      .map(url => `${url.startingUrl},${url.targetRedirect}`)
+      .join('\n');
     navigator.clipboard.writeText(csvContent);
   };
 
   if (!isOpen && !isClosing) return null;
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-200 ${
-      isClosing ? 'opacity-0' : 'opacity-100'
-    }`}>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-200 ${
+        isClosing ? 'opacity-0' : 'opacity-100'
+      }`}
+    >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm" />
-      
+
       {/* Overlay Content */}
       <div
         ref={overlayRef}
@@ -258,7 +296,9 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Add URLs</h2>
             <p className="text-sm text-gray-600 mt-1">
-              {currentProject ? `Project: ${currentProject.name}` : 'No project selected'}
+              {currentProject
+                ? `Project: ${currentProject.name}`
+                : 'No project selected'}
             </p>
           </div>
           <button
@@ -278,7 +318,9 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                 <button
                   onClick={() => {
                     setInputMethod('single');
-                    trackFeatureUsage('input_method_selected', { method: 'single' });
+                    trackFeatureUsage('input_method_selected', {
+                      method: 'single',
+                    });
                   }}
                   className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
                     inputMethod === 'single'
@@ -289,11 +331,13 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                   <Plus className="w-4 h-4" />
                   <span>Single URL</span>
                 </button>
-                
+
                 <button
                   onClick={() => {
                     setInputMethod('bulk');
-                    trackFeatureUsage('input_method_selected', { method: 'bulk' });
+                    trackFeatureUsage('input_method_selected', {
+                      method: 'bulk',
+                    });
                   }}
                   className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
                     inputMethod === 'bulk'
@@ -304,11 +348,13 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                   <Upload className="w-4 h-4" />
                   <span>Bulk Upload</span>
                 </button>
-                
+
                 <button
                   onClick={() => {
                     setInputMethod('paste');
-                    trackFeatureUsage('input_method_selected', { method: 'paste' });
+                    trackFeatureUsage('input_method_selected', {
+                      method: 'paste',
+                    });
                   }}
                   className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
                     inputMethod === 'paste'
@@ -319,11 +365,13 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                   <FileText className="w-4 h-4" />
                   <span>Copy/Paste</span>
                 </button>
-                
+
                 <button
                   onClick={() => {
                     setInputMethod('wayback');
-                    trackFeatureUsage('input_method_selected', { method: 'wayback' });
+                    trackFeatureUsage('input_method_selected', {
+                      method: 'wayback',
+                    });
                   }}
                   className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
                     inputMethod === 'wayback'
@@ -334,11 +382,13 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                   <Globe className="w-4 h-4" />
                   <span>Wayback</span>
                 </button>
-                
+
                 <button
                   onClick={() => {
                     setInputMethod('semrush');
-                    trackFeatureUsage('input_method_selected', { method: 'semrush' });
+                    trackFeatureUsage('input_method_selected', {
+                      method: 'semrush',
+                    });
                   }}
                   className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md text-sm font-medium transition-all ${
                     inputMethod === 'semrush'
@@ -350,23 +400,33 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                   <span>SEMrush</span>
                 </button>
               </div>
-              
-
             </div>
-
-
 
             {/* Single URL Input */}
             {inputMethod === 'single' && (
               <div className="space-y-4 relative">
                 {showSingleUrlInfo && (
                   <div className="absolute top-0 left-0 mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3 shadow-lg z-50 max-w-md">
-                    <h4 className="text-sm font-semibold text-blue-900">Single URL Input</h4>
+                    <h4 className="text-sm font-semibold text-blue-900">
+                      Single URL Input
+                    </h4>
                     <div className="text-sm text-blue-800 space-y-2">
-                      <p><strong>What it does:</strong> Add one URL at a time with optional target redirect.</p>
-                      <p><strong>Best for:</strong> Testing individual URLs or adding a few URLs quickly.</p>
-                      <p><strong>Target redirect:</strong> Optional - specify where the URL should redirect to for validation.</p>
-                      <p><strong>Keyboard shortcut:</strong> Press Enter in either field to add the URL.</p>
+                      <p>
+                        <strong>What it does:</strong> Add one URL at a time
+                        with optional target redirect.
+                      </p>
+                      <p>
+                        <strong>Best for:</strong> Testing individual URLs or
+                        adding a few URLs quickly.
+                      </p>
+                      <p>
+                        <strong>Target redirect:</strong> Optional - specify
+                        where the URL should redirect to for validation.
+                      </p>
+                      <p>
+                        <strong>Keyboard shortcut:</strong> Press Enter in
+                        either field to add the URL.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -391,23 +451,26 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                     <input
                       type="url"
                       value={singleStartingUrl}
-                      onChange={(e) => setSingleStartingUrl(e.target.value)}
+                      onChange={e => setSingleStartingUrl(e.target.value)}
                       placeholder="http://example.com"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      onKeyPress={(e) => e.key === 'Enter' && addSingleUrl()}
+                      onKeyPress={e => e.key === 'Enter' && addSingleUrl()}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Target Redirect <span className="text-gray-400 font-normal">(Optional)</span>
+                      Target Redirect{' '}
+                      <span className="text-gray-400 font-normal">
+                        (Optional)
+                      </span>
                     </label>
                     <input
                       type="url"
                       value={singleTargetUrl}
-                      onChange={(e) => setSingleTargetUrl(e.target.value)}
+                      onChange={e => setSingleTargetUrl(e.target.value)}
                       placeholder="https://example.com (optional)"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      onKeyPress={(e) => e.key === 'Enter' && addSingleUrl()}
+                      onKeyPress={e => e.key === 'Enter' && addSingleUrl()}
                     />
                   </div>
                 </div>
@@ -427,12 +490,26 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
               <div className="space-y-4 relative">
                 {showBulkInfo && (
                   <div className="absolute top-0 left-0 mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3 shadow-lg z-50 max-w-md">
-                    <h4 className="text-sm font-semibold text-blue-900">Bulk Upload</h4>
+                    <h4 className="text-sm font-semibold text-blue-900">
+                      Bulk Upload
+                    </h4>
                     <div className="text-sm text-blue-800 space-y-2">
-                      <p><strong>What it does:</strong> Upload multiple URLs from CSV files or XML sitemaps.</p>
-                      <p><strong>CSV format:</strong> "Starting URL" and optional "Target Redirect" columns.</p>
-                      <p><strong>XML sitemaps:</strong> Standard sitemap format with &lt;loc&gt; elements.</p>
-                      <p><strong>Best for:</strong> Large datasets, existing URL lists, or sitemap imports.</p>
+                      <p>
+                        <strong>What it does:</strong> Upload multiple URLs from
+                        CSV files or XML sitemaps.
+                      </p>
+                      <p>
+                        <strong>CSV format:</strong> "Starting URL" and optional
+                        "Target Redirect" columns.
+                      </p>
+                      <p>
+                        <strong>XML sitemaps:</strong> Standard sitemap format
+                        with &lt;loc&gt; elements.
+                      </p>
+                      <p>
+                        <strong>Best for:</strong> Large datasets, existing URL
+                        lists, or sitemap imports.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -452,11 +529,18 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
                   <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-sm text-gray-600 mb-2">
-                    Upload a CSV file with "Starting URL" and "Target Redirect" columns, or an XML sitemap file
+                    Upload a CSV file with "Starting URL" and "Target Redirect"
+                    columns, or an XML sitemap file
                   </p>
                   <div className="text-xs text-gray-500 mb-4">
-                    <p>• CSV: Include "Starting URL" and optional "Target Redirect" columns</p>
-                    <p>• XML Sitemap: Standard sitemap format with &lt;loc&gt; elements</p>
+                    <p>
+                      • CSV: Include "Starting URL" and optional "Target
+                      Redirect" columns
+                    </p>
+                    <p>
+                      • XML Sitemap: Standard sitemap format with &lt;loc&gt;
+                      elements
+                    </p>
                   </div>
                   <input
                     ref={fileInputRef}
@@ -480,12 +564,26 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
               <div className="space-y-4 relative">
                 {showPasteInfo && (
                   <div className="absolute top-0 left-0 mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3 shadow-lg z-50 max-w-md">
-                    <h4 className="text-sm font-semibold text-blue-900">Copy/Paste Input</h4>
+                    <h4 className="text-sm font-semibold text-blue-900">
+                      Copy/Paste Input
+                    </h4>
                     <div className="text-sm text-blue-800 space-y-2">
-                      <p><strong>What it does:</strong> Paste URLs directly from spreadsheets or text files.</p>
-                      <p><strong>Format:</strong> CSV format: Starting URL, Target Redirect (optional).</p>
-                      <p><strong>Auto-parse:</strong> Automatically detects and parses URLs as you type.</p>
-                      <p><strong>Best for:</strong> Quick imports from Excel, Google Sheets, or text files.</p>
+                      <p>
+                        <strong>What it does:</strong> Paste URLs directly from
+                        spreadsheets or text files.
+                      </p>
+                      <p>
+                        <strong>Format:</strong> CSV format: Starting URL,
+                        Target Redirect (optional).
+                      </p>
+                      <p>
+                        <strong>Auto-parse:</strong> Automatically detects and
+                        parses URLs as you type.
+                      </p>
+                      <p>
+                        <strong>Best for:</strong> Quick imports from Excel,
+                        Google Sheets, or text files.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -504,11 +602,12 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Paste URLs (CSV format: Starting URL, Target Redirect - Target is optional)
+                    Paste URLs (CSV format: Starting URL, Target Redirect -
+                    Target is optional)
                   </label>
                   <textarea
                     value={bulkText}
-                    onChange={(e) => handleBulkTextChange(e.target.value)}
+                    onChange={e => handleBulkTextChange(e.target.value)}
                     placeholder="http://example.com,https://example.com&#10;http://test.com&#10;http://another.com,https://another.com"
                     rows={8}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
@@ -520,7 +619,7 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
             {/* Wayback Machine Discovery */}
             {inputMethod === 'wayback' && (
               <WaybackDiscoveryTab
-                onUrlsDiscovered={(urls) => {
+                onUrlsDiscovered={urls => {
                   // Add discovered URLs to the project (no target URLs needed for discovery)
                   urls.forEach(url => {
                     addUrl({
@@ -528,10 +627,10 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                       targetRedirect: '', // Empty for discovery URLs
                     });
                   });
-                  
+
                   // Track Wayback discovery
                   trackUrlDiscovery('wayback', urls.length);
-                  
+
                   // Notify parent that URLs were added
                   onUrlsAdded?.();
                 }}
@@ -542,7 +641,7 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
             {/* SEMrush Discovery */}
             {inputMethod === 'semrush' && (
               <SEMrushDiscoveryTab
-                onUrlsDiscovered={(urls) => {
+                onUrlsDiscovered={urls => {
                   // Add discovered URLs to the project (no target URLs needed for discovery)
                   urls.forEach(url => {
                     addUrl({
@@ -550,10 +649,10 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                       targetRedirect: '', // Empty for discovery URLs
                     });
                   });
-                  
+
                   // Track SEMrush discovery
                   trackUrlDiscovery('semrush', urls.length);
-                  
+
                   // Notify parent that URLs were added
                   onUrlsAdded?.();
                 }}
@@ -570,10 +669,12 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                 <Filter className="w-4 h-4" />
                 <span>Advanced Options</span>
               </button>
-              
+
               {showAdvanced && (
                 <div className="mt-4 space-y-4">
-                  <h4 className="text-sm font-medium text-gray-700">Password Protected URLs (Staging)</h4>
+                  <h4 className="text-sm font-medium text-gray-700">
+                    Password Protected URLs (Staging)
+                  </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -582,7 +683,12 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                       <input
                         type="text"
                         value={authentication.username}
-                        onChange={(e) => setAuthentication(prev => ({ ...prev, username: e.target.value }))}
+                        onChange={e =>
+                          setAuthentication(prev => ({
+                            ...prev,
+                            username: e.target.value,
+                          }))
+                        }
                         placeholder="staging_user"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
@@ -594,7 +700,12 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                       <input
                         type="password"
                         value={authentication.password}
-                        onChange={(e) => setAuthentication(prev => ({ ...prev, password: e.target.value }))}
+                        onChange={e =>
+                          setAuthentication(prev => ({
+                            ...prev,
+                            password: e.target.value,
+                          }))
+                        }
                         placeholder="staging_pass"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
@@ -620,7 +731,7 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                       <span>Copy</span>
                     </button>
                     <button
-                      onClick={clearAll}
+                      onClick={handleClearAll}
                       className="flex items-center space-x-2 px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
                     >
                       <AlertCircle className="w-4 h-4" />
@@ -665,7 +776,9 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
             {urlsLoading && (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="animate-spin h-8 w-8 text-blue-600" />
-                <span className="ml-3 text-gray-600">Loading URLs from project...</span>
+                <span className="ml-3 text-gray-600">
+                  Loading URLs from project...
+                </span>
               </div>
             )}
           </div>
@@ -677,9 +790,8 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
             {!currentProject
               ? 'Please select or create a project first'
               : urls.length === 0
-              ? 'Add URLs to continue'
-              : `${urls.length} URL${urls.length !== 1 ? 's' : ''} ready`
-            }
+                ? 'Add URLs to continue'
+                : `${urls.length} URL${urls.length !== 1 ? 's' : ''} ready`}
           </div>
           <div className="flex items-center space-x-3">
             <button
@@ -698,6 +810,18 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Clear All URLs Confirmation Overlay */}
+      <ConfirmationOverlay
+        isOpen={showClearConfirmation}
+        onClose={() => setShowClearConfirmation(false)}
+        onConfirm={handleConfirmClear}
+        title="Clear All URLs"
+        message={`Are you sure you want to clear all ${urls.length} URLs? This action cannot be undone and will remove all URLs you've added in this session.`}
+        confirmText="Clear All"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };

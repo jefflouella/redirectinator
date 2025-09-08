@@ -1,23 +1,25 @@
 import React from 'react';
 import { Project } from '@/types';
-import {
-  Zap,
-  FolderOpen,
-  Settings,
-  ExternalLink,
-  Github
-} from 'lucide-react';
+import { Zap, FolderOpen, Settings, ExternalLink, Github } from 'lucide-react';
 
 interface HeaderProps {
   currentProject: Project | null;
-  activeTab: 'dashboard' | 'projects' | 'settings' | 'about' | 'privacy' | 'terms';
-  onTabChange: (tab: 'dashboard' | 'projects' | 'settings' | 'about' | 'privacy' | 'terms') => void;
+  activeTab:
+    | 'dashboard'
+    | 'projects'
+    | 'settings'
+    | 'about'
+    | 'privacy'
+    | 'terms';
+  onTabChange: (
+    tab: 'dashboard' | 'projects' | 'settings' | 'about' | 'privacy' | 'terms'
+  ) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ 
-  currentProject, 
-  activeTab, 
-  onTabChange 
+export const Header: React.FC<HeaderProps> = ({
+  currentProject,
+  activeTab,
+  onTabChange,
 }) => {
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm">
@@ -27,12 +29,17 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center space-x-4">
             <div className="flex flex-col">
               {/* Redirectinator Logo with text */}
-              <img 
-                src="/logo.svg" 
+              <img
+                src="/logo.svg"
                 alt="Redirectinator"
                 className="h-[56px] w-auto object-contain"
               />
-              <p className="text-gray-600 font-medium mt-0 text-right" style={{ fontSize: '0.83rem' }}>Find your way through every redirect</p>
+              <p
+                className="text-gray-600 font-medium mt-0 text-right"
+                style={{ fontSize: '0.83rem' }}
+              >
+                Find your way through every redirect
+              </p>
             </div>
           </div>
 
@@ -45,7 +52,9 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                   <FolderOpen className="w-4 h-4 text-blue-600" />
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-blue-900">{currentProject.name}</span>
+                    <span className="text-sm font-semibold text-blue-900">
+                      {currentProject.name}
+                    </span>
                     <div className="flex items-center space-x-2 text-xs text-blue-600">
                       <span>{currentProject.urls?.length || 0} URLs</span>
                       {currentProject.results.length > 0 && (
@@ -73,7 +82,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <Zap className="w-4 h-4" />
                 <span>Dashboard</span>
               </button>
-              
+
               <button
                 onClick={() => onTabChange('projects')}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -85,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <FolderOpen className="w-4 h-4" />
                 <span>Projects</span>
               </button>
-              
+
               <button
                 onClick={() => onTabChange('settings')}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -110,7 +119,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <Github className="w-5 h-5" />
               </a>
-              
+
               <a
                 href="https://www.jefflouella.com"
                 target="_blank"

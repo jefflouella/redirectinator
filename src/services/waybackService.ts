@@ -2,19 +2,19 @@
 // Handles discovery of historical URLs using the Internet Archive's CDX Server API
 
 export interface WaybackUrl {
-  timestamp: string;        // YYYYMMDDHHMMSS
-  original: string;         // Original URL from Wayback
-  mimeType?: string;        // text/html (optional, not always returned by API)
-  statusCode?: string;      // 200, 404, etc. (optional, not always returned by API)
-  redirectUrl?: string;     // If redirected
-  digest?: string;          // Content hash (optional, not always returned by API)
-  length?: string;          // Content length (optional, not always returned by API)
+  timestamp: string; // YYYYMMDDHHMMSS
+  original: string; // Original URL from Wayback
+  mimeType?: string; // text/html (optional, not always returned by API)
+  statusCode?: string; // 200, 404, etc. (optional, not always returned by API)
+  redirectUrl?: string; // If redirected
+  digest?: string; // Content hash (optional, not always returned by API)
+  length?: string; // Content length (optional, not always returned by API)
 }
 
 export interface WaybackDiscoveryParams {
   domain: string;
-  fromDate: string;         // YYYYMMDD
-  toDate: string;           // YYYYMMDD
+  fromDate: string; // YYYYMMDD
+  toDate: string; // YYYYMMDD
   limit: number;
   filters: {
     htmlOnly: boolean;
@@ -37,9 +37,13 @@ export class WaybackService {
   /**
    * Discover URLs from Wayback Machine for a given domain and timeframe
    */
-  async discoverUrls(params: WaybackDiscoveryParams): Promise<WaybackDiscoveryResult> {
+  async discoverUrls(
+    params: WaybackDiscoveryParams
+  ): Promise<WaybackDiscoveryResult> {
     try {
-      console.log(`Discovering URLs for ${params.domain} from ${params.fromDate} to ${params.toDate}`);
+      console.log(
+        `Discovering URLs for ${params.domain} from ${params.fromDate} to ${params.toDate}`
+      );
 
       // Build proxy API parameters
       const proxyParams = new URLSearchParams({
@@ -59,18 +63,22 @@ export class WaybackService {
 
       // Make API request to our proxy
       const response = await fetch(apiUrl);
-      
+
       console.log(`Response status: ${response.status} ${response.statusText}`);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Error response body:', errorText);
-        throw new Error(`Wayback proxy request failed: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(
+          `Wayback proxy request failed: ${response.status} ${response.statusText} - ${errorText}`
+        );
       }
 
       const data = await response.json();
       console.log(`Wayback proxy returned data:`, data);
-      console.log(`Wayback proxy returned ${data.totalFound} results for ${params.domain}`);
+      console.log(
+        `Wayback proxy returned ${data.totalFound} results for ${params.domain}`
+      );
 
       // Apply additional filters as safety net
       const filteredUrls = this.applyFilters(data.urls, params.filters);
@@ -84,19 +92,25 @@ export class WaybackService {
         filtersApplied: this.getAppliedFilters(params.filters),
       };
 
-      console.log(`Discovery complete: ${result.totalFound} URLs found for ${params.domain}`);
+      console.log(
+        `Discovery complete: ${result.totalFound} URLs found for ${params.domain}`
+      );
       return result;
-
     } catch (error) {
       console.error('Wayback discovery failed:', error);
-      throw new Error(`Failed to discover URLs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to discover URLs: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Apply additional filters to the discovered URLs
    */
-  private applyFilters(urls: WaybackUrl[], filters: WaybackDiscoveryParams['filters']): WaybackUrl[] {
+  private applyFilters(
+    urls: WaybackUrl[],
+    filters: WaybackDiscoveryParams['filters']
+  ): WaybackUrl[] {
     let filteredUrls = urls;
 
     // Filter by MIME type (if not already done by API)
@@ -116,14 +130,16 @@ export class WaybackService {
     if (filters.excludeSystemFiles) {
       filteredUrls = filteredUrls.filter(url => {
         const path = url.original.toLowerCase();
-        return !path.includes('/robots.txt') &&
-               !path.includes('/sitemap') &&
-               !path.includes('/admin/') &&
-               !path.includes('/wp-admin/') &&
-               !path.includes('/wp-content/') &&
-               !path.includes('/wp-includes/') &&
-               !path.includes('/.well-known/') &&
-               !path.includes('/cgi-bin/');
+        return (
+          !path.includes('/robots.txt') &&
+          !path.includes('/sitemap') &&
+          !path.includes('/admin/') &&
+          !path.includes('/wp-admin/') &&
+          !path.includes('/wp-content/') &&
+          !path.includes('/wp-includes/') &&
+          !path.includes('/.well-known/') &&
+          !path.includes('/cgi-bin/')
+        );
       });
     }
 
@@ -146,7 +162,9 @@ export class WaybackService {
   /**
    * Get list of applied filters for display
    */
-  private getAppliedFilters(filters: WaybackDiscoveryParams['filters']): string[] {
+  private getAppliedFilters(
+    filters: WaybackDiscoveryParams['filters']
+  ): string[] {
     const applied: string[] = [];
 
     if (filters.htmlOnly) {
@@ -172,14 +190,18 @@ export class WaybackService {
     }
 
     const trimmedDomain = domain.trim();
-    
+
     // Check if it's a simple domain
-    const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-    
+    const domainRegex =
+      /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
     // Check if it's a domain with subfolder
-    const subfolderRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\/[a-zA-Z0-9/\-_]+$/;
-    
-    return domainRegex.test(trimmedDomain) || subfolderRegex.test(trimmedDomain);
+    const subfolderRegex =
+      /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\/[a-zA-Z0-9/\-_]+$/;
+
+    return (
+      domainRegex.test(trimmedDomain) || subfolderRegex.test(trimmedDomain)
+    );
   }
 
   /**
@@ -187,9 +209,9 @@ export class WaybackService {
    */
   formatDomainForDisplay(domain: string): string {
     if (!domain) return '';
-    
+
     const trimmedDomain = domain.trim();
-    
+
     // If it's a subfolder, format it nicely
     if (trimmedDomain.includes('/')) {
       const parts = trimmedDomain.split('/');
@@ -197,7 +219,7 @@ export class WaybackService {
       const path = parts.slice(1).join('/');
       return `${baseDomain}/${path}`;
     }
-    
+
     return trimmedDomain;
   }
 
@@ -206,7 +228,7 @@ export class WaybackService {
    */
   getDomainType(domain: string): 'domain' | 'subfolder' {
     if (!domain) return 'domain';
-    
+
     const trimmedDomain = domain.trim();
     return trimmedDomain.includes('/') ? 'subfolder' : 'domain';
   }
@@ -217,7 +239,7 @@ export class WaybackService {
   getDomainExamples(): { domain: string; subfolder: string } {
     return {
       domain: 'example.com',
-      subfolder: 'example.com/electronics'
+      subfolder: 'example.com/electronics',
     };
   }
 
@@ -236,13 +258,23 @@ export class WaybackService {
    */
   getMonthYear(date: Date): { month: string; year: number } {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
-    
+
     return {
       month: months[date.getMonth()],
-      year: date.getFullYear()
+      year: date.getFullYear(),
     };
   }
 
@@ -250,12 +282,20 @@ export class WaybackService {
    * Get readable timeframe string
    */
   getReadableTimeframe(fromDate: string, toDate: string): string {
-    const from = new Date(parseInt(fromDate.slice(0, 4)), parseInt(fromDate.slice(4, 6)) - 1, parseInt(fromDate.slice(6, 8)));
-    const to = new Date(parseInt(toDate.slice(0, 4)), parseInt(toDate.slice(4, 6)) - 1, parseInt(toDate.slice(6, 8)));
-    
+    const from = new Date(
+      parseInt(fromDate.slice(0, 4)),
+      parseInt(fromDate.slice(4, 6)) - 1,
+      parseInt(fromDate.slice(6, 8))
+    );
+    const to = new Date(
+      parseInt(toDate.slice(0, 4)),
+      parseInt(toDate.slice(4, 6)) - 1,
+      parseInt(toDate.slice(6, 8))
+    );
+
     const fromMY = this.getMonthYear(from);
     const toMY = this.getMonthYear(to);
-    
+
     if (fromMY.year === toMY.year && fromMY.month === toMY.month) {
       return `${fromMY.month} ${fromMY.year}`;
     } else if (fromMY.year === toMY.year) {

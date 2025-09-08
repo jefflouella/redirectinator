@@ -3,6 +3,7 @@
 ## 🚀 Production Deployment
 
 ### Extension Distribution Files
+
 The `dist/` folder contains all files needed for production distribution:
 
 ```
@@ -49,6 +50,7 @@ extensions/dist/
 ### Future Store Launch
 
 When ready to submit to stores:
+
 1. Update web app messages to point to stores instead of manual downloads
 2. Remove or update the manual installation instructions
 3. Update extension descriptions for store submission

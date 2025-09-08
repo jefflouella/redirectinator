@@ -48,7 +48,10 @@ interface ExtensionAnalysisResult {
 declare global {
   interface Window {
     redirectinatorExtension?: {
-      analyzeUrl: (url: string, options?: ExtensionAnalysisOptions) => Promise<ExtensionAnalysisResult>;
+      analyzeUrl: (
+        url: string,
+        options?: ExtensionAnalysisOptions
+      ) => Promise<ExtensionAnalysisResult>;
       isAvailable: () => boolean;
       getVersion: () => string;
     };
@@ -58,11 +61,14 @@ declare global {
 class ExtensionService {
   private static instance: ExtensionService;
   private extensionPort: chrome.runtime.Port | null = null;
-  private pendingRequests = new Map<string, {
-    resolve: (value: any) => void;
-    reject: (value: any) => void;
-    timeout: NodeJS.Timeout;
-  }>();
+  private pendingRequests = new Map<
+    string,
+    {
+      resolve: (value: any) => void;
+      reject: (value: any) => void;
+      timeout: NodeJS.Timeout;
+    }
+  >();
   private isExtensionAvailable = false;
   private extensionVersion: string | null = null;
 
@@ -93,7 +99,7 @@ class ExtensionService {
   private checkExtensionAvailability(): void {
     // Only log in development mode and reduce verbosity
     const isDev = process.env.NODE_ENV === 'development';
-    
+
     if (isDev) {
       console.log('🔍 Extension Service: Starting availability check...');
     }
@@ -101,9 +107,13 @@ class ExtensionService {
     // Method 1: Check for global extension object (injected by content script bridge)
     if (window.redirectinatorExtension?.isAvailable?.()) {
       this.isExtensionAvailable = true;
-      this.extensionVersion = window.redirectinatorExtension.getVersion?.() || 'unknown';
+      this.extensionVersion =
+        window.redirectinatorExtension.getVersion?.() || 'unknown';
       if (isDev) {
-        console.log('✅ Extension detected via global object:', this.extensionVersion);
+        console.log(
+          '✅ Extension detected via global object:',
+          this.extensionVersion
+        );
       }
       return;
     } else if (isDev) {
@@ -115,7 +125,7 @@ class ExtensionService {
       console.log('🔍 Trying direct background communication...');
     }
     if (typeof chrome !== 'undefined' && chrome.runtime) {
-      chrome.runtime.sendMessage({ type: 'PING' }, (response) => {
+      chrome.runtime.sendMessage({ type: 'PING' }, response => {
         if (!chrome.runtime.lastError && response) {
           if (isDev) {
             console.log('✅ Background script responded:', response);
@@ -150,16 +160,24 @@ class ExtensionService {
     }
 
     if (isDev) {
-      console.log('🏁 Extension availability check complete. Available:', this.isExtensionAvailable, 'Version:', this.extensionVersion);
+      console.log(
+        '🏁 Extension availability check complete. Available:',
+        this.isExtensionAvailable,
+        'Version:',
+        this.extensionVersion
+      );
     }
   }
 
   private checkViaPostMessage(): void {
     // Send a ping to check if extension is listening
-    window.postMessage({
-      type: 'REDIRECTINATOR_PING',
-      timestamp: Date.now()
-    }, '*');
+    window.postMessage(
+      {
+        type: 'REDIRECTINATOR_PING',
+        timestamp: Date.now(),
+      },
+      '*'
+    );
 
     // Set a timeout to mark as unavailable if no response
     setTimeout(() => {
@@ -171,15 +189,21 @@ class ExtensionService {
 
   private pingContentScript(): void {
     // Send a specific ping that the content script will respond to
-    window.postMessage({
-      type: 'REDIRECTINATOR_CONTENT_SCRIPT_PING',
-      timestamp: Date.now(),
-      requestId: 'ping_' + Date.now()
-    }, '*');
+    window.postMessage(
+      {
+        type: 'REDIRECTINATOR_CONTENT_SCRIPT_PING',
+        timestamp: Date.now(),
+        requestId: 'ping_' + Date.now(),
+      },
+      '*'
+    );
 
     // Set a timeout to mark as unavailable if no response
     setTimeout(() => {
-      if (!this.isExtensionAvailable && process.env.NODE_ENV === 'development') {
+      if (
+        !this.isExtensionAvailable &&
+        process.env.NODE_ENV === 'development'
+      ) {
         console.log('⏰ Content script ping timeout - no response received');
       }
     }, 2000);
@@ -197,7 +221,10 @@ class ExtensionService {
       this.isExtensionAvailable = true;
       this.extensionVersion = event.data.version || 'unknown';
       if (isDev) {
-        console.log('Redirectinator Advanced extension detected:', this.extensionVersion);
+        console.log(
+          'Redirectinator Advanced extension detected:',
+          this.extensionVersion
+        );
       }
     }
 
@@ -211,7 +238,10 @@ class ExtensionService {
 
     if (event.data?.type === 'REDIRECTINATOR_CONTENT_SCRIPT_PONG') {
       if (isDev) {
-        console.log('🏓 Received content script PONG from extension:', event.data);
+        console.log(
+          '🏓 Received content script PONG from extension:',
+          event.data
+        );
       }
       this.isExtensionAvailable = true;
       this.extensionVersion = event.data.version || 'content-script-detected';
@@ -265,7 +295,10 @@ class ExtensionService {
   /**
    * Analyze a URL using the extension (if available)
    */
-  async analyzeUrl(url: string, options: ExtensionAnalysisOptions = {}): Promise<ExtensionAnalysisResult> {
+  async analyzeUrl(
+    url: string,
+    options: ExtensionAnalysisOptions = {}
+  ): Promise<ExtensionAnalysisResult> {
     if (!this.isExtensionAvailable) {
       throw new Error('Redirectinator Advanced extension is not available');
     }
@@ -274,43 +307,48 @@ class ExtensionService {
 
     return new Promise((resolve, reject) => {
       // Set up timeout
-      const timeout = setTimeout(() => {
-        this.pendingRequests.delete(requestId);
-        reject(new Error('Extension analysis timeout'));
-      }, (options.timeout || 15000) + 2000); // Add 2 second buffer
+      const timeout = setTimeout(
+        () => {
+          this.pendingRequests.delete(requestId);
+          reject(new Error('Extension analysis timeout'));
+        },
+        (options.timeout || 15000) + 2000
+      ); // Add 2 second buffer
 
       // Store the promise handlers
       this.pendingRequests.set(requestId, {
         resolve,
         reject,
-        timeout
+        timeout,
       });
 
       // Try different communication methods in order of preference
       if (typeof chrome !== 'undefined' && chrome.runtime) {
         // Method 1: Direct runtime communication (works if extension is loaded)
         console.log('🔗 Using direct runtime communication for URL analysis');
-        chrome.runtime.sendMessage({
-          type: 'ANALYZE_URL_REQUEST',
-          url: url,
-          options: options,
-          requestId: requestId
-        }, (response) => {
-          clearTimeout(timeout);
-          this.pendingRequests.delete(requestId);
+        chrome.runtime.sendMessage(
+          {
+            type: 'ANALYZE_URL_REQUEST',
+            url: url,
+            options: options,
+            requestId: requestId,
+          },
+          response => {
+            clearTimeout(timeout);
+            this.pendingRequests.delete(requestId);
 
-          if (chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message));
-            return;
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+              return;
+            }
+
+            if (response && response.success) {
+              resolve(response.result);
+            } else {
+              reject(new Error(response?.error || 'Analysis failed'));
+            }
           }
-
-          if (response && response.success) {
-            resolve(response.result);
-          } else {
-            reject(new Error(response?.error || 'Analysis failed'));
-          }
-        });
-
+        );
       } else if (this.extensionPort) {
         // Method 2: Port communication (legacy)
         console.log('🔗 Using port communication for URL analysis');
@@ -318,18 +356,20 @@ class ExtensionService {
           type: 'REDIRECTINATOR_REQUEST',
           requestId,
           url,
-          options
+          options,
         });
-
       } else {
         // Method 3: PostMessage communication (primary method for web apps)
         console.log('🔗 Using postMessage communication for URL analysis');
-        window.postMessage({
-          type: 'REDIRECTINATOR_REQUEST',
-          requestId,
-          url,
-          options
-        }, '*');
+        window.postMessage(
+          {
+            type: 'REDIRECTINATOR_REQUEST',
+            requestId,
+            url,
+            options,
+          },
+          '*'
+        );
       }
     });
   }
@@ -342,7 +382,7 @@ class ExtensionService {
       return null;
     }
 
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       if (this.extensionPort) {
         // For now, just resolve with null since health report response handling is not implemented
         resolve(null);

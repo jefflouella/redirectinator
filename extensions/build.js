@@ -17,7 +17,10 @@ class ExtensionBuilder {
   async buildChrome() {
     console.log('🚀 Building Chrome extension...');
 
-    const outputPath = path.join(this.rootDir, 'redirectinator-advanced-chrome.zip');
+    const outputPath = path.join(
+      this.rootDir,
+      'redirectinator-advanced-chrome.zip'
+    );
     const sourceDir = path.join(this.rootDir, 'chrome');
 
     if (!fs.existsSync(sourceDir)) {
@@ -32,7 +35,10 @@ class ExtensionBuilder {
   async buildFirefox() {
     console.log('🚀 Building Firefox add-on...');
 
-    const outputPath = path.join(this.rootDir, 'redirectinator-advanced-firefox.zip');
+    const outputPath = path.join(
+      this.rootDir,
+      'redirectinator-advanced-firefox.zip'
+    );
     const sourceDir = path.join(this.rootDir, 'firefox');
 
     if (!fs.existsSync(sourceDir)) {
@@ -55,7 +61,7 @@ class ExtensionBuilder {
     return new Promise((resolve, reject) => {
       const output = fs.createWriteStream(outputPath);
       const archive = archiver('zip', {
-        zlib: { level: 9 } // Maximum compression
+        zlib: { level: 9 }, // Maximum compression
       });
 
       output.on('close', () => {
@@ -63,7 +69,7 @@ class ExtensionBuilder {
         resolve();
       });
 
-      archive.on('error', (err) => {
+      archive.on('error', err => {
         reject(err);
       });
 
@@ -74,11 +80,18 @@ class ExtensionBuilder {
 
       // Add version info
       const version = require('./package.json').version;
-      archive.append(JSON.stringify({
-        version: version,
-        buildDate: new Date().toISOString(),
-        platform: path.basename(sourceDir)
-      }, null, 2), { name: 'build-info.json' });
+      archive.append(
+        JSON.stringify(
+          {
+            version: version,
+            buildDate: new Date().toISOString(),
+            platform: path.basename(sourceDir),
+          },
+          null,
+          2
+        ),
+        { name: 'build-info.json' }
+      );
 
       archive.finalize();
     });
@@ -89,7 +102,7 @@ class ExtensionBuilder {
 
     const files = [
       'redirectinator-advanced-chrome.zip',
-      'redirectinator-advanced-firefox.zip'
+      'redirectinator-advanced-firefox.zip',
     ];
 
     files.forEach(file => {
@@ -111,16 +124,8 @@ class ExtensionBuilder {
 
     // Check required files
     const requiredFiles = {
-      chrome: [
-        'manifest.json',
-        'src/background.js',
-        'src/content.js'
-      ],
-      firefox: [
-        'manifest.json',
-        'src/background.js',
-        'src/content.js'
-      ]
+      chrome: ['manifest.json', 'src/background.js', 'src/content.js'],
+      firefox: ['manifest.json', 'src/background.js', 'src/content.js'],
     };
 
     let isValid = true;

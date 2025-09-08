@@ -7,13 +7,15 @@ import {
   Trash2,
   Play,
   CheckCircle,
-  Settings
+  Settings,
 } from 'lucide-react';
 import Papa from 'papaparse';
 import { useUrlPersistence } from '@/hooks/useUrlPersistence';
 
 interface UrlInputProps {
-  onProcessUrls: (urls: Array<{ startingUrl: string; targetRedirect: string }>) => void;
+  onProcessUrls: (
+    urls: Array<{ startingUrl: string; targetRedirect: string }>
+  ) => void;
   isProcessing: boolean;
   currentProject: Project | null;
   onProjectUpdate?: (updatedProject: Project) => void;
@@ -23,20 +25,32 @@ export const UrlInput: React.FC<UrlInputProps> = ({
   onProcessUrls,
   isProcessing,
   currentProject,
-  onProjectUpdate
+  onProjectUpdate,
 }) => {
-  const [inputMethod, setInputMethod] = useState<'single' | 'bulk' | 'paste'>('single');
+  const [inputMethod, setInputMethod] = useState<'single' | 'bulk' | 'paste'>(
+    'single'
+  );
   const [singleStartingUrl, setSingleStartingUrl] = useState('');
   const [singleTargetUrl, setSingleTargetUrl] = useState('');
   const [bulkText, setBulkText] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [authentication, setAuthentication] = useState({ username: '', password: '' });
+  const [authentication, setAuthentication] = useState({
+    username: '',
+    password: '',
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Use persistent URL storage
-  const { urls, isLoading: urlsLoading, addUrl, removeUrl, setAllUrls, clearUrls } = useUrlPersistence({ 
-    currentProject, 
-    onProjectUpdate 
+  const {
+    urls,
+    isLoading: urlsLoading,
+    addUrl,
+    removeUrl,
+    setAllUrls,
+    clearUrls,
+  } = useUrlPersistence({
+    currentProject,
+    onProjectUpdate,
   });
 
   const addSingleUrl = () => {
@@ -51,8 +65,6 @@ export const UrlInput: React.FC<UrlInputProps> = ({
     }
   };
 
-
-
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -60,10 +72,10 @@ export const UrlInput: React.FC<UrlInputProps> = ({
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-              complete: (results) => {
-          const parsedUrls = results.data
-            .filter((row: Record<string, unknown>) => row['Starting URL']) // Only require starting URL
-            .map((row: Record<string, unknown>) => ({
+      complete: results => {
+        const parsedUrls = results.data
+          .filter((row: Record<string, unknown>) => row['Starting URL']) // Only require starting URL
+          .map((row: Record<string, unknown>) => ({
             startingUrl: String(row['Starting URL']).trim(),
             targetRedirect: String(row['Target Redirect'] || '').trim(), // Make target optional
           }));
@@ -71,10 +83,10 @@ export const UrlInput: React.FC<UrlInputProps> = ({
         setAllUrls(parsedUrls);
         setInputMethod('bulk');
       },
-      error: (error) => {
+      error: error => {
         console.error('CSV parsing error:', error);
         alert('Error parsing CSV file. Please check the format.');
-      }
+      },
     });
   };
 
@@ -83,7 +95,8 @@ export const UrlInput: React.FC<UrlInputProps> = ({
 
     // Auto-parse URLs from text
     const lines = text.split('\n').filter(line => line.trim());
-    const parsedUrls: Array<{ startingUrl: string; targetRedirect: string }> = [];
+    const parsedUrls: Array<{ startingUrl: string; targetRedirect: string }> =
+      [];
 
     for (const line of lines) {
       const parts = line.split(',').map(part => part.trim());
@@ -100,24 +113,28 @@ export const UrlInput: React.FC<UrlInputProps> = ({
 
   const validateUrls = () => {
     const errors: string[] = [];
-    
+
     urls.forEach((url, index) => {
       try {
         new URL(url.startingUrl);
       } catch {
-        errors.push(`Row ${index + 1}: Invalid starting URL - ${url.startingUrl}`);
+        errors.push(
+          `Row ${index + 1}: Invalid starting URL - ${url.startingUrl}`
+        );
       }
-      
+
       // Only validate target URL if it's provided
       if (url.targetRedirect.trim()) {
         try {
           new URL(url.targetRedirect);
         } catch {
-          errors.push(`Row ${index + 1}: Invalid target URL - ${url.targetRedirect}`);
+          errors.push(
+            `Row ${index + 1}: Invalid target URL - ${url.targetRedirect}`
+          );
         }
       }
     });
-    
+
     return errors;
   };
 
@@ -152,7 +169,9 @@ export const UrlInput: React.FC<UrlInputProps> = ({
   };
 
   const copyToClipboard = () => {
-    const csvContent = urls.map(url => `${url.startingUrl},${url.targetRedirect}`).join('\n');
+    const csvContent = urls
+      .map(url => `${url.startingUrl},${url.targetRedirect}`)
+      .join('\n');
     navigator.clipboard.writeText(csvContent);
   };
 
@@ -162,13 +181,13 @@ export const UrlInput: React.FC<UrlInputProps> = ({
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-tech-900">URL Input</h3>
-          
+
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
               className={`flex items-center space-x-2 px-3 py-1 rounded-md text-sm transition-colors ${
-                showAdvanced 
-                  ? 'bg-primary-100 text-primary-700' 
+                showAdvanced
+                  ? 'bg-primary-100 text-primary-700'
                   : 'text-tech-600 hover:text-tech-900'
               }`}
             >
@@ -179,7 +198,7 @@ export const UrlInput: React.FC<UrlInputProps> = ({
         </div>
 
         {/* Input Method Selector */}
-                  <div className="flex space-x-1 bg-gray-100 rounded-lg p-1 mb-4">
+        <div className="flex space-x-1 bg-gray-100 rounded-lg p-1 mb-4">
           <button
             onClick={() => setInputMethod('single')}
             className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
@@ -191,7 +210,7 @@ export const UrlInput: React.FC<UrlInputProps> = ({
             <Plus className="w-4 h-4" />
             <span>Single URL</span>
           </button>
-          
+
           <button
             onClick={() => setInputMethod('bulk')}
             className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
@@ -203,7 +222,7 @@ export const UrlInput: React.FC<UrlInputProps> = ({
             <Upload className="w-4 h-4" />
             <span>Bulk Upload</span>
           </button>
-          
+
           <button
             onClick={() => setInputMethod('paste')}
             className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
@@ -228,7 +247,7 @@ export const UrlInput: React.FC<UrlInputProps> = ({
                 <input
                   type="url"
                   value={singleStartingUrl}
-                  onChange={(e) => setSingleStartingUrl(e.target.value)}
+                  onChange={e => setSingleStartingUrl(e.target.value)}
                   placeholder="http://example.com"
                   className="input-field"
                 />
@@ -240,7 +259,7 @@ export const UrlInput: React.FC<UrlInputProps> = ({
                 <input
                   type="url"
                   value={singleTargetUrl}
-                  onChange={(e) => setSingleTargetUrl(e.target.value)}
+                  onChange={e => setSingleTargetUrl(e.target.value)}
                   placeholder="https://example.com"
                   className="input-field"
                 />
@@ -263,7 +282,8 @@ export const UrlInput: React.FC<UrlInputProps> = ({
             <div className="border-2 border-dashed border-tech-300 rounded-lg p-6 text-center">
               <Upload className="w-12 h-12 text-tech-400 mx-auto mb-4" />
               <p className="text-sm text-tech-600 mb-2">
-                Upload a CSV file with "Starting URL" and "Target Redirect" columns
+                Upload a CSV file with "Starting URL" and "Target Redirect"
+                columns
               </p>
               <input
                 ref={fileInputRef}
@@ -291,7 +311,7 @@ export const UrlInput: React.FC<UrlInputProps> = ({
               </label>
               <textarea
                 value={bulkText}
-                onChange={(e) => handleBulkTextChange(e.target.value)}
+                onChange={e => handleBulkTextChange(e.target.value)}
                 placeholder="http://example.com,https://example.com&#10;http://test.com,https://test.com"
                 rows={6}
                 className="input-field font-mono text-sm"
@@ -303,7 +323,9 @@ export const UrlInput: React.FC<UrlInputProps> = ({
         {/* Advanced Options */}
         {showAdvanced && (
           <div className="border-t border-tech-200 pt-4">
-            <h4 className="text-sm font-medium text-tech-700 mb-3">Password Protected URLs (Staging)</h4>
+            <h4 className="text-sm font-medium text-tech-700 mb-3">
+              Password Protected URLs (Staging)
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-tech-700 mb-2">
@@ -312,7 +334,12 @@ export const UrlInput: React.FC<UrlInputProps> = ({
                 <input
                   type="text"
                   value={authentication.username}
-                  onChange={(e) => setAuthentication(prev => ({ ...prev, username: e.target.value }))}
+                  onChange={e =>
+                    setAuthentication(prev => ({
+                      ...prev,
+                      username: e.target.value,
+                    }))
+                  }
                   placeholder="staging_user"
                   className="input-field"
                 />
@@ -324,7 +351,12 @@ export const UrlInput: React.FC<UrlInputProps> = ({
                 <input
                   type="password"
                   value={authentication.password}
-                  onChange={(e) => setAuthentication(prev => ({ ...prev, password: e.target.value }))}
+                  onChange={e =>
+                    setAuthentication(prev => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
                   placeholder="staging_pass"
                   className="input-field"
                 />
@@ -339,7 +371,9 @@ export const UrlInput: React.FC<UrlInputProps> = ({
         <div className="card">
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-            <span className="ml-3 text-tech-600">Loading URLs from project...</span>
+            <span className="ml-3 text-tech-600">
+              Loading URLs from project...
+            </span>
           </div>
         </div>
       )}
@@ -404,9 +438,8 @@ export const UrlInput: React.FC<UrlInputProps> = ({
               {!currentProject
                 ? 'Please select or create a project first'
                 : urls.length === 0
-                ? 'Add URLs to process'
-                : `${urls.length} URL${urls.length !== 1 ? 's' : ''} ready to process`
-              }
+                  ? 'Add URLs to process'
+                  : `${urls.length} URL${urls.length !== 1 ? 's' : ''} ready to process`}
             </div>
             <button
               onClick={handleProcess}
@@ -418,9 +451,8 @@ export const UrlInput: React.FC<UrlInputProps> = ({
                 {isProcessing
                   ? 'Processing...'
                   : !currentProject
-                  ? 'Select Project First'
-                  : 'Process URLs'
-                }
+                    ? 'Select Project First'
+                    : 'Process URLs'}
               </span>
             </button>
           </div>

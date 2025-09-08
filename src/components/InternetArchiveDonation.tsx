@@ -4,9 +4,14 @@ interface InternetArchiveDonationProps {
   className?: string;
 }
 
-export const InternetArchiveDonation: React.FC<InternetArchiveDonationProps> = ({ className = '' }) => {
+export const InternetArchiveDonation: React.FC<
+  InternetArchiveDonationProps
+> = ({ className = '' }) => {
   const handleDonate = () => {
-    window.open('https://archive.org/donate?origin=redirectinator.us', '_blank');
+    window.open(
+      'https://archive.org/donate?origin=redirectinator.us',
+      '_blank'
+    );
   };
 
   return (
@@ -16,22 +21,22 @@ export const InternetArchiveDonation: React.FC<InternetArchiveDonationProps> = (
           🏛️ Support the Internet Archive
         </h3>
       </div>
-      
+
       <div className="donation-content text-center">
-        <img 
-          src="/wayback-logo.png" 
+        <img
+          src="/wayback-logo.png"
           alt="WayBack Machine by Internet Archive"
           className="wayback-logo mx-auto mb-4 cursor-pointer transition-opacity duration-200 hover:opacity-80"
           onClick={handleDonate}
           style={{ maxWidth: '200px', height: 'auto' }}
         />
-        
+
         <p className="donation-message text-sm text-gray-600 mb-4 leading-relaxed">
-          The Wayback Machine API is free to use. Help keep 
-          this invaluable service alive by making a donation.
+          The Wayback Machine API is free to use. Help keep this invaluable
+          service alive by making a donation.
         </p>
-        
-        <button 
+
+        <button
           onClick={handleDonate}
           className="donate-button bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
         >

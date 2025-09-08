@@ -18,12 +18,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   processingStatus,
   onExport,
   mode,
-  onModeChange
+  onModeChange,
 }) => {
   return (
     <div className="space-y-6">
       <ModeSelector mode={mode} onModeChange={onModeChange} />
-      
+
       <ProcessingStatusComponent processingStatus={processingStatus} />
       <SummaryStatistics summaryStats={summaryStats} />
       <ExportSection

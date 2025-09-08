@@ -27,16 +27,19 @@
 The tool now tracks three main types of redirects:
 
 ### 1. HTTP Redirects
+
 - **Status Codes**: 301 (Permanent), 302 (Temporary), 307 (Temporary), 308 (Permanent)
 - **Detection Method**: Server response headers with Location field
 - **Display**: Blue badges showing status codes (e.g., "301", "302")
 
 ### 2. Meta Refresh Redirects
+
 - **Detection Method**: HTML `<meta http-equiv="refresh">` tags
 - **Features**: Shows delay timing and target URL
 - **Display**: Green badges labeled "Meta" with delay information
 
 ### 3. JavaScript Redirects
+
 - **Detection Method**: Script content analysis for common redirect patterns
 - **Patterns Detected**: `window.location`, `location.href`, `location.replace`
 - **Display**: Purple badges labeled "JavaScript"
@@ -44,6 +47,7 @@ The tool now tracks three main types of redirects:
 ### Redirect Chain Display
 
 The enhanced results table now shows:
+
 - **HTTP Status Column**: Displays the complete redirect chain (e.g., "301 → Meta → JS → 200")
 - **Redirect Types Column**: Visual badges for each redirect type in the chain
 - **Expanded Details**: Step-by-step breakdown of each redirect with:
@@ -55,6 +59,7 @@ The enhanced results table now shows:
 ### Example Output
 
 For a URL that goes through multiple redirect types, you'll see:
+
 ```
 Starting URL: http://example.com/start
 HTTP Status: 301 → Meta → JS → 200
@@ -63,6 +68,7 @@ Final URL: https://example.com/final
 ```
 
 In the expanded details, you'll see:
+
 - **Step 1**: HTTP 301 redirect from start URL to intermediate page
 - **Step 2**: Meta refresh (5s delay) to JavaScript page
 - **Step 3**: JavaScript redirect to final destination
@@ -71,28 +77,33 @@ In the expanded details, you'll see:
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+
+- Node.js 18+
 - npm or yarn
 
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/jefflouella/redirectinator.git
    cd redirectinator
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Start the development server**
+
    ```bash
    npm run dev
    ```
 
 4. **Start the backend server** (optional, for advanced features)
+
    ```bash
    npm run server
    ```
@@ -103,6 +114,7 @@ In the expanded details, you'll see:
 ## 📖 Usage
 
 ### Basic URL Analysis
+
 1. Navigate to the **Dashboard** tab
 2. Enter URLs in the input field (one per line or bulk import)
 3. Configure processing options (timeout, max redirects, etc.)
@@ -111,6 +123,7 @@ In the expanded details, you'll see:
 6. Export results in your preferred format
 
 ### Historical URL Discovery
+
 1. Go to the **Wayback Discovery** tab
 2. Enter a domain or specific URL
 3. Set date range for historical snapshots
@@ -118,6 +131,7 @@ In the expanded details, you'll see:
 5. Export findings for further analysis
 
 ### Project Management
+
 1. Create new projects in the **Projects** tab
 2. Organize URLs by project or client
 3. Share results with team members
@@ -126,6 +140,7 @@ In the expanded details, you'll see:
 ## 🏗 Architecture
 
 ### Frontend
+
 - **React 18** with TypeScript for type safety
 - **Vite** for fast development and building
 - **Tailwind CSS** for responsive styling
@@ -133,12 +148,14 @@ In the expanded details, you'll see:
 - **IndexedDB** for local data persistence
 
 ### Backend (Optional)
+
 - **Express.js** server for advanced processing
 - **Puppeteer** for complex redirect analysis
 - **CORS** enabled for cross-origin requests
 - **Proxy support** for development
 
 ### Data Flow
+
 ```
 URL Input → Processing Queue → Analysis Engine → Results Storage → Export
      ↓              ↓              ↓              ↓              ↓
@@ -148,6 +165,7 @@ URL Input → Processing Queue → Analysis Engine → Results Storage → Expor
 ## 🔧 Configuration
 
 ### Processing Options
+
 - **Timeout**: Set request timeout (default: 30 seconds)
 - **Max Redirects**: Limit redirect chain depth (default: 10)
 - **Batch Size**: Control concurrent requests (default: 5)
@@ -155,6 +173,7 @@ URL Input → Processing Queue → Analysis Engine → Results Storage → Expor
 - **Follow Redirects**: Enable/disable redirect following
 
 ### Export Options
+
 - **CSV**: Standard spreadsheet format
 - **JSON**: Structured data format
 - **Excel**: Advanced spreadsheet with formatting
@@ -184,6 +203,7 @@ redirectinator/
 ## 🛠 Development
 
 ### Available Scripts
+
 ```bash
 npm run dev          # Start development server
 npm run build        # Build for production
@@ -194,6 +214,7 @@ npm run format       # Format code with Prettier
 ```
 
 ### Code Quality
+
 - **ESLint** for code linting
 - **Prettier** for code formatting
 - **TypeScript** for type safety
@@ -202,24 +223,28 @@ npm run format       # Format code with Prettier
 ## 🌟 Key Features in Detail
 
 ### Intelligent Batching
+
 - Automatically batches URLs for optimal performance
 - Configurable batch sizes based on server capacity
 - Progress tracking for each batch
 - Error handling with retry logic
 
 ### Historical Analysis
+
 - Integration with Internet Archive Wayback Machine
 - Date range selection for historical snapshots
 - Bulk historical URL discovery
 - Export historical findings
 
 ### Export Capabilities
+
 - **CSV Export**: Standard spreadsheet format with all data
 - **JSON Export**: Structured data for API integration
 - **Excel Export**: Advanced formatting with multiple sheets
 - **Detailed Reports**: Comprehensive analysis documents
 
 ### Project Management
+
 - Create and manage multiple projects
 - Organize URLs by client or campaign
 - Share results with team members
@@ -230,6 +255,7 @@ npm run format       # Format code with Prettier
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
 ### Development Setup
+
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
@@ -265,4 +291,4 @@ Redirectinator was created to solve real-world SEO challenges and provide profes
 
 **Made with ❤️ by Jeff Louella**
 
-*Professional URL analysis tools for the modern web.*
+_Professional URL analysis tools for the modern web._

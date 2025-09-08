@@ -4,6 +4,7 @@ import { Dashboard } from './components/Dashboard';
 import { UrlInputOverlay } from './components/UrlInputOverlay';
 import { UrlSummary } from './components/UrlSummary';
 import { ProcessingOptions } from './components/ProcessingOptions';
+import { ProcessingStatusDisplay } from './components/ProcessingStatusDisplay';
 import { ResultsTable } from './components/ResultsTable';
 import { ProjectManager } from './components/ProjectManager';
 import { Settings } from './components/Settings';
@@ -29,45 +30,57 @@ function App() {
   // Use persisted mode from settings instead of local state
   const { settings, updateSettings } = useAppSettings();
   const mode = settings.redirectMode || 'default';
-  
+
   // Allow mode switching now that Advanced mode is ready
   const handleModeChange = async (newMode: 'default' | 'advanced') => {
     console.log('🔄 App: Mode change requested from', mode, 'to', newMode);
     await updateSettings({ redirectMode: newMode });
   };
-  const { currentProject, projects, loadProject, createNewProject, deleteProject, updateProject, setCurrentProject } = useProjects(settings);
-  const { results, processingStatus, processUrls, stopProcessing } = useUrlProcessing(
+  const {
     currentProject,
-    (newResults) => {
-      // Save results to persistent storage when processing completes
-      saveResults(newResults);
-    },
-    mode // Pass the current mode
-  );
-  
+    projects,
+    loadProject,
+    createNewProject,
+    deleteProject,
+    updateProject,
+    setCurrentProject,
+  } = useProjects(settings);
+  const { results, processingStatus, processUrls, stopProcessing, clearResults: clearInMemoryResults } =
+    useUrlProcessing(
+      currentProject,
+      newResults => {
+        // Save results to persistent storage when processing completes
+        saveResults(newResults);
+      },
+      mode // Pass the current mode
+    );
+
   // Use persistent results storage
-  const { 
-    results: persistentResults, 
-    saveResults, 
+  const {
+    results: persistentResults,
+    saveResults,
     clearResults,
     getUnprocessedUrls,
-    getProgressStats
+    getProgressStats,
   } = useResultsPersistence({ projectId: currentProject?.id || null });
-  
+
   // Use persistent results if available, otherwise use in-memory results
-  const finalResults = persistentResults.length > 0 ? persistentResults : results;
+  const finalResults =
+    persistentResults.length > 0 ? persistentResults : results;
   const summaryStats = useSummaryStats(finalResults);
 
   // Get progress statistics - use actual URL count from project
-  const progressStats = currentProject ? getProgressStats(currentProject.urls?.length || 0) : undefined;
+  const progressStats = currentProject
+    ? getProgressStats(currentProject.urls?.length || 0)
+    : undefined;
 
   // Analytics tracking
-  const { 
-    trackFeatureUsage, 
-    trackUrlProcessing, 
-    trackProjectCreation, 
-    trackExport, 
-    trackError 
+  const {
+    trackFeatureUsage,
+    trackUrlProcessing,
+    trackProjectCreation,
+    trackExport,
+    trackError,
   } = useAnalytics();
 
   // Schema management
@@ -81,28 +94,29 @@ function App() {
   // Processing functions
   const handleRunAllUrls = async () => {
     if (!currentProject) return;
-    
+
     // Track URL processing
     const urlCount = currentProject.urls?.length || 0;
     trackUrlProcessing(urlCount, 'run_all');
-    
+
     // Clear existing results and process all URLs
-    await clearResults();
+    await clearResults(); // Clear persistent results
+    clearInMemoryResults(); // Clear in-memory results
     const projectUrls = currentProject.urls || [];
     await processUrls(projectUrls);
   };
 
   const handleRunNewUrls = async () => {
     if (!currentProject) return;
-    
+
     // Get URLs from the project and find unprocessed ones
     const projectUrls = currentProject.urls || [];
     const unprocessedUrls = getUnprocessedUrls(projectUrls);
-    
+
     if (unprocessedUrls.length > 0) {
       // Track URL processing
       trackUrlProcessing(unprocessedUrls.length, 'run_new');
-      
+
       // Process only unprocessed URLs
       await processUrls(unprocessedUrls);
     }
@@ -110,11 +124,11 @@ function App() {
 
   const handleContinueProcessing = async () => {
     if (!currentProject) return;
-    
+
     // Track URL processing
     const remainingCount = progressStats?.remaining || 0;
     trackUrlProcessing(remainingCount, 'continue');
-    
+
     const projectUrls = currentProject.urls || [];
     const unprocessedUrls = getUnprocessedUrls(projectUrls);
     await processUrls(unprocessedUrls);
@@ -127,26 +141,37 @@ function App() {
 
   const handleClearResults = async () => {
     trackFeatureUsage('results_cleared');
-    await clearResults();
+    // Clear both persistent and in-memory results
+    await clearResults(); // Clear persistent results
+    clearInMemoryResults(); // Clear in-memory results
   };
 
   const exportResults = async (format: 'csv' | 'json' | 'excel' | 'report') => {
     try {
       switch (format) {
         case 'csv':
-          ExportService.exportToCSV(finalResults, { format: 'csv', includeHeaders: true });
+          ExportService.exportToCSV(finalResults, {
+            format: 'csv',
+            includeHeaders: true,
+          });
           break;
         case 'json':
-          ExportService.exportToJSON(finalResults, { format: 'json', includeHeaders: true });
+          ExportService.exportToJSON(finalResults, {
+            format: 'json',
+            includeHeaders: true,
+          });
           break;
         case 'excel':
-          ExportService.exportToExcel(finalResults, { format: 'excel', includeHeaders: true });
+          ExportService.exportToExcel(finalResults, {
+            format: 'excel',
+            includeHeaders: true,
+          });
           break;
         case 'report':
           ExportService.generateReport(finalResults);
           break;
       }
-      
+
       // Track export usage
       trackExport(format, finalResults.length);
     } catch (error) {
@@ -177,36 +202,37 @@ function App() {
     }
   }, [currentProject, settings.autoSave, settings.autoSaveInterval]);
 
-
-
   return (
     <NotificationProvider>
-      <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#f9fafb' }}>
-        <Header 
+      <div
+        className="min-h-screen flex flex-col"
+        style={{ backgroundColor: '#f9fafb' }}
+      >
+        <Header
           currentProject={currentProject}
           onTabChange={navigateTo}
           activeTab={activeTab}
         />
-        
+
         <main className="flex-1">
           {activeTab === 'dashboard' && (
             <div className="container mx-auto px-4 py-6 space-y-6">
-              <Dashboard 
+              <Dashboard
                 summaryStats={summaryStats}
                 processingStatus={processingStatus}
                 onExport={exportResults}
                 mode={mode}
                 onModeChange={handleModeChange}
               />
-              
-              <UrlSummary 
+
+              <UrlSummary
                 key={`${currentProject?.id}-${currentProject?.updatedAt}-${currentProject?.urls?.length}-${refreshCounter}`}
                 currentProject={currentProject}
                 onProcessUrls={processUrls}
                 isProcessing={processingStatus.isProcessing}
                 onEditUrls={() => setIsUrlOverlayOpen(true)}
                 onNavigateToProjects={() => navigateTo('projects')}
-                onProjectUpdate={async (updatedProject) => {
+                onProjectUpdate={async updatedProject => {
                   try {
                     // Save the updated project to the database
                     await updateProject(updatedProject.id, updatedProject);
@@ -220,7 +246,7 @@ function App() {
                   }
                 }}
               />
-              
+
               <ProcessingOptions
                 currentProject={currentProject}
                 urlCount={currentProject?.urls?.length || 0}
@@ -234,19 +260,21 @@ function App() {
                 onClearResults={handleClearResults}
                 progressStats={progressStats}
               />
-              
+
+              <ProcessingStatusDisplay
+                isProcessing={processingStatus.isProcessing}
+                processingStatus={processingStatus}
+              />
+
               {finalResults.length > 0 && (
-                <ResultsTable 
-                  results={finalResults}
-                  onExport={exportResults}
-                />
+                <ResultsTable results={finalResults} onExport={exportResults} />
               )}
             </div>
           )}
-          
+
           {activeTab === 'projects' && (
             <div className="container mx-auto px-4 py-6 space-y-6">
-              <ProjectManager 
+              <ProjectManager
                 projects={projects}
                 currentProject={currentProject}
                 onCreateProject={handleCreateProject}
@@ -257,12 +285,9 @@ function App() {
               />
             </div>
           )}
-          
+
           {activeTab === 'settings' && (
-            <Settings 
-              settings={settings}
-              onUpdateSettings={updateSettings}
-            />
+            <Settings settings={settings} onUpdateSettings={updateSettings} />
           )}
 
           {activeTab === 'about' && (
@@ -280,7 +305,7 @@ function App() {
 
         {/* Footer - show on all pages */}
         <Footer />
-        
+
         {/* URL Input Overlay */}
         <UrlInputOverlay
           isOpen={isUrlOverlayOpen}
@@ -288,14 +313,20 @@ function App() {
           currentProject={currentProject}
           onUrlsAdded={async () => {
             // Refresh the current project to get updated URL count
-            console.log('onUrlsAdded called, refreshing project:', currentProject?.id);
+            console.log(
+              'onUrlsAdded called, refreshing project:',
+              currentProject?.id
+            );
             if (currentProject) {
               await loadProject(currentProject.id);
               setRefreshCounter(prev => prev + 1); // Force re-render
-              console.log('Project reloaded, new URL count:', currentProject.urls?.length);
+              console.log(
+                'Project reloaded, new URL count:',
+                currentProject.urls?.length
+              );
             }
           }}
-          onProjectUpdate={(updatedProject) => {
+          onProjectUpdate={updatedProject => {
             // Update the current project state
             setCurrentProject(updatedProject);
             // Force a re-render

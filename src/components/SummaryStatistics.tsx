@@ -7,14 +7,16 @@ import {
   AlertCircle,
   Clock,
   FileText,
-  TrendingUp
+  TrendingUp,
 } from 'lucide-react';
 
 interface SummaryStatisticsProps {
   summaryStats: SummaryStats;
 }
 
-export const SummaryStatistics: React.FC<SummaryStatisticsProps> = ({ summaryStats }) => {
+export const SummaryStatistics: React.FC<SummaryStatisticsProps> = ({
+  summaryStats,
+}) => {
   return (
     <div className="space-y-6">
       {/* Main Statistics */}

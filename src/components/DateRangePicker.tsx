@@ -12,19 +12,31 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   fromDate,
   toDate,
   onDateChange,
-  className = ''
+  className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [startMonth, setStartMonth] = useState(fromDate);
   const [endMonth, setEndMonth] = useState(toDate);
   const [selectedFromDate, setSelectedFromDate] = useState(fromDate);
   const [selectedToDate, setSelectedToDate] = useState(toDate);
-  const [activeCalendar, setActiveCalendar] = useState<'start' | 'end'>('start');
+  const [activeCalendar, setActiveCalendar] = useState<'start' | 'end'>(
+    'start'
+  );
   const pickerRef = useRef<HTMLDivElement>(null);
 
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   const daysOfWeek = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -32,7 +44,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   // Close picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+      if (
+        pickerRef.current &&
+        !pickerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -68,11 +83,15 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
   // Navigate months for start calendar
   const goToPreviousStartMonth = () => {
-    setStartMonth(new Date(startMonth.getFullYear(), startMonth.getMonth() - 1, 1));
+    setStartMonth(
+      new Date(startMonth.getFullYear(), startMonth.getMonth() - 1, 1)
+    );
   };
 
   const goToNextStartMonth = () => {
-    setStartMonth(new Date(startMonth.getFullYear(), startMonth.getMonth() + 1, 1));
+    setStartMonth(
+      new Date(startMonth.getFullYear(), startMonth.getMonth() + 1, 1)
+    );
   };
 
   // Navigate months for end calendar
@@ -106,8 +125,6 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     return date >= selectedFromDate && date <= selectedToDate;
   };
 
-
-
   // Check if date is today
   const isToday = (date: Date) => {
     const today = new Date();
@@ -116,8 +133,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
   // Check if date is in current month
   const isCurrentMonth = (date: Date, month: Date) => {
-    return date.getMonth() === month.getMonth() && 
-           date.getFullYear() === month.getFullYear();
+    return (
+      date.getMonth() === month.getMonth() &&
+      date.getFullYear() === month.getFullYear()
+    );
   };
 
   // Format date for display
@@ -153,11 +172,13 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         <div className="flex items-center space-x-2">
           <Calendar className="w-4 h-4 text-gray-400" />
           <span className="text-sm text-gray-900">
-            {formatDate(selectedFromDate)} <span className="text-gray-400">→</span> {formatDate(selectedToDate)}
+            {formatDate(selectedFromDate)}{' '}
+            <span className="text-gray-400">→</span>{' '}
+            {formatDate(selectedToDate)}
           </span>
         </div>
         <button
-          onClick={(e) => {
+          onClick={e => {
             e.stopPropagation();
             setIsOpen(false);
           }}
@@ -172,7 +193,9 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 min-w-[700px]">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Select Date Range</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Select Date Range
+            </h3>
             <button
               onClick={() => setIsOpen(false)}
               className="text-gray-400 hover:text-gray-600"
@@ -185,11 +208,15 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           <div className="flex space-x-8">
             {/* Start Date Calendar */}
             <div className="flex-1">
-              <div className={`text-center mb-3 pb-2 ${activeCalendar === 'start' ? 'border-b-2 border-blue-500' : 'border-b border-gray-200'}`}>
+              <div
+                className={`text-center mb-3 pb-2 ${activeCalendar === 'start' ? 'border-b-2 border-blue-500' : 'border-b border-gray-200'}`}
+              >
                 <h4 className="font-semibold text-gray-900">Start Date</h4>
-                <p className="text-sm text-gray-500">Click to select start date</p>
+                <p className="text-sm text-gray-500">
+                  Click to select start date
+                </p>
               </div>
-              
+
               <div className="flex items-center justify-between mb-3">
                 <button
                   onClick={goToPreviousStartMonth}
@@ -211,7 +238,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
               {/* Days of Week */}
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {daysOfWeek.map(day => (
-                  <div key={day} className="text-xs font-medium text-gray-500 text-center py-1">
+                  <div
+                    key={day}
+                    className="text-xs font-medium text-gray-500 text-center py-1"
+                  >
                     {day}
                   </div>
                 ))}
@@ -226,15 +256,16 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                     disabled={!isCurrentMonth(date, startMonth)}
                     className={`
                       w-8 h-8 text-xs rounded-md transition-colors calendar-day
-                      ${!isCurrentMonth(date, startMonth) 
-                        ? 'text-gray-300 cursor-not-allowed' 
-                        : isToday(date)
-                        ? 'bg-blue-100 text-blue-700 font-semibold'
-                        : date.getTime() === selectedFromDate.getTime()
-                        ? 'bg-blue-600 text-white font-semibold'
-                        : isInRange(date)
-                        ? 'bg-blue-100 text-blue-900'
-                        : 'text-gray-700 hover:bg-gray-100'
+                      ${
+                        !isCurrentMonth(date, startMonth)
+                          ? 'text-gray-300 cursor-not-allowed'
+                          : isToday(date)
+                            ? 'bg-blue-100 text-blue-700 font-semibold'
+                            : date.getTime() === selectedFromDate.getTime()
+                              ? 'bg-blue-600 text-white font-semibold'
+                              : isInRange(date)
+                                ? 'bg-blue-100 text-blue-900'
+                                : 'text-gray-700 hover:bg-gray-100'
                       }
                     `}
                   >
@@ -246,11 +277,15 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
             {/* End Date Calendar */}
             <div className="flex-1">
-              <div className={`text-center mb-3 pb-2 ${activeCalendar === 'end' ? 'border-b-2 border-blue-500' : 'border-b border-gray-200'}`}>
+              <div
+                className={`text-center mb-3 pb-2 ${activeCalendar === 'end' ? 'border-b-2 border-blue-500' : 'border-b border-gray-200'}`}
+              >
                 <h4 className="font-semibold text-gray-900">End Date</h4>
-                <p className="text-sm text-gray-500">Click to select end date</p>
+                <p className="text-sm text-gray-500">
+                  Click to select end date
+                </p>
               </div>
-              
+
               <div className="flex items-center justify-between mb-3">
                 <button
                   onClick={goToPreviousEndMonth}
@@ -272,7 +307,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
               {/* Days of Week */}
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {daysOfWeek.map(day => (
-                  <div key={day} className="text-xs font-medium text-gray-500 text-center py-1">
+                  <div
+                    key={day}
+                    className="text-xs font-medium text-gray-500 text-center py-1"
+                  >
                     {day}
                   </div>
                 ))}
@@ -284,18 +322,22 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                   <button
                     key={index}
                     onClick={() => handleDateClick(date, 'end')}
-                    disabled={!isCurrentMonth(date, endMonth) || date < selectedFromDate}
+                    disabled={
+                      !isCurrentMonth(date, endMonth) || date < selectedFromDate
+                    }
                     className={`
                       w-8 h-8 text-xs rounded-md transition-colors calendar-day
-                      ${!isCurrentMonth(date, endMonth) || date < selectedFromDate
-                        ? 'text-gray-300 cursor-not-allowed' 
-                        : isToday(date)
-                        ? 'bg-blue-100 text-blue-700 font-semibold'
-                        : date.getTime() === selectedToDate.getTime()
-                        ? 'bg-blue-600 text-white font-semibold'
-                        : isInRange(date)
-                        ? 'bg-blue-100 text-blue-900'
-                        : 'text-gray-700 hover:bg-gray-100'
+                      ${
+                        !isCurrentMonth(date, endMonth) ||
+                        date < selectedFromDate
+                          ? 'text-gray-300 cursor-not-allowed'
+                          : isToday(date)
+                            ? 'bg-blue-100 text-blue-700 font-semibold'
+                            : date.getTime() === selectedToDate.getTime()
+                              ? 'bg-blue-600 text-white font-semibold'
+                              : isInRange(date)
+                                ? 'bg-blue-100 text-blue-900'
+                                : 'text-gray-700 hover:bg-gray-100'
                       }
                     `}
                   >
@@ -317,7 +359,9 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           {/* Footer */}
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
             <div className="text-sm text-gray-600">
-              {activeCalendar === 'start' ? 'Select start date' : 'Select end date'}
+              {activeCalendar === 'start'
+                ? 'Select start date'
+                : 'Select end date'}
             </div>
             <div className="flex space-x-2">
               <button

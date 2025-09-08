@@ -2,30 +2,36 @@ export default function handler(req, res) {
   // Extract the path from the request to determine the redirect type
   const url = new URL(req.url, `https://${req.headers.host}`);
   const pathParts = url.pathname.split('/').filter(Boolean);
-  
+
   // Find the slug part after /redirect-tests/
   const redirectTestsIndex = pathParts.indexOf('redirect-tests');
-  const slug = redirectTestsIndex >= 0 && redirectTestsIndex < pathParts.length - 1 
-    ? pathParts[redirectTestsIndex + 1] 
-    : '';
-  
-  const { 
-    type = slug || 'http',   // http, meta, js, target
-    code = '302',            // 301, 302, 307, 308
-    target = 'target',       // target URL
-    delay = '0',             // delay in ms
-    hops = '1',              // number of hops
-    chain = '',              // comma-separated chain
-    loop = 'false'           // create a loop
+  const slug =
+    redirectTestsIndex >= 0 && redirectTestsIndex < pathParts.length - 1
+      ? pathParts[redirectTestsIndex + 1]
+      : '';
+
+  const {
+    type = slug || 'http', // http, meta, js, target
+    code = '302', // 301, 302, 307, 308
+    target = 'target', // target URL
+    delay = '0', // delay in ms
+    hops = '1', // number of hops
+    chain = '', // comma-separated chain
+    loop = 'false', // create a loop
   } = req.query;
-  
-  const inferredProto = (req.connection && req.connection.encrypted) ? 'https' : 'http';
-  const proto = (req.headers['x-forwarded-proto'] || inferredProto || 'https').toString();
+
+  const inferredProto =
+    req.connection && req.connection.encrypted ? 'https' : 'http';
+  const proto = (
+    req.headers['x-forwarded-proto'] ||
+    inferredProto ||
+    'https'
+  ).toString();
   const host = req.headers.host || 'localhost';
   const base = `${proto}://${host}`;
   const baseTests = `${base}/redirect-tests`;
 
-  const absolute = (p) => p.startsWith('http') ? p : `${baseTests}/${p}`;
+  const absolute = p => (p.startsWith('http') ? p : `${baseTests}/${p}`);
 
   const sendMeta = (to, delayMs = 0) => {
     res.statusCode = 200;
@@ -98,17 +104,17 @@ export default function handler(req, res) {
       }
     }
   }
-  
+
   if (slug.startsWith('meta-')) {
     // Pattern: meta-anything
     return sendMeta(target, parseInt(delay) || 0);
   }
-  
+
   if (slug.startsWith('js-')) {
     // Pattern: js-anything
     return sendJs(target, parseInt(delay) || 100);
   }
-  
+
   if (slug === 'target') {
     return showTarget();
   }
@@ -119,18 +125,18 @@ export default function handler(req, res) {
     case 'server':
       const statusCode = code || '302';
       return redirect(statusCode, target);
-      
+
     case 'meta':
     case 'meta-refresh':
       return sendMeta(target, parseInt(delay) || 0);
-      
+
     case 'js':
     case 'javascript':
       return sendJs(target, parseInt(delay) || 100);
-      
+
     case 'target':
       return showTarget();
-      
+
     default:
       // Default: return a simple 302 redirect
       return redirect('302', target);

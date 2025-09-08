@@ -16,6 +16,7 @@ This is the backend proxy server for the Redirectinator application. It helps by
 Check redirects for a given URL.
 
 **Request Body:**
+
 ```json
 {
   "url": "https://example.com",
@@ -26,6 +27,7 @@ Check redirects for a given URL.
 ```
 
 **Response:**
+
 ```json
 {
   "finalUrl": "https://example.com/final",
@@ -45,6 +47,7 @@ Check redirects for a given URL.
 Health check endpoint.
 
 **Response:**
+
 ```json
 {
   "status": "OK",
