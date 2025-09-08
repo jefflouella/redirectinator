@@ -90,6 +90,13 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
     return () => clearInterval(interval);
   }, [currentMode]);
 
+  // Auto-switch to default mode if extension is not available on initial load
+  useEffect(() => {
+    if (!checkingExtension && !extensionAvailable && currentMode === 'advanced') {
+      onModeChange('default');
+    }
+  }, [checkingExtension, extensionAvailable, currentMode, onModeChange]);
+
   // Listen for extension state changes with reduced frequency
   useEffect(() => {
     const handleExtensionStateChange = () => {
@@ -100,6 +107,11 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
       if (available !== extensionAvailable || version !== extensionVersion) {
         setExtensionAvailable(available);
         setExtensionVersion(version);
+        
+        // If extension becomes unavailable and we're in advanced mode, switch to default
+        if (!available && currentMode === 'advanced') {
+          onModeChange('default');
+        }
       }
     };
 
@@ -308,7 +320,7 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
             <div className="flex flex-col items-center space-y-1">
               <button
                 onClick={handleModeToggle}
-                disabled={disabled}
+                disabled={disabled || (currentMode === 'default' && !extensionAvailable)}
                 className={`
                   relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
                   ${
@@ -316,9 +328,9 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
                       ? 'bg-purple-600'
                       : 'bg-blue-600'
                   }
-                  ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                  ${disabled || (currentMode === 'default' && !extensionAvailable) ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
-                title={`Extension available: ${extensionAvailable}, Disabled: ${disabled}`}
+                title={`Extension available: ${extensionAvailable}, Disabled: ${disabled || (currentMode === 'default' && !extensionAvailable)}`}
               >
                 <span
                   className={`
