@@ -15,7 +15,7 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
   const [extensionAvailable, setExtensionAvailable] = useState(false);
   const [extensionVersion, setExtensionVersion] = useState<string | null>(null);
   const [checkingExtension, setCheckingExtension] = useState(true);
-  const [showAdvancedBanner, setShowAdvancedBanner] = useState(true);
+  const [showAdvancedInfo, setShowAdvancedInfo] = useState(false);
 
   // Track previous state to only log changes
   const prevExtensionState = useRef({
@@ -266,33 +266,70 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
             </div>
           </div>
 
-          {/* Toggle Switch */}
-          <div className="ml-6">
+          {/* Toggle Switch and Advanced Info Label */}
+          <div className="ml-6 flex items-center space-x-4">
+            {/* Advanced Mode Status Label */}
             <button
-              onClick={handleModeToggle}
-              disabled={disabled || !extensionAvailable}
-              className={`
-                relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
-                ${
-                  currentMode === 'advanced'
-                    ? 'bg-purple-600'
-                    : extensionAvailable
-                      ? 'bg-blue-600'
-                      : 'bg-gray-300 cursor-not-allowed'
-                }
-                ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-              `}
-              title={`Extension available: ${extensionAvailable}, Disabled: ${disabled || !extensionAvailable}`}
+              onClick={() => setShowAdvancedInfo(!showAdvancedInfo)}
+              className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full transition-colors ${
+                extensionAvailable
+                  ? 'text-green-700 bg-green-100 hover:bg-green-200'
+                  : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
+              }`}
+              title="Click to learn more about Advanced Mode"
             >
-              <span
-                className={`
-                  inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-                  ${currentMode === 'advanced' ? 'translate-x-6' : 'translate-x-1'}
-                `}
-              />
+              {extensionAvailable ? (
+                <>
+                  <span className="mr-1">🎉</span>
+                  Advanced Available
+                </>
+              ) : (
+                <>
+                  <span className="mr-1">🔧</span>
+                  Advanced Mode
+                </>
+              )}
+              <svg
+                className={`w-3 h-3 ml-1 transition-transform ${
+                  showAdvancedInfo ? 'rotate-180' : ''
+                }`}
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
             </button>
-
-            <div className="mt-2 text-center">
+            
+            {/* Toggle Switch with Label Below */}
+            <div className="flex flex-col items-center space-y-1">
+              <button
+                onClick={handleModeToggle}
+                disabled={disabled || !extensionAvailable}
+                className={`
+                  relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+                  ${
+                    currentMode === 'advanced'
+                      ? 'bg-purple-600'
+                      : extensionAvailable
+                        ? 'bg-blue-600'
+                        : 'bg-gray-300 cursor-not-allowed'
+                  }
+                  ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                `}
+                title={`Extension available: ${extensionAvailable}, Disabled: ${disabled || !extensionAvailable}`}
+              >
+                <span
+                  className={`
+                    inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                    ${currentMode === 'advanced' ? 'translate-x-6' : 'translate-x-1'}
+                  `}
+                />
+              </button>
+              
               <span
                 className={`text-xs font-medium ${
                   currentMode === 'advanced'
@@ -307,68 +344,19 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
         </div>
       </div>
 
-      {/* Extension Installation Instructions */}
-      {!extensionAvailable && !checkingExtension && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg
-                className="h-5 w-5 text-yellow-400"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h4 className="text-sm font-medium text-yellow-800">
-                Advanced Mode Requires Extension
-              </h4>
-              <div className="mt-2 text-sm text-yellow-700">
-                <p>
-                  To use Advanced mode, install the Redirectinator Advanced
-                  browser extension:
-                </p>
-                <div className="mt-2 space-y-1">
-                  <p className="text-yellow-600 font-medium mb-2">
-                    ⚠️ Pre-release version - Manual installation required
-                  </p>
-                  <p className="mb-2">
-                    Download and manually install the extension until official
-                    launch:
-                  </p>
-                  <div className="space-y-2">
-                    <a
-                      href="https://redirectinator.us/extensions/dist/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      📥 Download Extensions
-                    </a>
-                  </div>
-                  <p className="text-xs text-yellow-600 mt-2">
-                    See installation guide for step-by-step instructions
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Advanced Mode Available Banner - Collapsible */}
-      {extensionAvailable && showAdvancedBanner && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
+      {/* Advanced Mode Info Panel - Expandable */}
+      {showAdvancedInfo && (
+        <div className={`border rounded-lg p-3 ${
+          extensionAvailable
+            ? 'bg-green-50 border-green-200'
+            : 'bg-yellow-50 border-yellow-200'
+        }`}>
+          <div className="flex items-start space-x-2">
+            <div className="flex-shrink-0">
+              {extensionAvailable ? (
                 <svg
-                  className="h-5 w-5 text-green-400"
+                  className="h-4 w-4 text-green-500 mt-0.5"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -378,43 +366,49 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
                     clipRule="evenodd"
                   />
                 </svg>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center space-x-2">
-                  <h4 className="text-sm font-medium text-green-800">
-                    Advanced Mode Now Available! 🎉
+              ) : (
+                <svg
+                  className="h-4 w-4 text-yellow-500 mt-0.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              )}
+            </div>
+            <div className="flex-1">
+              {extensionAvailable ? (
+                <>
+                  <h4 className="text-sm font-medium text-green-800 mb-1">
+                    Advanced Mode Features
                   </h4>
-                  <button
-                    onClick={() => setShowAdvancedBanner(false)}
-                    className="text-green-600 hover:text-green-500"
-                    title="Dismiss banner"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </div>
-                <p className="text-sm text-green-700 mt-1">
-                  Advanced mode uses the browser extension to detect Meta
-                  Refresh and JavaScript redirects locally.
-                </p>
-                <p className="text-sm text-green-700 mt-1">
-                  <strong>No server costs</strong> - all processing happens in
-                  your browser!
-                </p>
-                <p className="text-sm text-green-600 mt-2">
-                  💡 <strong>Pre-release version:</strong> Extension loaded
-                  manually. Will be available in stores at launch.
-                </p>
-              </div>
+                  <p className="text-xs text-green-700 mb-1">
+                    Detects Meta Refresh and JavaScript redirects locally using your browser extension.
+                  </p>
+                  <p className="text-xs text-green-700 mb-1">
+                    <strong>No server costs</strong> - all processing happens in your browser!
+                  </p>
+                  <p className="text-xs text-green-600">
+                    💡 <strong>Pre-release:</strong> Extension loaded manually. Will be available in stores at launch.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h4 className="text-sm font-medium text-gray-800 mb-1">
+                    Advanced Mode
+                  </h4>
+                  <p className="text-xs text-gray-600 mb-1">
+                    Advanced mode provides enhanced redirect detection capabilities.
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    💡 <strong>Note:</strong> Extension installation required for full functionality.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
