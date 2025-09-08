@@ -42,10 +42,10 @@ export class RedirectChecker {
   // Helper function to clean malformed URLs
   private cleanUrl(url: string): string | null {
     if (!url || typeof url !== 'string') return null;
-    
+
     // Remove malformed patterns like "https://www.https://www.https://www."
     const cleaned = url.replace(/^(https?:\/\/[^\/]*?)(\1)+/g, '$1');
-    
+
     try {
       new URL(cleaned);
       return cleaned;
@@ -61,25 +61,32 @@ export class RedirectChecker {
     return this.mode;
   }
 
-  async checkRedirect(startingUrl: string, targetRedirect: string = ''): Promise<RedirectResult> {
+  async checkRedirect(
+    startingUrl: string,
+    targetRedirect: string = ''
+  ): Promise<RedirectResult> {
     const startTime = performance.now();
     const id = crypto.randomUUID();
-    
+
     // Clean the starting URL before processing
     const cleanStartingUrl = this.cleanUrl(startingUrl) || startingUrl;
-    
+
     try {
       const result = await this.performRedirectCheck(cleanStartingUrl);
       const responseTime = Math.round(performance.now() - startTime);
-      
+
       // Small guard: prefer extension-computed fields when present
       const resolvedResult: 'direct' | 'redirect' | 'error' | 'loop' =
         (result as any).result ?? this.determineResult(result, targetRedirect);
       const resolvedRedirectCount: number =
         (result as any).numberOfRedirects ?? (result as any).redirectCount ?? 0;
       const resolvedStatusChain: string[] = (result as any).statusChain ?? [];
-      const resolvedFinalStatus: number = (result as any).finalStatusCode ?? 200;
-      const resolvedFinalUrl: string = this.cleanUrl((result as any).finalUrl) || (result as any).finalUrl || cleanStartingUrl;
+      const resolvedFinalStatus: number =
+        (result as any).finalStatusCode ?? 200;
+      const resolvedFinalUrl: string =
+        this.cleanUrl((result as any).finalUrl) ||
+        (result as any).finalUrl ||
+        cleanStartingUrl;
 
       return {
         id,
@@ -87,7 +94,9 @@ export class RedirectChecker {
         targetRedirect,
         finalUrl: resolvedFinalUrl,
         result: resolvedResult,
-        httpStatus: resolvedStatusChain.length ? resolvedStatusChain.join(' → ') : String(resolvedFinalStatus),
+        httpStatus: resolvedStatusChain.length
+          ? resolvedStatusChain.join(' → ')
+          : String(resolvedFinalStatus),
         finalStatusCode: resolvedFinalStatus,
         numberOfRedirects: resolvedRedirectCount,
         responseTime,
@@ -111,7 +120,7 @@ export class RedirectChecker {
       };
     } catch (error) {
       const responseTime = Math.round(performance.now() - startTime);
-      
+
       return {
         id,
         startingUrl: cleanStartingUrl,
@@ -139,24 +148,31 @@ export class RedirectChecker {
     const isAffiliateLink = this.isAffiliateLink(url);
 
     if (isAffiliateLink) {
-      console.log(`Affiliate link detected: ${url}, using server-side processing`);
+      console.log(
+        `Affiliate link detected: ${url}, using server-side processing`
+      );
       return await this.performServerSideCheck(url);
     }
 
     // Try advanced mode with extension if available and selected
     if (this.mode === 'advanced' && extensionService.isAvailable()) {
       try {
-        console.log(`Advanced mode enabled and extension available, analyzing: ${url}`);
+        console.log(
+          `Advanced mode enabled and extension available, analyzing: ${url}`
+        );
         const extensionResult = await extensionService.analyzeUrl(url, {
           timeout: 15000,
           followRedirects: true,
-          maxRedirects: 10
+          maxRedirects: 10,
         });
 
         // Convert extension result to our format
         return this.convertExtensionResult(extensionResult);
       } catch (error) {
-        console.warn('Extension analysis failed, falling back to server-side:', error);
+        console.warn(
+          'Extension analysis failed, falling back to server-side:',
+          error
+        );
         // Fall through to server-side processing
       }
     }
@@ -170,17 +186,30 @@ export class RedirectChecker {
    * Convert extension analysis result to internal format
    */
   private convertExtensionResult(extensionResult: any) {
-    const statusChain = extensionResult.redirectChain?.map((step: any) =>
-      step.statusCode || 200
-    ) || [extensionResult.finalStatusCode || 200];
+    // Build status chain from redirect steps, filtering out initial 200s
+    const statusChain: string[] = [];
+    
+    if (extensionResult.redirectChain?.length > 0) {
+      extensionResult.redirectChain.forEach((step: any) => {
+        // Only include redirect status codes (300-399) and meaningful status codes
+        if (step.statusCode && step.statusCode >= 300 && step.statusCode < 400) {
+          statusChain.push(step.statusCode.toString());
+        }
+      });
+    }
+    
+    // Add final status code
+    if (extensionResult.finalStatusCode) {
+      statusChain.push(extensionResult.finalStatusCode.toString());
+    }
 
     // Helper function to validate and clean URLs
     const cleanUrl = (url: string): string | null => {
       if (!url || typeof url !== 'string') return null;
-      
+
       // Remove malformed patterns like "https://www.https://www.https://www."
       const cleaned = url.replace(/^(https?:\/\/[^\/]*?)(\1)+/g, '$1');
-      
+
       try {
         new URL(cleaned);
         return cleaned;
@@ -191,13 +220,13 @@ export class RedirectChecker {
 
     // Build complete redirect chain including HTTP redirects and client-side redirects
     const redirectChain: string[] = [];
-    
+
     // Start with original URL (clean it)
     const originalUrl = cleanUrl(extensionResult.originalUrl);
     if (originalUrl) {
       redirectChain.push(originalUrl);
     }
-    
+
     // Add redirects from the chain (support different step shapes)
     if (extensionResult.redirectChain?.length > 0) {
       extensionResult.redirectChain.forEach((step: any) => {
@@ -208,25 +237,28 @@ export class RedirectChecker {
         }
       });
     }
-    
+
     // Add final URL if different and not already included
     const finalUrl = cleanUrl(extensionResult.finalUrl);
     if (finalUrl && !redirectChain.includes(finalUrl)) {
       redirectChain.push(finalUrl);
     }
-    
+
     console.log('🔍 Built redirect chain:', redirectChain);
 
     // Calculate redirect count using only actual redirect steps in the chain
-    const redirectCount = (extensionResult.redirectChain || []).filter((s: any) => (
-      s.type === 'http_redirect' || s.type === 'meta_refresh' || s.type === 'javascript'
-    )).length;
-    
+    const redirectCount = (extensionResult.redirectChain || []).filter(
+      (s: any) =>
+        s.type === 'http_redirect' ||
+        s.type === 'meta_refresh' ||
+        s.type === 'javascript'
+    ).length;
+
     console.log('🔍 Extension redirect count calculation:', {
       httpRedirects: extensionResult.redirectChain?.length || 0,
       hasMetaRefresh: extensionResult.hasMetaRefresh,
       hasJavaScriptRedirect: extensionResult.hasJavaScriptRedirect,
-      totalCount: redirectCount
+      totalCount: redirectCount,
     });
 
     return {
@@ -240,23 +272,37 @@ export class RedirectChecker {
       numberOfRedirects: redirectCount,
       responseTime: extensionResult.analysisTime || 0,
       hasRedirectLoop: this.detectLoop(redirectChain),
-      mixedRedirectTypes: this.detectMixedTypes((extensionResult.redirectChain || []).map((s: any) => ({
-        ...s,
-        type: s.type === 'http_redirect' ? 'http' : s.type === 'meta_refresh' ? 'meta' : s.type
-      }))),
+      mixedRedirectTypes: this.detectMixedTypes(
+        (extensionResult.redirectChain || []).map((s: any) => ({
+          ...s,
+          type:
+            s.type === 'http_redirect'
+              ? 'http'
+              : s.type === 'meta_refresh'
+                ? 'meta'
+                : s.type,
+        }))
+      ),
       fullRedirectChain: redirectChain,
       statusChain,
       domainChanges: this.detectDomainChanges(redirectChain),
       httpsUpgrade: this.detectHttpsUpgrade(redirectChain),
       redirectTypes: this.buildRedirectTypes(extensionResult),
-      redirectChainDetails: (extensionResult.redirectChain || []).map((s: any) => ({
-        ...s,
-        type: s.type === 'http_redirect' ? 'http' : s.type === 'meta_refresh' ? 'meta' : s.type
-      })),
+      redirectChainDetails: (extensionResult.redirectChain || []).map(
+        (s: any) => ({
+          ...s,
+          type:
+            s.type === 'http_redirect'
+              ? 'http'
+              : s.type === 'meta_refresh'
+                ? 'meta'
+                : s.type,
+        })
+      ),
       hasMetaRefresh: extensionResult.hasMetaRefresh || false,
       hasJavaScriptRedirect: extensionResult.hasJavaScriptRedirect || false,
       timestamp: Date.now(),
-      source: 'manual' as const
+      source: 'manual' as const,
     };
   }
 
@@ -293,12 +339,23 @@ export class RedirectChecker {
       if (!step || !step.type) return;
       if (step.type === 'original' || step.type === 'final') return;
       types.push({
-        type: step.type === 'http_redirect' ? 'http' : step.type === 'meta_refresh' ? 'meta' : step.type,
+        type:
+          step.type === 'http_redirect'
+            ? 'http'
+            : step.type === 'meta_refresh'
+              ? 'meta'
+              : step.type,
         statusCode: step.statusCode || 200,
         url: step.from || step.url,
         targetUrl: step.targetUrl || step.to || step.url,
         delay: step.delay || 0,
-        method: step.method || (step.type === 'meta_refresh' ? 'meta' : step.type === 'javascript' ? 'javascript' : 'GET')
+        method:
+          step.method ||
+          (step.type === 'meta_refresh'
+            ? 'meta'
+            : step.type === 'javascript'
+              ? 'javascript'
+              : 'GET'),
       });
     });
 
@@ -339,78 +396,182 @@ export class RedirectChecker {
     // Comprehensive affiliate link patterns
     const affiliatePatterns = [
       // Major Affiliate Networks
-      'go.linkby.com', 'prf.hn', 'partnerize.com', 'skimlinks.com', 'viglink.com', 'outbrain.com',
-      'amazon.com/dp', 'amzn.to', 'amazon.com/gp', 'clickbank.com', 'clickbank.net',
-      'commissionjunction.com', 'cj.com', 'shareasale.com', 'shareasale.net',
-      'rakuten.com', 'rakuten.co.jp', 'ebates.com', 'awin.com', 'affiliatewindow.com',
-      'impact.com', 'impactradius.com', 'flexoffers.com', 'pepperjam.com', 'avantlink.com',
-      'linksynergy.com', 'linksynergy.net', 'performics.com', 'tradedoubler.com',
-      'webgains.com', 'affiliatefuture.com', 'affiliatewindow.co.uk', 'dgmpro.com',
-      
+      'go.linkby.com',
+      'prf.hn',
+      'partnerize.com',
+      'skimlinks.com',
+      'viglink.com',
+      'outbrain.com',
+      'amazon.com/dp',
+      'amzn.to',
+      'amazon.com/gp',
+      'clickbank.com',
+      'clickbank.net',
+      'commissionjunction.com',
+      'cj.com',
+      'shareasale.com',
+      'shareasale.net',
+      'rakuten.com',
+      'rakuten.co.jp',
+      'ebates.com',
+      'awin.com',
+      'affiliatewindow.com',
+      'impact.com',
+      'impactradius.com',
+      'flexoffers.com',
+      'pepperjam.com',
+      'avantlink.com',
+      'linksynergy.com',
+      'linksynergy.net',
+      'performics.com',
+      'tradedoubler.com',
+      'webgains.com',
+      'affiliatefuture.com',
+      'affiliatewindow.co.uk',
+      'dgmpro.com',
+
       // URL Shorteners (often used for affiliate links)
-      'bit.ly', 't.co', 'tinyurl.com', 'ow.ly', 'buff.ly', 'is.gd', 'v.gd', 'shorturl.at',
-      'rb.gy', 'cutt.ly', 'short.io', 'tiny.cc', 'shorten.asia', 'goo.gl', 't.ly',
-      'short.cm', 'adf.ly', 'sh.st', 'bc.vc', 'adfly.com',
-      
+      'bit.ly',
+      't.co',
+      'tinyurl.com',
+      'ow.ly',
+      'buff.ly',
+      'is.gd',
+      'v.gd',
+      'shorturl.at',
+      'rb.gy',
+      'cutt.ly',
+      'short.io',
+      'tiny.cc',
+      'shorten.asia',
+      'goo.gl',
+      't.ly',
+      'short.cm',
+      'adf.ly',
+      'sh.st',
+      'bc.vc',
+      'adfly.com',
+
       // Social Media Affiliate Links
-      'instagram.com/affiliate', 'facebook.com/affiliate', 'twitter.com/affiliate', 'pinterest.com/affiliate',
-      
+      'instagram.com/affiliate',
+      'facebook.com/affiliate',
+      'twitter.com/affiliate',
+      'pinterest.com/affiliate',
+
       // E-commerce Platform Affiliates
-      'shopify.com/affiliate', 'woocommerce.com/affiliate', 'bigcommerce.com/affiliate', 'magento.com/affiliate',
-      
+      'shopify.com/affiliate',
+      'woocommerce.com/affiliate',
+      'bigcommerce.com/affiliate',
+      'magento.com/affiliate',
+
       // Travel Affiliate Networks
-      'booking.com/affiliate', 'expedia.com/affiliate', 'hotels.com/affiliate', 'tripadvisor.com/affiliate', 'kayak.com/affiliate',
-      
+      'booking.com/affiliate',
+      'expedia.com/affiliate',
+      'hotels.com/affiliate',
+      'tripadvisor.com/affiliate',
+      'kayak.com/affiliate',
+
       // Financial Affiliate Networks
-      'creditkarma.com/affiliate', 'nerdwallet.com/affiliate', 'bankrate.com/affiliate', 'lendingtree.com/affiliate',
-      
+      'creditkarma.com/affiliate',
+      'nerdwallet.com/affiliate',
+      'bankrate.com/affiliate',
+      'lendingtree.com/affiliate',
+
       // Technology Affiliate Networks
-      'microsoft.com/affiliate', 'adobe.com/affiliate', 'autodesk.com/affiliate', 'intuit.com/affiliate',
-      
+      'microsoft.com/affiliate',
+      'adobe.com/affiliate',
+      'autodesk.com/affiliate',
+      'intuit.com/affiliate',
+
       // Gaming Affiliate Networks
-      'steam.com/affiliate', 'epicgames.com/affiliate', 'origin.com/affiliate', 'battle.net/affiliate',
-      
+      'steam.com/affiliate',
+      'epicgames.com/affiliate',
+      'origin.com/affiliate',
+      'battle.net/affiliate',
+
       // Education Affiliate Networks
-      'coursera.org/affiliate', 'udemy.com/affiliate', 'skillshare.com/affiliate', 'masterclass.com/affiliate',
-      
+      'coursera.org/affiliate',
+      'udemy.com/affiliate',
+      'skillshare.com/affiliate',
+      'masterclass.com/affiliate',
+
       // Health & Fitness Affiliate Networks
-      'myfitnesspal.com/affiliate', 'fitbit.com/affiliate', 'garmin.com/affiliate', 'strava.com/affiliate',
-      
+      'myfitnesspal.com/affiliate',
+      'fitbit.com/affiliate',
+      'garmin.com/affiliate',
+      'strava.com/affiliate',
+
       // Fashion & Beauty Affiliate Networks
-      'sephora.com/affiliate', 'ulta.com/affiliate', 'nordstrom.com/affiliate', 'macys.com/affiliate',
-      
+      'sephora.com/affiliate',
+      'ulta.com/affiliate',
+      'nordstrom.com/affiliate',
+      'macys.com/affiliate',
+
       // Food & Beverage Affiliate Networks
-      'hellofresh.com/affiliate', 'blueapron.com/affiliate', 'instacart.com/affiliate', 'doordash.com/affiliate',
-      
+      'hellofresh.com/affiliate',
+      'blueapron.com/affiliate',
+      'instacart.com/affiliate',
+      'doordash.com/affiliate',
+
       // Subscription Service Affiliate Networks
-      'netflix.com/affiliate', 'spotify.com/affiliate', 'hulu.com/affiliate', 'disneyplus.com/affiliate',
-      
+      'netflix.com/affiliate',
+      'spotify.com/affiliate',
+      'hulu.com/affiliate',
+      'disneyplus.com/affiliate',
+
       // Home & Garden Affiliate Networks
-      'wayfair.com/affiliate', 'overstock.com/affiliate', 'homedepot.com/affiliate', 'lowes.com/affiliate',
-      
+      'wayfair.com/affiliate',
+      'overstock.com/affiliate',
+      'homedepot.com/affiliate',
+      'lowes.com/affiliate',
+
       // Automotive Affiliate Networks
-      'carmax.com/affiliate', 'cargurus.com/affiliate', 'autotrader.com/affiliate', 'cars.com/affiliate',
-      
+      'carmax.com/affiliate',
+      'cargurus.com/affiliate',
+      'autotrader.com/affiliate',
+      'cars.com/affiliate',
+
       // Insurance Affiliate Networks
-      'geico.com/affiliate', 'progressive.com/affiliate', 'statefarm.com/affiliate', 'allstate.com/affiliate',
-      
+      'geico.com/affiliate',
+      'progressive.com/affiliate',
+      'statefarm.com/affiliate',
+      'allstate.com/affiliate',
+
       // Real Estate Affiliate Networks
-      'zillow.com/affiliate', 'realtor.com/affiliate', 'redfin.com/affiliate', 'trulia.com/affiliate',
-      
+      'zillow.com/affiliate',
+      'realtor.com/affiliate',
+      'redfin.com/affiliate',
+      'trulia.com/affiliate',
+
       // Job & Career Affiliate Networks
-      'indeed.com/affiliate', 'linkedin.com/affiliate', 'monster.com/affiliate', 'careerbuilder.com/affiliate',
-      
+      'indeed.com/affiliate',
+      'linkedin.com/affiliate',
+      'monster.com/affiliate',
+      'careerbuilder.com/affiliate',
+
       // Pet & Animal Affiliate Networks
-      'chewy.com/affiliate', 'petco.com/affiliate', 'petsmart.com/affiliate', 'petfinder.com/affiliate',
-      
+      'chewy.com/affiliate',
+      'petco.com/affiliate',
+      'petsmart.com/affiliate',
+      'petfinder.com/affiliate',
+
       // Sports & Outdoor Affiliate Networks
-      'rei.com/affiliate', 'dickssportinggoods.com/affiliate', 'basspro.com/affiliate', 'cabelas.com/affiliate',
-      
+      'rei.com/affiliate',
+      'dickssportinggoods.com/affiliate',
+      'basspro.com/affiliate',
+      'cabelas.com/affiliate',
+
       // Baby & Kids Affiliate Networks
-      'buybuybaby.com/affiliate', 'babiesrus.com/affiliate', 'toysrus.com/affiliate', 'target.com/affiliate',
-      
+      'buybuybaby.com/affiliate',
+      'babiesrus.com/affiliate',
+      'toysrus.com/affiliate',
+      'target.com/affiliate',
+
       // Office & Business Affiliate Networks
-      'staples.com/affiliate', 'officedepot.com/affiliate', 'quill.com/affiliate', 'newegg.com/affiliate'
+      'staples.com/affiliate',
+      'officedepot.com/affiliate',
+      'quill.com/affiliate',
+      'newegg.com/affiliate',
     ];
 
     const urlLower = url.toLowerCase();
@@ -449,8 +610,9 @@ export class RedirectChecker {
             redirect: 'manual',
             signal: AbortSignal.timeout(this.settings.timeout),
             headers: {
-              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            }
+              'User-Agent':
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            },
           });
 
           const status = response.status;
@@ -481,7 +643,10 @@ export class RedirectChecker {
             if (newDomain !== originalDomain) {
               domainChanges = true;
             }
-            if (originalProtocol === 'http:' && currentUrl.startsWith('https:')) {
+            if (
+              originalProtocol === 'http:' &&
+              currentUrl.startsWith('https:')
+            ) {
               httpsUpgrade = true;
             }
           } else {
@@ -492,8 +657,9 @@ export class RedirectChecker {
                 redirect: 'manual',
                 signal: AbortSignal.timeout(this.settings.timeout),
                 headers: {
-                  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                }
+                  'User-Agent':
+                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                },
               });
 
               const getStatus = getResponse.status;
@@ -537,9 +703,8 @@ export class RedirectChecker {
         hasLoop,
         hasMixedTypes,
         domainChanges,
-        httpsUpgrade
+        httpsUpgrade,
       };
-
     } catch (error) {
       console.warn(`Client-side redirect check failed for ${url}:`, error);
       return null;
@@ -550,12 +715,17 @@ export class RedirectChecker {
     try {
       // Try proxy server for comprehensive redirect analysis
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.settings.timeout);
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        this.settings.timeout
+      );
 
       // Use mode-based logic instead of automatic detection
       const usePuppeteer = this.mode === 'advanced';
-      
-      console.log(`DEBUG: Frontend mode=${this.mode}, usePuppeteer=${usePuppeteer}, type=${typeof usePuppeteer}`);
+
+      console.log(
+        `DEBUG: Frontend mode=${this.mode}, usePuppeteer=${usePuppeteer}, type=${typeof usePuppeteer}`
+      );
 
       // Try to connect to the backend server via proxy
       let proxyResponse = null;
@@ -565,11 +735,11 @@ export class RedirectChecker {
           method: 'GET',
           followRedirects: false,
           maxRedirects: this.settings.maxRedirects,
-          usePuppeteer: usePuppeteer
+          usePuppeteer: usePuppeteer,
         };
-        
+
         console.log(`DEBUG: Sending request body:`, requestBody);
-        
+
         proxyResponse = await fetch('/api/check-redirect', {
           method: 'POST',
           signal: controller.signal,
@@ -579,7 +749,9 @@ export class RedirectChecker {
           body: JSON.stringify(requestBody),
         });
 
-        console.log(`Connected to backend server via proxy${usePuppeteer ? ' with Advanced mode (Puppeteer)' : ' with Default mode'}`);
+        console.log(
+          `Connected to backend server via proxy${usePuppeteer ? ' with Advanced mode (Puppeteer)' : ' with Default mode'}`
+        );
       } catch (error) {
         console.error('Failed to connect to backend server via proxy:', error);
         throw error;
@@ -587,29 +759,32 @@ export class RedirectChecker {
 
       if (proxyResponse && proxyResponse.ok) {
         const data = await proxyResponse.json();
-        console.log(`Backend server successfully analyzed ${url} in ${this.mode} mode:`, data);
+        console.log(
+          `Backend server successfully analyzed ${url} in ${this.mode} mode:`,
+          data
+        );
         clearTimeout(timeoutId);
         return data;
       }
 
       console.warn(`Backend server not available for ${url}`);
       throw new Error('Server-side processing not available');
-
     } catch (error) {
       console.error(`Server-side redirect check failed for ${url}:`, error);
       throw error;
     }
   }
 
-
-
-  private determineResult(checkResult: CheckResult, targetRedirect: string): 'direct' | 'redirect' | 'error' | 'loop' {
+  private determineResult(
+    checkResult: CheckResult,
+    targetRedirect: string
+  ): 'direct' | 'redirect' | 'error' | 'loop' {
     // Debug logging
     console.log('determineResult called with:', {
       redirectCount: checkResult.redirectCount,
       targetRedirect: targetRedirect,
       finalStatusCode: checkResult.finalStatusCode,
-      method: checkResult.method
+      method: checkResult.method,
     });
 
     // Check if this is a blocked affiliate link (server returns method: 'BLOCKED_AFFILIATE')
@@ -633,7 +808,9 @@ export class RedirectChecker {
     // If no target redirect specified (Wayback discovery), check if there were any redirects
     if (!targetRedirect) {
       const result = checkResult.redirectCount > 0 ? 'redirect' : 'direct';
-      console.log(`No target redirect specified, redirectCount: ${checkResult.redirectCount}, returning: ${result}`);
+      console.log(
+        `No target redirect specified, redirectCount: ${checkResult.redirectCount}, returning: ${result}`
+      );
       return result;
     }
 
@@ -641,8 +818,11 @@ export class RedirectChecker {
     try {
       const finalUrl = new URL(checkResult.finalUrl);
       const targetUrl = new URL(targetRedirect);
-      
-      if (finalUrl.hostname === targetUrl.hostname && finalUrl.pathname === targetUrl.pathname) {
+
+      if (
+        finalUrl.hostname === targetUrl.hostname &&
+        finalUrl.pathname === targetUrl.pathname
+      ) {
         return 'redirect';
       }
     } catch (error) {
@@ -653,21 +833,25 @@ export class RedirectChecker {
     return 'error';
   }
 
-  async checkBatch(urls: Array<{ startingUrl: string; targetRedirect: string }>): Promise<RedirectResult[]> {
+  async checkBatch(
+    urls: Array<{ startingUrl: string; targetRedirect: string }>
+  ): Promise<RedirectResult[]> {
     const results: RedirectResult[] = [];
-    
+
     for (let i = 0; i < urls.length; i++) {
       const { startingUrl, targetRedirect } = urls[i];
-      
+
       // Add delay between requests if specified
       if (i > 0 && this.settings.delayBetweenRequests > 0) {
-        await new Promise(resolve => setTimeout(resolve, this.settings.delayBetweenRequests));
+        await new Promise(resolve =>
+          setTimeout(resolve, this.settings.delayBetweenRequests)
+        );
       }
-      
+
       const result = await this.checkRedirect(startingUrl, targetRedirect);
       results.push(result);
     }
-    
+
     return results;
   }
 }
