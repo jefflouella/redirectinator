@@ -367,6 +367,212 @@ export class AnalyticsService {
   }
 
   /**
+   * Track redirect test execution
+   */
+  public trackRedirectTest(
+    testType: 'single' | 'batch' | 'bulk',
+    urlCount: number,
+    mode: 'default' | 'advanced',
+    source: 'manual' | 'upload' | 'wayback' | 'semrush'
+  ): void {
+    this.trackEvent({
+      action: 'redirect_test_started',
+      category: 'redirect_testing',
+      label: `${testType}_${mode}`,
+      value: urlCount,
+      custom_parameters: {
+        test_type: testType,
+        url_count: urlCount,
+        detection_mode: mode,
+        test_source: source,
+        feature_category: 'redirect_testing',
+      },
+    });
+  }
+
+  /**
+   * Track redirect test completion
+   */
+  public trackRedirectTestComplete(
+    testType: 'single' | 'batch' | 'bulk',
+    urlCount: number,
+    results: {
+      successful: number;
+      errors: number;
+      redirects: number;
+      loops: number;
+      direct: number;
+    },
+    processingTime: number,
+    mode: 'default' | 'advanced'
+  ): void {
+    this.trackEvent({
+      action: 'redirect_test_completed',
+      category: 'redirect_testing',
+      label: `${testType}_${mode}`,
+      value: urlCount,
+      custom_parameters: {
+        test_type: testType,
+        url_count: urlCount,
+        detection_mode: mode,
+        successful_checks: results.successful,
+        error_count: results.errors,
+        redirect_count: results.redirects,
+        loop_count: results.loops,
+        direct_count: results.direct,
+        processing_time_ms: Math.round(processingTime),
+        success_rate: Math.round((results.successful / urlCount) * 100),
+        feature_category: 'redirect_testing',
+      },
+    });
+  }
+
+  /**
+   * Track individual redirect check results
+   */
+  public trackRedirectResult(
+    result: 'direct' | 'redirect' | 'error' | 'loop',
+    redirectCount: number,
+    hasDomainChange: boolean,
+    hasHttpsUpgrade: boolean,
+    responseTime: number,
+    mode: 'default' | 'advanced'
+  ): void {
+    this.trackEvent({
+      action: 'redirect_result',
+      category: 'redirect_testing',
+      label: result,
+      value: redirectCount,
+      custom_parameters: {
+        result_type: result,
+        redirect_count: redirectCount,
+        has_domain_change: hasDomainChange,
+        has_https_upgrade: hasHttpsUpgrade,
+        response_time_ms: Math.round(responseTime),
+        detection_mode: mode,
+        feature_category: 'redirect_testing',
+      },
+    });
+  }
+
+  /**
+   * Track redirect processing batch
+   */
+  public trackRedirectBatch(
+    batchNumber: number,
+    batchSize: number,
+    totalBatches: number,
+    mode: 'default' | 'advanced'
+  ): void {
+    this.trackEvent({
+      action: 'redirect_batch_processed',
+      category: 'redirect_testing',
+      label: `batch_${batchNumber}_of_${totalBatches}`,
+      value: batchSize,
+      custom_parameters: {
+        batch_number: batchNumber,
+        batch_size: batchSize,
+        total_batches: totalBatches,
+        detection_mode: mode,
+        progress_percentage: Math.round((batchNumber / totalBatches) * 100),
+        feature_category: 'redirect_testing',
+      },
+    });
+  }
+
+  /**
+   * Track redirect test errors
+   */
+  public trackRedirectError(
+    errorType: string,
+    context: string,
+    mode: 'default' | 'advanced',
+    urlCount?: number
+  ): void {
+    this.trackEvent({
+      action: 'redirect_test_error',
+      category: 'error',
+      label: errorType,
+      value: urlCount || 1,
+      custom_parameters: {
+        error_type: errorType,
+        error_context: context,
+        detection_mode: mode,
+        affected_url_count: urlCount || 1,
+        feature_category: 'redirect_testing',
+      },
+    });
+  }
+
+  /**
+   * Track detailed UI interactions
+   */
+  public trackDetailedUIInteraction(
+    element: string,
+    action: string,
+    context?: string,
+    metadata?: Record<string, any>
+  ): void {
+    this.trackEvent({
+      action: 'ui_interaction_detailed',
+      category: 'navigation',
+      label: `${element}_${action}`,
+      custom_parameters: {
+        ui_element: element,
+        interaction_action: action,
+        interaction_context: context,
+        feature_category: 'navigation',
+        ...metadata,
+      },
+    });
+  }
+
+  /**
+   * Track mode switching
+   */
+  public trackModeSwitch(
+    fromMode: 'default' | 'advanced',
+    toMode: 'default' | 'advanced',
+    context?: string
+  ): void {
+    this.trackEvent({
+      action: 'mode_switched',
+      category: 'configuration',
+      label: `${fromMode}_to_${toMode}`,
+      custom_parameters: {
+        from_mode: fromMode,
+        to_mode: toMode,
+        switch_context: context,
+        feature_category: 'configuration',
+      },
+    });
+  }
+
+  /**
+   * Track project statistics
+   */
+  public trackProjectStats(
+    projectId: string,
+    urlCount: number,
+    resultCount: number,
+    hasResults: boolean
+  ): void {
+    this.trackEvent({
+      action: 'project_stats',
+      category: 'project_management',
+      label: hasResults ? 'with_results' : 'empty',
+      value: urlCount,
+      custom_parameters: {
+        project_id: projectId,
+        url_count: urlCount,
+        result_count: resultCount,
+        has_results: hasResults,
+        feature_category: 'project_management',
+      },
+    });
+  }
+
+  /**
    * Enable/disable analytics
    */
   public setEnabled(enabled: boolean): void {

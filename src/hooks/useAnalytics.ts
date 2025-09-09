@@ -83,6 +83,111 @@ export const useAnalytics = () => {
     []
   );
 
+  // New redirect testing analytics methods
+  const trackRedirectTest = useCallback(
+    (
+      testType: 'single' | 'batch' | 'bulk',
+      urlCount: number,
+      mode: 'default' | 'advanced',
+      source: 'manual' | 'upload' | 'wayback' | 'semrush'
+    ) => {
+      analytics.trackRedirectTest(testType, urlCount, mode, source);
+    },
+    []
+  );
+
+  const trackRedirectTestComplete = useCallback(
+    (
+      testType: 'single' | 'batch' | 'bulk',
+      urlCount: number,
+      results: {
+        successful: number;
+        errors: number;
+        redirects: number;
+        loops: number;
+        direct: number;
+      },
+      processingTime: number,
+      mode: 'default' | 'advanced'
+    ) => {
+      analytics.trackRedirectTestComplete(testType, urlCount, results, processingTime, mode);
+    },
+    []
+  );
+
+  const trackRedirectResult = useCallback(
+    (
+      result: 'direct' | 'redirect' | 'error' | 'loop',
+      redirectCount: number,
+      hasDomainChange: boolean,
+      hasHttpsUpgrade: boolean,
+      responseTime: number,
+      mode: 'default' | 'advanced'
+    ) => {
+      analytics.trackRedirectResult(result, redirectCount, hasDomainChange, hasHttpsUpgrade, responseTime, mode);
+    },
+    []
+  );
+
+  const trackRedirectBatch = useCallback(
+    (
+      batchNumber: number,
+      batchSize: number,
+      totalBatches: number,
+      mode: 'default' | 'advanced'
+    ) => {
+      analytics.trackRedirectBatch(batchNumber, batchSize, totalBatches, mode);
+    },
+    []
+  );
+
+  const trackRedirectError = useCallback(
+    (
+      errorType: string,
+      context: string,
+      mode: 'default' | 'advanced',
+      urlCount?: number
+    ) => {
+      analytics.trackRedirectError(errorType, context, mode, urlCount);
+    },
+    []
+  );
+
+  const trackDetailedUIInteraction = useCallback(
+    (
+      element: string,
+      action: string,
+      context?: string,
+      metadata?: Record<string, any>
+    ) => {
+      analytics.trackDetailedUIInteraction(element, action, context, metadata);
+    },
+    []
+  );
+
+  const trackModeSwitch = useCallback(
+    (
+      fromMode: 'default' | 'advanced',
+      toMode: 'default' | 'advanced',
+      context?: string
+    ) => {
+      analytics.trackModeSwitch(fromMode, toMode, context);
+    },
+    []
+  );
+
+  const trackProjectStats = useCallback(
+    (
+      projectId: string,
+      urlCount: number,
+      resultCount: number,
+      hasResults: boolean
+    ) => {
+      analytics.trackProjectStats(projectId, urlCount, resultCount, hasResults);
+    },
+    []
+  );
+
   return {
     trackFeatureUsage,
     trackUrlProcessing,
@@ -97,6 +202,15 @@ export const useAnalytics = () => {
     trackBulkAction,
     trackCleanup,
     trackUIInteraction,
+    // New redirect testing analytics
+    trackRedirectTest,
+    trackRedirectTestComplete,
+    trackRedirectResult,
+    trackRedirectBatch,
+    trackRedirectError,
+    trackDetailedUIInteraction,
+    trackModeSwitch,
+    trackProjectStats,
     isEnabled: analytics.isAnalyticsEnabled(),
     setEnabled: analytics.setEnabled.bind(analytics),
   };

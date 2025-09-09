@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { RedirectResult, ProcessingStatus, Project } from '@/types';
 import { storageService } from '@/services/storage';
 import { RedirectChecker } from '@/services/redirectChecker';
+import { useAnalytics } from './useAnalytics';
 
 export const useUrlProcessing = (
   currentProject: Project | null,
@@ -22,6 +23,16 @@ export const useUrlProcessing = (
   // Use ref to track stopping state so the async loop can see updates
   const isStoppingRef = useRef(false);
 
+  // Analytics tracking
+  const {
+    trackRedirectTest,
+    trackRedirectTestComplete,
+    trackRedirectResult,
+    trackRedirectBatch,
+    trackRedirectError,
+    trackPerformance,
+  } = useAnalytics();
+
   const processUrls = useCallback(
     async (urls: Array<{ startingUrl: string; targetRedirect: string }>) => {
       if (!currentProject) {
@@ -34,6 +45,13 @@ export const useUrlProcessing = (
       // Reset stopping state
       isStoppingRef.current = false;
 
+      const startTime = Date.now();
+      const testType = urls.length === 1 ? 'single' : urls.length <= 10 ? 'batch' : 'bulk';
+      const totalBatches = Math.ceil(urls.length / currentProject.settings.batchSize);
+
+      // Track redirect test start
+      trackRedirectTest(testType, urls.length, mode, 'manual');
+
       setProcessingStatus(prev => ({
         ...prev,
         isProcessing: true,
@@ -41,11 +59,9 @@ export const useUrlProcessing = (
         totalUrls: urls.length,
         processedUrls: 0,
         currentBatch: 0,
-        totalBatches: Math.ceil(
-          urls.length / currentProject.settings.batchSize
-        ),
+        totalBatches,
         errors: [],
-        startTime: Date.now(),
+        startTime,
       }));
 
       const checker = new RedirectChecker(currentProject.settings);
@@ -62,15 +78,31 @@ export const useUrlProcessing = (
           }
 
           const batch = urls.slice(i, i + batchSize);
+          const batchNumber = Math.floor(i / batchSize) + 1;
 
           setProcessingStatus(prev => ({
             ...prev,
-            currentBatch: Math.floor(i / batchSize) + 1,
+            currentBatch: batchNumber,
             currentUrl: batch[0]?.startingUrl,
           }));
 
           const batchResults = await checker.checkBatch(batch);
           newResults.push(...batchResults);
+
+          // Track batch completion
+          trackRedirectBatch(batchNumber, batch.length, totalBatches, mode);
+
+          // Track individual redirect results
+          batchResults.forEach(result => {
+            trackRedirectResult(
+              result.result,
+              result.numberOfRedirects,
+              result.domainChanges,
+              result.httpsUpgrade,
+              result.responseTime,
+              mode
+            );
+          });
 
           setProcessingStatus(prev => ({
             ...prev,
@@ -90,6 +122,25 @@ export const useUrlProcessing = (
         await storageService.saveResults(newResults, currentProject.id);
         setResults(newResults);
 
+        // Calculate results summary for analytics
+        const resultsSummary = {
+          successful: newResults.filter(r => r.result !== 'error').length,
+          errors: newResults.filter(r => r.result === 'error').length,
+          redirects: newResults.filter(r => r.result === 'redirect').length,
+          loops: newResults.filter(r => r.result === 'loop').length,
+          direct: newResults.filter(r => r.result === 'direct').length,
+        };
+
+        const processingTime = Date.now() - startTime;
+
+        // Track redirect test completion
+        trackRedirectTestComplete(testType, urls.length, resultsSummary, processingTime, mode);
+
+        // Track performance metrics
+        trackPerformance('total_processing_time', processingTime);
+        trackPerformance('urls_per_second', urls.length / (processingTime / 1000));
+        trackPerformance('average_response_time', newResults.reduce((sum, r) => sum + r.responseTime, 0) / newResults.length);
+
         // Notify parent component about saved results
         onResultSaved?.(newResults);
 
@@ -105,11 +156,16 @@ export const useUrlProcessing = (
         };
         await storageService.saveProject(updatedProject);
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Track redirect test error
+        trackRedirectError('processing_error', errorMessage, mode, urls.length);
+
         setProcessingStatus(prev => ({
           ...prev,
           errors: [
             ...prev.errors,
-            error instanceof Error ? error.message : 'Unknown error',
+            errorMessage,
           ],
         }));
       } finally {

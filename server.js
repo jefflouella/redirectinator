@@ -94,7 +94,19 @@ async function checkRedirectWithPuppeteer(url, maxRedirects = 10) {
       statusChain.push(finalStatusCode.toString());
     }
 
-    console.log(`Puppeteer: ${url} → ${finalUrl} (${finalStatusCode})`);
+    let urlDomain = 'unknown';
+    let finalDomain = 'unknown';
+    try {
+      urlDomain = new URL(url).hostname;
+    } catch (error) {
+      console.log('Invalid URL in Puppeteer result:', error.message);
+    }
+    try {
+      finalDomain = new URL(finalUrl).hostname;
+    } catch (error) {
+      console.log('Invalid final URL in Puppeteer result:', error.message);
+    }
+    console.log(`Puppeteer: ${urlDomain} → ${finalDomain} (${finalStatusCode})`);
 
     return {
       finalUrl,
@@ -285,7 +297,14 @@ app.get('/api/semrush/units', async (req, res) => {
 async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
   let browser;
   try {
-    console.log(`Starting Puppeteer for: ${url}`);
+    let urlDomain = 'unknown';
+    try {
+      urlDomain = new URL(url).hostname;
+    } catch (error) {
+      console.log('Invalid URL in Puppeteer function:', error.message);
+      throw new Error('Invalid URL format');
+    }
+    console.log(`Starting Puppeteer for domain: ${urlDomain}`);
 
     // Launch browser with specific arguments to avoid detection
     browser = await puppeteer.launch({
@@ -484,7 +503,13 @@ async function performPuppeteerRedirectCheck(url, maxRedirects, res) {
             metaRefreshContent.url,
             page.url()
           ).toString();
-          console.log(`Following meta refresh to: ${targetUrl}`);
+          let targetDomain = 'unknown';
+          try {
+            targetDomain = new URL(targetUrl).hostname;
+          } catch (error) {
+            console.log('Invalid target URL in meta refresh:', error.message);
+          }
+          console.log(`Following meta refresh to domain: ${targetDomain}`);
 
           try {
             await page.goto(targetUrl, {
@@ -750,7 +775,13 @@ app.get('/api/wayback/discover', async (req, res) => {
     // to match the working behavior
 
     const cdxUrl = `http://web.archive.org/cdx/search/cdx?${cdxParams.toString()}`;
-    console.log(`Proxying Wayback CDX request: ${cdxUrl}`);
+    let cdxDomain = 'unknown';
+    try {
+      cdxDomain = new URL(cdxUrl).hostname;
+    } catch (error) {
+      console.log('Invalid CDX URL:', error.message);
+    }
+    console.log(`Proxying Wayback CDX request to domain: ${cdxDomain}`);
 
     // Make request to CDX API with timeout
     const controller = new AbortController();
@@ -977,25 +1008,32 @@ app.post('/api/check-redirect', async (req, res) => {
       usePuppeteer = false,
     } = req.body;
 
-    // Debug logging
-    console.log(
-      `Processing ${url} with method=${method}, followRedirects=${followRedirects}, usePuppeteer=${usePuppeteer}`
-    );
-    console.log(`Full request body:`, req.body);
-
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
 
+    // Debug logging (privacy-safe - no URLs logged)
+    let urlDomain = 'unknown';
+    try {
+      urlDomain = new URL(url).hostname;
+    } catch (error) {
+      console.log('Invalid URL provided:', error.message);
+      return res.status(400).json({ error: 'Invalid URL format' });
+    }
+
     console.log(
-      `Checking redirects for: ${url} using ${method}${usePuppeteer ? ' with Puppeteer' : ''}`
+      `Processing request for domain: ${urlDomain} with method=${method}, followRedirects=${followRedirects}, usePuppeteer=${usePuppeteer}`
+    );
+
+    console.log(
+      `Checking redirects for domain: ${urlDomain} using ${method}${usePuppeteer ? ' with Puppeteer' : ''}`
     );
 
     // Check if this is an affiliate link that we explicitly block
     const affiliateInfo = getAffiliateInfo(url);
 
     if (affiliateInfo) {
-      console.log(`Affiliate link blocked: ${url} - ${affiliateInfo.service}`);
+      console.log(`Affiliate link blocked for domain: ${urlDomain} - ${affiliateInfo.service}`);
       return res.json({
         finalUrl: url,
         finalStatusCode: 403,
@@ -1026,7 +1064,7 @@ app.post('/api/check-redirect', async (req, res) => {
     console.log(`DEBUG: shouldUsePuppeteer=${shouldUsePuppeteer}`);
 
     if (shouldUsePuppeteer) {
-      console.log(`Using Puppeteer for enhanced redirect detection: ${url}`);
+      console.log(`Using Puppeteer for enhanced redirect detection for domain: ${urlDomain}`);
       const puppeteerResult = await performPuppeteerRedirectCheck(
         url,
         maxRedirects,
@@ -1367,7 +1405,13 @@ app.post('/api/check-redirect', async (req, res) => {
 
         // If HEAD fails, try GET as fallback for this URL only
         if (method === 'HEAD') {
-          console.log(`HEAD failed for ${currentUrl}, trying GET`);
+          let currentDomain = 'unknown';
+          try {
+            currentDomain = new URL(currentUrl).hostname;
+          } catch (error) {
+            console.log('Invalid current URL in HEAD fallback:', error.message);
+          }
+          console.log(`HEAD failed for domain: ${currentDomain}, trying GET`);
           try {
             const getResponse = await fetch(currentUrl, {
               method: 'GET',
@@ -1584,7 +1628,14 @@ app.post('/api/check-redirect', async (req, res) => {
       `Redirect chain complete. Final URL: ${currentUrl}, Total redirects: ${redirectCount}`
     );
     console.log(`Status chain: ${statusChain.join(' → ')}`);
-    console.log(`Redirect URLs: ${redirectChain.join(' → ')}`);
+    const redirectDomains = redirectChain.map(url => {
+      try {
+        return new URL(url).hostname;
+      } catch {
+        return 'invalid-url';
+      }
+    });
+    console.log(`Redirect domains: ${redirectDomains.join(' → ')}`);
 
     // Check for mixed redirect types
     hasMixedTypes = redirectTypes.size > 1;

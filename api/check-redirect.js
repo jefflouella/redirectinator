@@ -26,24 +26,32 @@ export default async function handler(req, res) {
       usePuppeteer = false,
     } = req.body;
 
-    // Debug logging
-    console.log(
-      `Processing ${url} with method=${method}, followRedirects=${followRedirects}`
-    );
-
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
 
+    // Debug logging (privacy-safe - no URLs logged)
+    let urlDomain = 'unknown';
+    try {
+      urlDomain = new URL(url).hostname;
+    } catch (error) {
+      console.log('Invalid URL provided:', error.message);
+      return res.status(400).json({ error: 'Invalid URL format' });
+    }
+
     console.log(
-      `Checking redirects for: ${url} using ${method}${usePuppeteer ? ' with Puppeteer' : ''}`
+      `Processing request for domain: ${urlDomain} with method=${method}, followRedirects=${followRedirects}`
+    );
+
+    console.log(
+      `Checking redirects for domain: ${urlDomain} using ${method}${usePuppeteer ? ' with Puppeteer' : ''}`
     );
 
     // Check if this is an affiliate link that we explicitly block
     const affiliateInfo = getAffiliateInfo(url);
 
     if (affiliateInfo) {
-      console.log(`Affiliate link blocked: ${url} - ${affiliateInfo.service}`);
+      console.log(`Affiliate link blocked for domain: ${urlDomain} - ${affiliateInfo.service}`);
       return res.json({
         finalUrl: url,
         finalStatusCode: 403,

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Play, RefreshCw, Trash2, Plus, Square } from 'lucide-react';
 import { Project } from '@/types';
 import { ConfirmationOverlay } from './ConfirmationOverlay';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface ProcessingOptionsProps {
   currentProject: Project | null;
@@ -41,6 +42,7 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
   progressStats,
 }) => {
   const [showClearConfirmation, setShowClearConfirmation] = useState(false);
+  const { trackDetailedUIInteraction } = useAnalytics();
 
   const newUrlCount = urlCount - resultCount;
   const hasNewUrls = newUrlCount > 0;
@@ -49,12 +51,53 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
     progressStats && !progressStats.isComplete && progressStats.remaining > 0;
 
   const handleClearResults = () => {
+    trackDetailedUIInteraction('clear_results_button', 'click', 'processing_options', {
+      result_count: resultCount,
+      has_results: hasResults,
+    });
     setShowClearConfirmation(true);
   };
 
   const handleConfirmClear = () => {
+    trackDetailedUIInteraction('clear_results_confirm', 'click', 'processing_options', {
+      result_count: resultCount,
+    });
     onClearResults();
     setShowClearConfirmation(false);
+  };
+
+  const handleRunAllUrls = () => {
+    trackDetailedUIInteraction('run_all_urls_button', 'click', 'processing_options', {
+      url_count: urlCount,
+      result_count: resultCount,
+      has_incomplete: hasIncompleteProcessing,
+    });
+    onRunAllUrls();
+  };
+
+  const handleRunNewUrls = () => {
+    trackDetailedUIInteraction('run_new_urls_button', 'click', 'processing_options', {
+      new_url_count: newUrlCount,
+      total_url_count: urlCount,
+      result_count: resultCount,
+    });
+    onRunNewUrls();
+  };
+
+  const handleContinueProcessing = () => {
+    trackDetailedUIInteraction('continue_processing_button', 'click', 'processing_options', {
+      remaining_urls: progressStats?.remaining || 0,
+      processed_urls: progressStats?.processed || 0,
+    });
+    onContinueProcessing();
+  };
+
+  const handleStopProcessing = () => {
+    trackDetailedUIInteraction('stop_processing_button', 'click', 'processing_options', {
+      current_batch: processingStatus?.currentBatch || 0,
+      total_batches: processingStatus?.totalBatches || 0,
+    });
+    onStopProcessing();
   };
 
   if (!currentProject) {
@@ -82,7 +125,7 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
         {/* Stop Processing */}
         {isProcessing && (
           <button
-            onClick={onStopProcessing}
+            onClick={handleStopProcessing}
             className="flex items-center justify-center space-x-2 p-4 border border-red-200 rounded-lg hover:border-red-300 hover:bg-red-50 transition-colors"
           >
             <Square className="w-5 h-5 text-red-600" />
@@ -98,7 +141,7 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
         {/* Continue Processing */}
         {hasIncompleteProcessing && !isProcessing && (
           <button
-            onClick={onContinueProcessing}
+            onClick={handleContinueProcessing}
             className="flex items-center justify-center space-x-2 p-4 border border-orange-200 rounded-lg hover:border-orange-300 hover:bg-orange-50 transition-colors"
           >
             <Play className="w-5 h-5 text-orange-600" />
@@ -115,7 +158,7 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
 
         {/* Run All URLs Again */}
         <button
-          onClick={onRunAllUrls}
+          onClick={handleRunAllUrls}
           disabled={isProcessing || urlCount === 0}
           className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -130,7 +173,7 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
 
         {/* Run New URLs Only */}
         <button
-          onClick={onRunNewUrls}
+          onClick={handleRunNewUrls}
           disabled={isProcessing || !hasNewUrls}
           className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >

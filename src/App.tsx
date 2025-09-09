@@ -37,6 +37,10 @@ function App() {
   // Allow mode switching now that Advanced mode is ready
   const handleModeChange = async (newMode: 'default' | 'advanced') => {
     console.log('🔄 App: Mode change requested from', mode, 'to', newMode);
+    
+    // Track mode switch
+    trackModeSwitch(mode, newMode, 'app_settings');
+    
     await updateSettings({ redirectMode: newMode });
   };
   const {
@@ -89,6 +93,8 @@ function App() {
     trackProjectCreation,
     trackExport,
     trackError,
+    trackModeSwitch,
+    trackProjectStats,
   } = useAnalytics();
 
   // Schema management
@@ -98,6 +104,18 @@ function App() {
   useEffect(() => {
     trackFeatureUsage('tab_navigation', { tab: activeTab });
   }, [activeTab, trackFeatureUsage]);
+
+  // Track project statistics when project changes
+  useEffect(() => {
+    if (currentProject) {
+      trackProjectStats(
+        currentProject.id,
+        currentProject.urls?.length || 0,
+        finalResults.length,
+        finalResults.length > 0
+      );
+    }
+  }, [currentProject, finalResults.length, trackProjectStats]);
 
   // Processing functions
   const handleRunAllUrls = async () => {
