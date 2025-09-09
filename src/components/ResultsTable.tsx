@@ -108,36 +108,43 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   };
 
   const getStatusCodeColor = (httpStatus: string) => {
-    // Extract the first status code from chains like "301 → 200"
-    const firstCode = httpStatus.split(' ')[0];
-    const code = parseInt(firstCode);
-
-    if (isNaN(code)) {
-      return 'text-gray-600 bg-gray-100 px-2 py-1 rounded'; // Default color for invalid codes
+    // Handle error cases
+    if (httpStatus === 'Error' || httpStatus === 'error') {
+      return 'text-red-700 bg-red-100 px-2 py-1 rounded font-semibold';
     }
 
+    // Extract all status codes from chains like "301 → 200" or "301 → 404"
+    const statusCodes = httpStatus.split(' → ').map(code => parseInt(code.trim()));
+
+    // Check if any status code in the chain is problematic
+    const hasError = statusCodes.some(code => code >= 400 && code < 600);
+    const hasTemporaryRedirect = statusCodes.some(code => code === 302 || code === 307);
+    const hasServerError = statusCodes.some(code => code >= 500 && code < 600);
+    const hasClientError = statusCodes.some(code => code >= 400 && code < 500);
+
     // 4xx errors - red
-    if (code >= 400 && code < 500) {
+    if (hasClientError) {
       return 'text-red-700 bg-red-100 px-2 py-1 rounded font-semibold';
     }
 
     // 5xx errors - purple
-    if (code >= 500 && code < 600) {
+    if (hasServerError) {
       return 'text-purple-700 bg-purple-100 px-2 py-1 rounded font-semibold';
     }
 
     // Temporary redirects (302, 307) - yellow
-    if (code === 302 || code === 307) {
+    if (hasTemporaryRedirect) {
       return 'text-yellow-700 bg-yellow-100 px-2 py-1 rounded font-semibold';
     }
 
-    // 301 and 200 - default (keep same)
-    if (code === 301 || code === 200) {
-      return 'text-gray-600';
+    // Check if all codes are good (301, 200)
+    const allGood = statusCodes.every(code => code === 301 || code === 200);
+    if (allGood) {
+      return 'text-green-700 bg-green-100 px-2 py-1 rounded font-semibold';
     }
 
-    // Other codes - default
-    return 'text-gray-600';
+    // Default for other cases
+    return 'text-gray-600 bg-gray-100 px-2 py-1 rounded';
   };
 
   // Track search term changes
