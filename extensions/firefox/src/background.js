@@ -248,11 +248,9 @@ async function performAnalysis(url, options = {}) {
     console.log('✅ Page loaded, waiting for client-side redirects...');
     await new Promise(resolve => setTimeout(resolve, 5000));
 
-    // Inject content script to analyze page
-    const analysisResults = await browserAPI.scripting.executeScript({
-      target: { tabId: tab.id },
-      function: analyzePageForRedirectsFirefox,
-      args: [httpRedirects.finalUrl],
+    // Inject content script to analyze page (Manifest V2 compatible)
+    const analysisResults = await browserAPI.tabs.executeScript(tab.id, {
+      code: `(${analyzePageForRedirectsFirefox.toString()})('${httpRedirects.finalUrl}')`
     });
 
     const clientSideResults = analysisResults[0]?.result;
@@ -699,11 +697,9 @@ async function performAdvancedUrlAnalysis(url, options = {}) {
 
     console.log('🔍 Injecting analysis script...');
 
-    // Inject the analysis script to detect client-side redirects
-    const results = await browserAPI.scripting.executeScript({
-      target: { tabId: tab.id },
-      function: analyzePageForRedirects,
-      args: [httpRedirects.finalUrl],
+    // Inject the analysis script to detect client-side redirects (Manifest V2 compatible)
+    const results = await browserAPI.tabs.executeScript(tab.id, {
+      code: `(${analyzePageForRedirects.toString()})('${httpRedirects.finalUrl}')`
     });
 
     const analysisResult = results[0]?.result;

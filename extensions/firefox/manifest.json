@@ -6,7 +6,6 @@
   "permissions": [
     "tabs",
     "activeTab",
-    "scripting",
     "webNavigation",
     "webRequest",
     "<all_urls>",
@@ -17,7 +16,8 @@
     "https://redirectinator.us/*"
   ],
   "background": {
-    "scripts": ["src/background.js"]
+    "scripts": ["src/background.js"],
+    "persistent": false
   },
   "content_scripts": [
     {
@@ -48,5 +48,11 @@
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "redirectinator-advanced@redirectinator.us",
+      "strict_min_version": "78.0"
+    }
   }
 }
