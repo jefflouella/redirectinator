@@ -5,6 +5,7 @@ import {
   Code,
   Zap,
   Shield,
+  HardDrive,
 } from 'lucide-react';
 
 // ProjectCard component for displaying other projects
@@ -83,7 +84,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
         </div>
 
         {/* App Features */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center mb-4">
               <Zap className="w-8 h-8 text-blue-600 mr-3" />
@@ -122,6 +123,20 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
               Built for SEO professionals with Wayback Machine integration,
               SEMrush import, project management, and detailed export
               capabilities.
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center mb-4">
+              <HardDrive className="w-8 h-8 text-orange-600 mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Local Storage & Privacy
+              </h3>
+            </div>
+            <p className="text-gray-600">
+              All data is stored locally on your machine. Redirectinator doesn't
+              record, track, or transmit any redirect data to external servers,
+              ensuring complete privacy and data security.
             </p>
           </div>
         </div>
@@ -310,7 +325,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
         {/* Other Projects */}
         <section className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-            Other Projects
+            Other Projects by Jeff Louella
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <ProjectCard
