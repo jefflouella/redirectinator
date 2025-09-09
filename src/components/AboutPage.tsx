@@ -250,7 +250,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
                   Advanced mode is available through our browser extension (Chrome & Firefox). 
                   The extension is currently in pre-release testing and requires manual installation. 
                   <a
-                    href="/extensions/dist/"
+                    href="/extensions"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium underline hover:text-blue-800 ml-1"

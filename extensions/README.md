@@ -6,7 +6,7 @@
 
 ### For Users (Manual Installation)
 
-1. **Download**: Go to [`/extensions/dist/`](/extensions/dist/) in your browser
+1. **Download**: Go to [`/extensions`](/extensions) in your browser
 2. **Choose your browser**: Download Chrome or Firefox extension
 3. **Install manually**: Follow the installation guide in the dist folder
 4. **Test**: Visit [redirectinator.us](https://redirectinator.us) and enable Advanced Mode
@@ -88,8 +88,8 @@ The `dist/` folder contains everything users need to manually install the extens
 
 Users can access the distribution files at:
 
-- **Local development**: `http://localhost:3000/extensions/dist/`
-- **Production**: `https://redirectinator.us/extensions/dist/`
+- **Local development**: `http://localhost:3000/extensions`
+- **Production**: `https://redirectinator.us/extensions`
 
 ## 🚨 Important Notes
 

@@ -155,7 +155,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   }, [statusFilter, trackFilter, filteredResults.length]);
 
   return (
-    <div className="card">
+    <div className="bg-white rounded-lg border border-amber-200 shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-tech-900">
           Results ({filteredResults.length} of {results.length})
@@ -204,38 +204,38 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
       </div>
 
       {/* Results Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="overflow-hidden">
+        <table className="w-full table-fixed">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
+              <th className="w-12 px-2 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
                 #
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
+              <th className="w-20 px-2 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
+              <th className="w-64 px-2 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
                 Starting URL
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
+              <th className="w-64 px-2 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
                 Target Redirect
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
+              <th className="w-64 px-2 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
                 Final URL
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
+              <th className="w-28 px-2 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
                 HTTP Status
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
+              <th className="w-32 px-2 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
                 Redirect Types
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
+              <th className="w-16 px-2 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
                 Redirects
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
+              <th className="w-20 px-2 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
                 Time (ms)
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
+              <th className="w-24 px-2 py-3 text-left text-xs font-medium text-tech-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -244,13 +244,13 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             {filteredResults.map((result, index) => (
               <React.Fragment key={result.id}>
                 <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
+                  <td className="px-2 py-3">
                     <div className="text-sm font-medium text-tech-600">
                       {index + 1}
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center space-x-2">
+                  <td className="px-2 py-3">
+                    <div className="flex items-center space-x-1">
                       {getStatusIcon(result)}
                       <span className={getStatusBadge(result)}>
                         {result.blockedReason ? 'blocked' : result.result}
@@ -258,46 +258,40 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                     </div>
                   </td>
 
-                  <td className="px-4 py-3">
-                    <div className="max-w-xs">
-                      <div className="text-sm font-medium text-tech-900 truncate">
-                        {result.startingUrl}
-                      </div>
+                  <td className="px-2 py-3">
+                    <div className="text-sm font-medium text-tech-900 break-all">
+                      {result.startingUrl}
                     </div>
                   </td>
 
-                  <td className="px-4 py-3">
-                    <div className="max-w-xs">
-                      <div className="text-sm text-tech-600 truncate">
-                        {result.targetRedirect}
-                      </div>
+                  <td className="px-2 py-3">
+                    <div className="text-sm text-tech-600 break-all">
+                      {result.targetRedirect}
                     </div>
                   </td>
 
-                  <td className="px-4 py-3">
-                    <div className="max-w-xs">
-                      <div className="text-sm text-tech-600 truncate">
-                        {result.finalUrl || '-'}
-                      </div>
+                  <td className="px-2 py-3">
+                    <div className="text-sm text-tech-600 break-all">
+                      {result.finalUrl || '-'}
                     </div>
                   </td>
 
-                  <td className="px-4 py-3">
+                  <td className="px-2 py-3">
                     <div
-                      className={`text-sm font-mono ${getStatusCodeColor(result.httpStatus)}`}
+                      className={`text-sm font-mono break-all ${getStatusCodeColor(result.httpStatus)}`}
                     >
                       {result.httpStatus}
                     </div>
                   </td>
 
-                  <td className="px-4 py-3">
+                  <td className="px-2 py-3">
                     <div className="flex flex-wrap gap-1">
                       {result.redirectTypes &&
                       result.redirectTypes.length > 0 ? (
                         result.redirectTypes.map((redirectType, idx) => (
                           <span
                             key={idx}
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${
                               redirectType.type === 'http'
                                 ? 'bg-blue-100 text-blue-800'
                                 : redirectType.type === 'meta'
@@ -319,20 +313,20 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                     </div>
                   </td>
 
-                  <td className="px-4 py-3">
+                  <td className="px-2 py-3">
                     <div className="text-sm text-tech-600">
                       {result.numberOfRedirects}
                     </div>
                   </td>
 
-                  <td className="px-4 py-3">
+                  <td className="px-2 py-3">
                     <div className="text-sm text-tech-600">
                       {result.responseTime}
                     </div>
                   </td>
 
-                  <td className="px-4 py-3">
-                    <div className="flex items-center space-x-2">
+                  <td className="px-2 py-3">
+                    <div className="flex items-center space-x-1">
                       <button
                         onClick={() => toggleDetails(result.id)}
                         className="p-1 text-tech-400 hover:text-tech-600 transition-colors"

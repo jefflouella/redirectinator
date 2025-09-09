@@ -18,10 +18,10 @@ extensions/dist/
 
 1. **Upload to Production**
    - Copy the entire `dist/` folder to your web server
-   - Place it at: `https://redirectinator.us/extensions/dist/`
+   - Place it at: `https://redirectinator.us/extensions`
 
 2. **Verify Access**
-   - Test: `https://redirectinator.us/extensions/dist/`
+   - Test: `https://redirectinator.us/extensions`
    - Should show the download page
    - Download links should work correctly
 
@@ -33,14 +33,14 @@ extensions/dist/
 ### User Experience Flow
 
 1. **User visits redirectinator.us** → Sees "Advanced Mode Requires Extension"
-2. **Clicks download button** → Goes to `/extensions/dist/`
+2. **Clicks download button** → Goes to `/extensions`
 3. **Downloads extension** → Follows installation guide
 4. **Installs extension** → Returns to redirectinator.us
 5. **Advanced Mode available** → Extension detected and working
 
 ### Testing Checklist
 
-- [ ] Download page accessible at `/extensions/dist/`
+- [ ] Download page accessible at `/extensions`
 - [ ] Chrome extension downloads correctly
 - [ ] Firefox extension downloads correctly
 - [ ] Installation guide is clear and complete

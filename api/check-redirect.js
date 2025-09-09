@@ -18,20 +18,30 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { url, method = 'HEAD', followRedirects = false, maxRedirects = 10, usePuppeteer = false } = req.body;
-    
+    const {
+      url,
+      method = 'HEAD',
+      followRedirects = false,
+      maxRedirects = 10,
+      usePuppeteer = false,
+    } = req.body;
+
     // Debug logging
-    console.log(`Processing ${url} with method=${method}, followRedirects=${followRedirects}`);
+    console.log(
+      `Processing ${url} with method=${method}, followRedirects=${followRedirects}`
+    );
 
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-    console.log(`Checking redirects for: ${url} using ${method}${usePuppeteer ? ' with Puppeteer' : ''}`);
+    console.log(
+      `Checking redirects for: ${url} using ${method}${usePuppeteer ? ' with Puppeteer' : ''}`
+    );
 
     // Check if this is an affiliate link that we explicitly block
     const affiliateInfo = getAffiliateInfo(url);
-    
+
     if (affiliateInfo) {
       console.log(`Affiliate link blocked: ${url} - ${affiliateInfo.service}`);
       return res.json({
@@ -47,7 +57,7 @@ export default async function handler(req, res) {
         method: 'BLOCKED_AFFILIATE',
         blockedReason: `Affiliate links from ${affiliateInfo.service} are not supported due to anti-bot protection. Please use the direct destination URL instead.`,
         affiliateService: affiliateInfo.service,
-        suggestedDirectUrl: affiliateInfo.suggestedUrl
+        suggestedDirectUrl: affiliateInfo.suggestedUrl,
       });
     }
 
@@ -67,12 +77,13 @@ export default async function handler(req, res) {
     // This gives us complete redirect information regardless of the followRedirects parameter
     for (let i = 0; i < maxRedirects; i++) {
       try {
-        const response = await fetch(currentUrl, { 
+        const response = await fetch(currentUrl, {
           method: method.toUpperCase(),
           redirect: 'manual',
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-          }
+            'User-Agent':
+              'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
         });
 
         const status = response.status;
@@ -87,13 +98,13 @@ export default async function handler(req, res) {
 
           // Resolve relative URLs
           const resolvedUrl = new URL(location, currentUrl).href;
-          
+
           // Check for redirect loops
           if (visitedUrls.has(resolvedUrl)) {
             hasLoop = true;
             break;
           }
-          
+
           visitedUrls.add(resolvedUrl);
           redirectChain.push(currentUrl);
           redirectCount++;
@@ -105,17 +116,15 @@ export default async function handler(req, res) {
           if (status === 303) redirectTypes.add('303');
           if (status === 307) redirectTypes.add('307');
           if (status === 308) redirectTypes.add('308');
-
         } else {
           // No more redirects
           break;
         }
-
       } catch (error) {
         console.error('Error following redirect:', error);
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: 'Failed to follow redirect',
-          details: error.message 
+          details: error.message,
         });
       }
     }
@@ -129,7 +138,8 @@ export default async function handler(req, res) {
 
     // Check for HTTPS upgrade
     const finalProtocol = new URL(currentUrl).protocol;
-    const httpsUpgrade = originalProtocol === 'http:' && finalProtocol === 'https:';
+    const httpsUpgrade =
+      originalProtocol === 'http:' && finalProtocol === 'https:';
 
     return res.json({
       finalUrl: currentUrl,
@@ -141,14 +151,13 @@ export default async function handler(req, res) {
       hasMixedTypes,
       domainChanges,
       httpsUpgrade,
-      method: method.toUpperCase()
+      method: method.toUpperCase(),
     });
-
   } catch (error) {
     console.error('Redirect checker error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to check redirect',
-      details: error.message 
+      details: error.message,
     });
   }
 }

@@ -92,7 +92,11 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
 
   // Auto-switch to default mode if extension is not available on initial load
   useEffect(() => {
-    if (!checkingExtension && !extensionAvailable && currentMode === 'advanced') {
+    if (
+      !checkingExtension &&
+      !extensionAvailable &&
+      currentMode === 'advanced'
+    ) {
       onModeChange('default');
     }
   }, [checkingExtension, extensionAvailable, currentMode, onModeChange]);
@@ -107,7 +111,7 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
       if (available !== extensionAvailable || version !== extensionVersion) {
         setExtensionAvailable(available);
         setExtensionVersion(version);
-        
+
         // If extension becomes unavailable and we're in advanced mode, switch to default
         if (!available && currentMode === 'advanced') {
           onModeChange('default');
@@ -315,18 +319,18 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
                 />
               </svg>
             </button>
-            
+
             {/* Toggle Switch with Label Below */}
             <div className="flex flex-col items-center space-y-1">
               <button
                 onClick={handleModeToggle}
-                disabled={disabled || (currentMode === 'default' && !extensionAvailable)}
+                disabled={
+                  disabled || (currentMode === 'default' && !extensionAvailable)
+                }
                 className={`
                   relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
                   ${
-                    currentMode === 'advanced'
-                      ? 'bg-purple-600'
-                      : 'bg-blue-600'
+                    currentMode === 'advanced' ? 'bg-purple-600' : 'bg-blue-600'
                   }
                   ${disabled || (currentMode === 'default' && !extensionAvailable) ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
@@ -339,7 +343,7 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
                   `}
                 />
               </button>
-              
+
               <span
                 className={`text-xs font-medium ${
                   currentMode === 'advanced'
@@ -354,14 +358,15 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
         </div>
       </div>
 
-
       {/* Advanced Mode Info Panel - Expandable */}
       {showAdvancedInfo && (
-        <div className={`border rounded-lg p-3 ${
-          extensionAvailable
-            ? 'bg-green-50 border-green-200'
-            : 'bg-yellow-50 border-yellow-200'
-        }`}>
+        <div
+          className={`border rounded-lg p-3 ${
+            extensionAvailable
+              ? 'bg-green-50 border-green-200'
+              : 'bg-yellow-50 border-yellow-200'
+          }`}
+        >
           <div className="flex items-start space-x-2">
             <div className="flex-shrink-0">
               {extensionAvailable ? (
@@ -397,13 +402,16 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
                     Advanced Mode Features
                   </h4>
                   <p className="text-xs text-green-700 mb-1">
-                    Detects Meta Refresh and JavaScript redirects locally using your browser extension.
+                    Detects Meta Refresh and JavaScript redirects locally using
+                    your browser extension.
                   </p>
                   <p className="text-xs text-green-700 mb-1">
-                    <strong>No server costs</strong> - all processing happens in your browser!
+                    <strong>No server costs</strong> - all processing happens in
+                    your browser!
                   </p>
                   <p className="text-xs text-green-600">
-                    💡 <strong>Pre-release:</strong> Extension loaded manually. Will be available in stores at launch.
+                    💡 <strong>Pre-release:</strong> Extension loaded manually.
+                    Will be available in stores at launch.
                   </p>
                 </>
               ) : (
@@ -412,14 +420,16 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
                     Advanced Mode
                   </h4>
                   <p className="text-xs text-gray-600 mb-1">
-                    Advanced mode provides enhanced redirect detection capabilities.
+                    Advanced mode provides enhanced redirect detection
+                    capabilities.
                   </p>
                   <p className="text-xs text-gray-500 mb-2">
-                    💡 <strong>Note:</strong> Extension installation required for full functionality.
+                    💡 <strong>Note:</strong> Extension installation required
+                    for full functionality.
                   </p>
                   <div className="space-y-2">
                     <a
-                      href="/extensions/dist/"
+                      href="/extensions"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"

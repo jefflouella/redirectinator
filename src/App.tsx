@@ -13,6 +13,7 @@ import { AboutPage } from './components/AboutPage';
 import { PrivacyPage } from './components/PrivacyPage';
 import { TermsPage } from './components/TermsPage';
 import { ExtensionsPage } from './components/ExtensionsPage';
+import { NotFoundPage } from './components/NotFoundPage';
 import { NotificationProvider } from './components/NotificationProvider';
 import { ExportService } from './services/exportService';
 import { useProjects } from './hooks/useProjects';
@@ -317,6 +318,10 @@ function App() {
 
           {activeTab === 'extensions' && (
             <ExtensionsPage onBack={() => navigateTo('dashboard')} />
+          )}
+
+          {activeTab === '404' && (
+            <NotFoundPage onBack={() => navigateTo('dashboard')} />
           )}
         </main>
 

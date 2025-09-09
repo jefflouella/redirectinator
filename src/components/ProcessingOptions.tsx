@@ -41,7 +41,7 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
   progressStats,
 }) => {
   const [showClearConfirmation, setShowClearConfirmation] = useState(false);
-  
+
   const newUrlCount = urlCount - resultCount;
   const hasNewUrls = newUrlCount > 0;
   const hasResults = resultCount > 0;
@@ -159,7 +159,6 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
         </button>
       </div>
 
-
       {/* Info Messages */}
       {!isProcessing && (
         <div className="mt-4 space-y-2">
@@ -194,7 +193,6 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
           )}
         </div>
       )}
-
 
       {/* Clear Results Confirmation Overlay */}
       <ConfirmationOverlay

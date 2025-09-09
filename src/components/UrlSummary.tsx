@@ -130,7 +130,7 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
   const handleConfirmClear = () => {
     clearUrls();
     setShowClearConfirmation(false);
-    
+
     // Show notification
     addNotification({
       type: 'success',
@@ -145,7 +145,7 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
     // If no current project, show create project message
     if (!currentProject) {
       return (
-        <div className="card">
+        <div className="bg-white rounded-lg border border-blue-200 shadow-sm">
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Plus className="w-8 h-8 text-blue-600" />
@@ -168,7 +168,7 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
 
     // If there's a current project but no URLs, show add URLs message
     return (
-      <div className="card">
+      <div className="bg-white rounded-lg border border-blue-200 shadow-sm">
         <div className="text-center py-8">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Plus className="w-8 h-8 text-blue-600" />
@@ -194,7 +194,7 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
   // Show loading state
   if (urlsLoading) {
     return (
-      <div className="card">
+      <div className="bg-white rounded-lg border border-blue-200 shadow-sm">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           <span className="ml-3 text-gray-600">
@@ -207,7 +207,7 @@ export const UrlSummary: React.FC<UrlSummaryProps> = ({
 
   // Show URL summary
   return (
-    <div className="card">
+    <div className="bg-white rounded-lg border border-blue-200 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div

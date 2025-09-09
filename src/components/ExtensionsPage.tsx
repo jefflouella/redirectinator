@@ -82,7 +82,7 @@ export const ExtensionsPage: React.FC<ExtensionsPageProps> = ({ onBack }) => {
                 For Chrome, Edge, and other Chromium-based browsers
               </p>
               <a
-                href="/extensions/dist/redirectinator-advanced-chrome.zip"
+                href="/extensions/redirectinator-advanced-chrome.zip"
                 download
                 className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
@@ -107,7 +107,7 @@ export const ExtensionsPage: React.FC<ExtensionsPageProps> = ({ onBack }) => {
                 For Firefox and other Mozilla-based browsers
               </p>
               <a
-                href="/extensions/dist/redirectinator-advanced-firefox.zip"
+                href="/extensions/redirectinator-advanced-firefox.zip"
                 download
                 className="inline-flex items-center px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
               >
@@ -155,7 +155,7 @@ export const ExtensionsPage: React.FC<ExtensionsPageProps> = ({ onBack }) => {
                   <p className="text-gray-600 text-sm">
                     Load the extension in your browser. For detailed steps, see the{' '}
                     <a
-                      href="/extensions/dist/INSTALLATION.md"
+                      href="/extensions/INSTALLATION.md"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-700 underline"

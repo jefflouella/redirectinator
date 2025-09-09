@@ -268,12 +268,10 @@ app.get('/api/semrush/units', async (req, res) => {
     }
   } catch (error) {
     console.error('SEMrush units proxy error:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Failed to validate SEMrush API key',
-        details: error.message,
-      });
+    res.status(500).json({
+      error: 'Failed to validate SEMrush API key',
+      details: error.message,
+    });
   }
 });
 
@@ -1144,7 +1142,10 @@ app.post('/api/check-redirect', async (req, res) => {
     let stepCounter = 0;
 
     while (redirectCount < maxRedirects) {
+      // Check for loops, but be more intelligent about JavaScript redirects
       if (visitedUrls.has(currentUrl)) {
+        // If we've seen this URL before, it could be a loop
+        // But we need to check if the previous visit was a JavaScript redirect that wasn't followed
         hasLoop = true;
         break;
       }
@@ -1266,6 +1267,12 @@ app.post('/api/check-redirect', async (req, res) => {
 
             if (jsRedirectFound) {
               redirectCount++;
+              // For JavaScript redirects, we need to actually follow them or break the loop
+              // Since we can't execute JavaScript on the server, we'll break here to avoid false loops
+              console.log(
+                `JavaScript redirect detected, breaking to avoid false loop detection`
+              );
+              break;
             }
           } catch (parseError) {
             console.log(
@@ -1724,8 +1731,23 @@ app.get('/api/health', (req, res) => {
   });
 })();
 
-// Note: For development, run 'npm run dev' to serve the frontend
-// For production, the catch-all route would be added here
+// Catch-all route for client-side routing
+// This serves the main HTML file for all routes so React Router can handle them
+app.use((req, res, next) => {
+  // Check if this is a valid route that should return 404
+  const validRoutes = ['/', '/about', '/privacy', '/terms', '/projects', '/settings', '/extensions'];
+  // Normalize path by removing trailing slash (except for root)
+  const normalizedPath = req.path === '/' ? '/' : req.path.replace(/\/$/, '');
+  const isValidRoute = validRoutes.includes(normalizedPath);
+  
+  if (!isValidRoute) {
+    // Set 404 status code for invalid routes
+    res.status(404);
+  }
+  
+  // Serve the main HTML file (React will handle the routing)
+  res.sendFile('index.html', { root: 'dist' });
+});
 
 // Start server
 app.listen(PORT, () => {

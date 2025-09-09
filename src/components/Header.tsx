@@ -22,7 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   onTabChange,
 }) => {
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm">
+    <header className="bg-gradient-to-r from-slate-50 to-blue-50 border-b-2 border-blue-200 shadow-lg">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between py-4">
           {/* Logo and Brand */}

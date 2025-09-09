@@ -7,7 +7,8 @@ type TabType =
   | 'about'
   | 'privacy'
   | 'terms'
-  | 'extensions';
+  | 'extensions'
+  | '404';
 
 export const useRouting = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -23,6 +24,9 @@ export const useRouting = () => {
       const path = window.location.pathname;
       let newTab: TabType = 'dashboard';
 
+      // Define valid routes
+      const validRoutes = ['/', '/about', '/privacy', '/terms', '/projects', '/settings', '/extensions'];
+      
       if (path === '/about') {
         newTab = 'about';
       } else if (path === '/privacy') {
@@ -35,8 +39,11 @@ export const useRouting = () => {
         newTab = 'settings';
       } else if (path === '/extensions') {
         newTab = 'extensions';
-      } else {
+      } else if (path === '/') {
         newTab = 'dashboard';
+      } else {
+        // Invalid route - show 404 page
+        newTab = '404';
       }
 
       setActiveTab(newTab);

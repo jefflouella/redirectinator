@@ -11,6 +11,7 @@ interface CheckResult {
   hasMixedTypes: boolean;
   domainChanges: boolean;
   httpsUpgrade: boolean;
+  hasJavaScriptRedirect?: boolean;
   method?: string;
   blockedReason?: string;
   affiliateService?: string;
@@ -188,16 +189,20 @@ export class RedirectChecker {
   private convertExtensionResult(extensionResult: any) {
     // Build status chain from redirect steps, filtering out initial 200s
     const statusChain: string[] = [];
-    
+
     if (extensionResult.redirectChain?.length > 0) {
       extensionResult.redirectChain.forEach((step: any) => {
         // Only include redirect status codes (300-399) and meaningful status codes
-        if (step.statusCode && step.statusCode >= 300 && step.statusCode < 400) {
+        if (
+          step.statusCode &&
+          step.statusCode >= 300 &&
+          step.statusCode < 400
+        ) {
           statusChain.push(step.statusCode.toString());
         }
       });
     }
-    
+
     // Add final status code
     if (extensionResult.finalStatusCode) {
       statusChain.push(extensionResult.finalStatusCode.toString());
@@ -793,6 +798,15 @@ export class RedirectChecker {
     }
 
     if (checkResult.hasLoop) {
+      // Check if this is actually a JavaScript redirect that couldn't be followed
+      // rather than a true HTTP redirect loop
+      if (
+        checkResult.hasJavaScriptRedirect &&
+        checkResult.redirectCount === 1
+      ) {
+        console.log('Detected JavaScript redirect, not treating as loop');
+        return 'redirect'; // Treat as a successful redirect instead of a loop
+      }
       return 'loop';
     }
 

@@ -61,11 +61,9 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error('SEMrush units proxy error:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Failed to validate SEMrush API key',
-        details: error.message,
-      });
+    res.status(500).json({
+      error: 'Failed to validate SEMrush API key',
+      details: error.message,
+    });
   }
 }
