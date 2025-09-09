@@ -106,14 +106,25 @@ export const ExtensionsPage: React.FC<ExtensionsPageProps> = ({ onBack }) => {
               <p className="text-gray-600 text-sm mb-4">
                 For Firefox and other Mozilla-based browsers
               </p>
-              <a
-                href="/extensions/redirectinator-advanced-firefox.zip"
-                download
-                className="inline-flex items-center px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download Firefox Extension
-              </a>
+              <div className="space-y-2">
+                <a
+                  href="/extensions/redirectinator-advanced-firefox.xpi"
+                  download
+                  className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download .xpi (Recommended)
+                </a>
+                <br />
+                <a
+                  href="/extensions/redirectinator-advanced-firefox.zip"
+                  download
+                  className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download .zip
+                </a>
+              </div>
             </div>
           </div>
         </div>

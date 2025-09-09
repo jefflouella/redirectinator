@@ -379,7 +379,8 @@ https://oldsite.com/page3,`}
                   <ol className="list-decimal list-inside text-orange-800 space-y-2">
                     <li>Download from Firefox Add-ons (coming soon)</li>
                     <li>Or install manually from <code>/extensions</code> folder</li>
-                    <li>Load as temporary add-on</li>
+                    <li>Use the <code>.xpi</code> file for easy installation</li>
+                    <li>Load as temporary add-on or permanent installation</li>
                   </ol>
                 </div>
               </div>

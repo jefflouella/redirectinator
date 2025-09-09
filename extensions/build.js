@@ -35,9 +35,13 @@ class ExtensionBuilder {
   async buildFirefox() {
     console.log('🚀 Building Firefox add-on...');
 
-    const outputPath = path.join(
+    const zipOutputPath = path.join(
       this.rootDir,
       'redirectinator-advanced-firefox.zip'
+    );
+    const xpiOutputPath = path.join(
+      this.rootDir,
+      'redirectinator-advanced-firefox.xpi'
     );
     const sourceDir = path.join(this.rootDir, 'firefox');
 
@@ -45,9 +49,15 @@ class ExtensionBuilder {
       throw new Error('Firefox add-on directory not found');
     }
 
-    await this.createZip(sourceDir, outputPath);
-    console.log('✅ Firefox add-on built successfully!');
-    console.log(`📦 Output: ${outputPath}`);
+    // Create ZIP file
+    await this.createZip(sourceDir, zipOutputPath);
+    console.log('✅ Firefox add-on ZIP built successfully!');
+    console.log(`📦 ZIP Output: ${zipOutputPath}`);
+
+    // Create XPI file (same as ZIP but with .xpi extension)
+    await this.createZip(sourceDir, xpiOutputPath);
+    console.log('✅ Firefox add-on XPI built successfully!');
+    console.log(`📦 XPI Output: ${xpiOutputPath}`);
   }
 
   async buildAll() {
@@ -103,6 +113,7 @@ class ExtensionBuilder {
     const files = [
       'redirectinator-advanced-chrome.zip',
       'redirectinator-advanced-firefox.zip',
+      'redirectinator-advanced-firefox.xpi',
     ];
 
     files.forEach(file => {
