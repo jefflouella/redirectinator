@@ -10,6 +10,7 @@ import {
   Key,
   Loader2,
   X,
+  BookOpen,
 } from 'lucide-react';
 
 interface SettingsProps {
@@ -39,6 +40,15 @@ export const Settings: React.FC<SettingsProps> = ({
   const autoSaveInfoRef = useRef<HTMLDivElement>(null);
 
   const semrushService = new SEMrushService();
+
+  const checkSemrushApiKeyStatus = useCallback(async () => {
+    try {
+      const hasKey = await semrushService.hasApiKey();
+      setHasSemrushKey(hasKey);
+    } catch (error) {
+      console.error('Failed to check SEMrush API key status:', error);
+    }
+  }, [semrushService]);
 
   useEffect(() => {
     checkSemrushApiKeyStatus();
@@ -78,15 +88,6 @@ export const Settings: React.FC<SettingsProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showBatchSizeInfo, showDelayInfo, showTimeoutInfo, showAutoSaveInfo]);
-
-  const checkSemrushApiKeyStatus = useCallback(async () => {
-    try {
-      const hasKey = await semrushService.hasApiKey();
-      setHasSemrushKey(hasKey);
-    } catch (error) {
-      console.error('Failed to check SEMrush API key status:', error);
-    }
-  }, [semrushService]);
 
   const handleTestSemrushApiKey = async () => {
     if (!semrushApiKey.trim()) {
@@ -161,7 +162,7 @@ export const Settings: React.FC<SettingsProps> = ({
         <h2 className="text-2xl font-bold text-tech-900">Settings</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto px-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-6xl mx-auto px-4">
         {/* Performance */}
         <div className="card">
           <div className="flex items-center space-x-2 mb-4">
@@ -505,6 +506,60 @@ export const Settings: React.FC<SettingsProps> = ({
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Instructions & Help */}
+        <div className="card">
+          <div className="flex items-center space-x-2 mb-4">
+            <BookOpen className="w-5 h-5 text-primary-600" />
+            <h3 className="text-lg font-semibold text-tech-900">
+              Instructions & Help
+            </h3>
+          </div>
+
+          <div className="space-y-4">
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="text-sm font-medium text-blue-800 mb-2">
+                Complete User Guide
+              </h4>
+              <p className="text-xs text-blue-700 mb-3">
+                Learn how to use all of Redirectinator's powerful features including 
+                Wayback Machine discovery, SEMrush integration, browser extensions, and more.
+              </p>
+              <a
+                href="/instructions"
+                className="inline-flex items-center px-3 py-2 text-xs font-medium text-blue-800 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
+              >
+                <BookOpen className="w-3 h-3 mr-1" />
+                View Instructions
+              </a>
+            </div>
+
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h4 className="text-sm font-medium text-green-800 mb-2">
+                Key Features Covered
+              </h4>
+              <div className="text-xs text-green-700 space-y-1">
+                <p>• <strong>Wayback Machine Discovery:</strong> Find historical URLs from site migrations</p>
+                <p>• <strong>SEMrush Integration:</strong> Discover top-performing pages</p>
+                <p>• <strong>Browser Extensions:</strong> Advanced redirect detection</p>
+                <p>• <strong>Multiple Upload Methods:</strong> CSV, XML sitemaps, and more</p>
+                <p>• <strong>Export Options:</strong> CSV, Excel, JSON, and reports</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <h4 className="text-sm font-medium text-purple-800 mb-2">
+                Quick Start Guide
+              </h4>
+              <div className="text-xs text-purple-700 space-y-1">
+                <p>1. Create a new project</p>
+                <p>2. Add URLs using any of the 5 methods</p>
+                <p>3. Process URLs to analyze redirects</p>
+                <p>4. Export results for your reports</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

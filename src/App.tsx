@@ -13,6 +13,7 @@ import { AboutPage } from './components/AboutPage';
 import { PrivacyPage } from './components/PrivacyPage';
 import { TermsPage } from './components/TermsPage';
 import { ExtensionsPage } from './components/ExtensionsPage';
+import { InstructionsPage } from './components/InstructionsPage';
 import { NotFoundPage } from './components/NotFoundPage';
 import { NotificationProvider } from './components/NotificationProvider';
 import { ExportService } from './services/exportService';
@@ -318,6 +319,10 @@ function App() {
 
           {activeTab === 'extensions' && (
             <ExtensionsPage onBack={() => navigateTo('dashboard')} />
+          )}
+
+          {activeTab === 'instructions' && (
+            <InstructionsPage onBack={() => navigateTo('dashboard')} />
           )}
 
           {activeTab === '404' && (

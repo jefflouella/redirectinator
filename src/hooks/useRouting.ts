@@ -8,6 +8,7 @@ type TabType =
   | 'privacy'
   | 'terms'
   | 'extensions'
+  | 'instructions'
   | '404';
 
 export const useRouting = () => {
@@ -25,7 +26,7 @@ export const useRouting = () => {
       let newTab: TabType = 'dashboard';
 
       // Define valid routes
-      const validRoutes = ['/', '/about', '/privacy', '/terms', '/projects', '/settings', '/extensions'];
+      const validRoutes = ['/', '/about', '/privacy', '/terms', '/projects', '/settings', '/extensions', '/instructions'];
       
       if (path === '/about') {
         newTab = 'about';
@@ -39,6 +40,8 @@ export const useRouting = () => {
         newTab = 'settings';
       } else if (path === '/extensions') {
         newTab = 'extensions';
+      } else if (path === '/instructions') {
+        newTab = 'instructions';
       } else if (path === '/') {
         newTab = 'dashboard';
       } else {

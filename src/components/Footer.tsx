@@ -41,6 +41,14 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <a
+                  href="/instructions"
+                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  Instructions
+                </a>
+              </li>
+              <li>
+                <a
                   href="https://www.jefflouella.com"
                   target="_blank"
                   rel="noopener noreferrer"
