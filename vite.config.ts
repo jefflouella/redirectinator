@@ -19,6 +19,10 @@ export default defineConfig({
         secure: false,
       },
     },
+    middlewareMode: false,
+    fs: {
+      strict: false,
+    },
   },
   build: {
     outDir: 'dist',

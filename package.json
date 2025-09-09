@@ -9,7 +9,7 @@
     "server": "PORT=3001 node server.js",
     "dev:combined": "concurrently \"npm run server\" \"npm run dev\"",
     "dev:full": "npm run build && npm run server",
-    "build": "vite build",
+    "build": "vite build && cp extensions/redirectinator-advanced-firefox.xpi dist/extensions/",
     "preview": "vite preview",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "format": "prettier --write .",

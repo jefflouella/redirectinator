@@ -128,6 +128,12 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Serve .xpi files with correct MIME type (before static files)
+app.get('/extensions/redirectinator-advanced-firefox.xpi', (req, res) => {
+  res.setHeader('Content-Type', 'application/x-xpinstall');
+  res.sendFile('extensions/redirectinator-advanced-firefox.xpi', { root: 'dist' });
+});
+
 // Serve static files from the dist directory (built frontend)
 app.use(express.static('dist'));
 
