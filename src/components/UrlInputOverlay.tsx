@@ -53,6 +53,7 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
   const [showBulkInfo, setShowBulkInfo] = useState(false);
   const [showPasteInfo, setShowPasteInfo] = useState(false);
   const [showClearConfirmation, setShowClearConfirmation] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -155,37 +156,146 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
     return parsedUrls;
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const processFile = (file: File) => {
     if (!file) return;
 
     const fileExtension = file.name.toLowerCase().split('.').pop();
 
     if (fileExtension === 'csv') {
-      // Handle CSV files
+      // Handle CSV files - first check if it has headers, then parse accordingly
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
-        complete: results => {
-          const parsedUrls = (results.data as Record<string, unknown>[])
-            .filter(row => row['Starting URL']) // Only require starting URL
-            .map(row => ({
-              startingUrl: String(row['Starting URL']).trim(),
-              targetRedirect: String(row['Target Redirect'] || '').trim(), // Make target optional
-            }));
+        preview: 1, // Only read first row to check headers
+        complete: previewResults => {
+          console.log('CSV preview results:', previewResults);
+          const headers = previewResults.meta?.fields || [];
+          
+          // Check if first row looks like headers (contains descriptive text, not URLs)
+          const hasHeaders = headers.some(h => {
+            if (!h || typeof h !== 'string') return false;
+            const normalized = h.toLowerCase().trim();
+            // If it contains URL-like patterns, it's probably data, not headers
+            if (normalized.startsWith('http') || normalized.includes('www.') || normalized.includes('.com')) {
+              return false;
+            }
+            // If it contains descriptive words, it's probably a header
+            return (
+              normalized.includes('url') || 
+              normalized.includes('redirect') ||
+              normalized.includes('source') ||
+              normalized.includes('target') ||
+              normalized.includes('starting') ||
+              normalized.includes('from') ||
+              normalized.includes('to')
+            );
+          });
 
-          setAllUrls(parsedUrls);
-          setInputMethod('bulk');
+          console.log('Headers detected:', headers);
+          console.log('Has meaningful headers:', hasHeaders);
 
-          // Track CSV upload
-          trackFeatureUsage('csv_upload', { url_count: parsedUrls.length });
+          if (hasHeaders) {
+            // Parse with headers
+            Papa.parse(file, {
+              header: true,
+              skipEmptyLines: true,
+              complete: results => {
+                const startingUrlColumn = headers.find(h => {
+                  if (!h) return false;
+                  const normalized = h.toLowerCase().trim();
+                  return (
+                    normalized.includes('starting') && normalized.includes('url') ||
+                    normalized === 'url' ||
+                    normalized === 'source' ||
+                    normalized === 'from' ||
+                    normalized === 'original' ||
+                    normalized.includes('old') && normalized.includes('url')
+                  );
+                });
+                
+                const targetRedirectColumn = headers.find(h => {
+                  if (!h) return false;
+                  const normalized = h.toLowerCase().trim();
+                  return (
+                    (normalized.includes('target') && normalized.includes('redirect')) ||
+                    normalized === 'redirect' ||
+                    normalized === 'destination' ||
+                    normalized === 'to' ||
+                    normalized === 'new' ||
+                    normalized.includes('new') && normalized.includes('url')
+                  );
+                });
 
-          // Notify parent that URLs were added
-          onUrlsAdded?.();
+                console.log('Detected columns:', { startingUrlColumn, targetRedirectColumn });
+
+                if (!startingUrlColumn) {
+                  alert(`No "Starting URL" column found. Available columns: ${headers.join(', ')}`);
+                  return;
+                }
+
+                const parsedUrls = (results.data as Record<string, unknown>[])
+                  .filter(row => {
+                    const url = row[startingUrlColumn];
+                    return url && String(url).trim() !== '';
+                  })
+                  .map(row => ({
+                    startingUrl: String(row[startingUrlColumn]).trim(),
+                    targetRedirect: targetRedirectColumn ? String(row[targetRedirectColumn] || '').trim() : '',
+                  }));
+
+                console.log('Parsed URLs (with headers):', parsedUrls);
+
+                if (parsedUrls.length === 0) {
+                  alert('No valid URLs found in the CSV file. Please check that the "Starting URL" column contains valid URLs.');
+                  return;
+                }
+
+                setAllUrls(parsedUrls);
+                setInputMethod('bulk');
+                trackFeatureUsage('csv_upload', { url_count: parsedUrls.length });
+                onUrlsAdded?.();
+              },
+              error: error => {
+                console.error('CSV parsing error:', error);
+                alert('Error parsing CSV file. Please check the format.');
+              },
+            });
+          } else {
+            // Parse without headers - treat as raw data
+            console.log('No headers detected, parsing as raw data');
+            Papa.parse(file, {
+              header: false,
+              skipEmptyLines: true,
+              complete: results => {
+                const parsedUrls = (results.data as string[][])
+                  .filter(row => row && row.length >= 1 && row[0] && row[0].trim() !== '')
+                  .map(row => ({
+                    startingUrl: row[0].trim(),
+                    targetRedirect: row[1] ? row[1].trim() : '',
+                  }));
+
+                console.log('Parsed URLs (no headers):', parsedUrls);
+
+                if (parsedUrls.length === 0) {
+                  alert('No valid URLs found in the CSV file. Please check that the first column contains valid URLs.');
+                  return;
+                }
+
+                setAllUrls(parsedUrls);
+                setInputMethod('bulk');
+                trackFeatureUsage('csv_upload', { url_count: parsedUrls.length });
+                onUrlsAdded?.();
+              },
+              error: error => {
+                console.error('CSV parsing error:', error);
+                alert('Error parsing CSV file. Please check the format.');
+              },
+            });
+          }
         },
         error: error => {
-          console.error('CSV parsing error:', error);
-          alert('Error parsing CSV file. Please check the format.');
+          console.error('CSV preview error:', error);
+          alert('Error reading CSV file. Please check the format.');
         },
       });
     } else if (fileExtension === 'xml') {
@@ -198,7 +308,7 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
 
           if (parsedUrls.length === 0) {
             alert(
-              'No URLs found in the XML sitemap. Please check the file format.'
+              'No URLs found in the XML sitemap. Please check the file format and ensure it contains <loc> elements.'
             );
             return;
           }
@@ -220,7 +330,36 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
       };
       reader.readAsText(file);
     } else {
-      alert('Please upload a CSV file or XML sitemap file.');
+      alert('Please upload a CSV file (.csv) or XML sitemap file (.xml).');
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    processFile(file);
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(false);
+
+    const files = event.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      processFile(file);
     }
   };
 
@@ -526,16 +665,30 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                     </button>
                   </h3>
                 </div>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-sm text-gray-600 mb-2">
-                    Upload a CSV file with "Starting URL" and "Target Redirect"
-                    columns, or an XML sitemap file
+                <div 
+                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
+                    isDragOver 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-300 hover:border-blue-400'
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  <Upload className={`w-12 h-12 mx-auto mb-4 ${
+                    isDragOver ? 'text-blue-500' : 'text-gray-400'
+                  }`} />
+                  <p className={`text-sm mb-2 ${
+                    isDragOver ? 'text-blue-700' : 'text-gray-600'
+                  }`}>
+                    {isDragOver 
+                      ? 'Drop your file here' 
+                      : 'Upload a CSV file with URLs, or an XML sitemap file'
+                    }
                   </p>
                   <div className="text-xs text-gray-500 mb-4">
                     <p>
-                      • CSV: Include "Starting URL" and optional "Target
-                      Redirect" columns
+                      • CSV: Two columns (Starting URL, Target Redirect) - headers optional
                     </p>
                     <p>
                       • XML Sitemap: Standard sitemap format with &lt;loc&gt;
@@ -550,11 +703,18 @@ export const UrlInputOverlay: React.FC<UrlInputOverlayProps> = ({
                     className="hidden"
                   />
                   <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors"
+                    onClick={() => {
+                      if (fileInputRef.current) {
+                        fileInputRef.current.click();
+                      }
+                    }}
+                    className="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                   >
                     Choose File (CSV or XML)
                   </button>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Or drag and drop your file here
+                  </p>
                 </div>
               </div>
             )}
