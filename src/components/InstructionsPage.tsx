@@ -374,15 +374,21 @@ https://oldsite.com/page3,`}
                     <li>Load the extension</li>
                   </ol>
                 </div>
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
-                  <h4 className="text-lg font-semibold text-orange-900 mb-3">Firefox Add-on:</h4>
-                  <ol className="list-decimal list-inside text-orange-800 space-y-2">
-                    <li>Download from Firefox Add-ons (coming soon)</li>
-                    <li>Or install manually from <code>/extensions</code> folder</li>
-                    <li>Use the <code>.xpi</code> file for easy installation</li>
-                    <li>Load as temporary add-on or permanent installation</li>
-                  </ol>
-                </div>
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+          <h4 className="text-lg font-semibold text-orange-900 mb-3">Firefox Add-on:</h4>
+          <div className="text-orange-800 space-y-3">
+            <p className="font-medium">Installation Options:</p>
+            <ol className="list-decimal list-inside space-y-2 ml-4">
+              <li><strong>Developer Mode:</strong> Go to <code>about:config</code>, set <code>xpinstall.signatures.required</code> to <code>false</code>, restart Firefox, then install the .xpi file</li>
+              <li><strong>Temporary Add-on:</strong> Go to <code>about:debugging</code> → "This Firefox" → "Load Temporary Add-on" → select <code>manifest.json</code></li>
+              <li><strong>Firefox Developer Edition:</strong> Download Firefox Developer Edition (has relaxed restrictions)</li>
+              <li><strong>Firefox ESR:</strong> Download Firefox Extended Support Release</li>
+            </ol>
+            <p className="text-sm text-orange-700 mt-3">
+              <strong>Note:</strong> Firefox requires extensions to be verified. Use one of the methods above to install the unverified extension.
+            </p>
+          </div>
+        </div>
               </div>
             </div>
 

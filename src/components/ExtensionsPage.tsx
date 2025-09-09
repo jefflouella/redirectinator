@@ -106,24 +106,34 @@ export const ExtensionsPage: React.FC<ExtensionsPageProps> = ({ onBack }) => {
               <p className="text-gray-600 text-sm mb-4">
                 For Firefox and other Mozilla-based browsers
               </p>
-              <div className="space-y-2">
-                <a
-                  href="/extensions/redirectinator-advanced-firefox.xpi"
-                  download
-                  className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download .xpi (Recommended)
-                </a>
-                <br />
-                <a
-                  href="/extensions/redirectinator-advanced-firefox.zip"
-                  download
-                  className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download .zip
-                </a>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <a
+                    href="/extensions/redirectinator-advanced-firefox.xpi"
+                    download
+                    className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download .xpi (Recommended)
+                  </a>
+                  <br />
+                  <a
+                    href="/extensions/redirectinator-advanced-firefox.zip"
+                    download
+                    className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download .zip
+                  </a>
+                </div>
+                <div className="text-xs text-orange-700 bg-orange-50 p-3 rounded border border-orange-200">
+                  <p className="font-medium mb-1">Installation Note:</p>
+                  <p>Firefox requires extensions to be verified. If installation fails:</p>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>Go to <code>about:config</code> → set <code>xpinstall.signatures.required</code> to <code>false</code></li>
+                    <li>Or use <code>about:debugging</code> → "Load Temporary Add-on"</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
