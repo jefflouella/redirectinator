@@ -37,13 +37,13 @@ export const InstructionsPage: React.FC<InstructionsPageProps> = ({ onBack }) =>
               is lost during website changes. Built with modern web technologies, it provides fast, accurate, 
               and comprehensive redirect analysis.
             </p>
-            <div className="bg-gray-100 rounded-lg p-6 mb-6">
-              <img 
-                src="/.playwright-mcp/dashboard-overview.png" 
-                alt="Dashboard Overview" 
-                className="w-full rounded-lg shadow-md"
-              />
-            </div>
+              <div className="bg-gray-100 rounded-lg p-6 mb-6">
+                <img 
+                  src="/dashboard-overview.png" 
+                  alt="Dashboard Overview" 
+                  className="w-full rounded-lg shadow-md"
+                />
+              </div>
           </section>
 
           <section className="mb-12">
@@ -85,7 +85,7 @@ export const InstructionsPage: React.FC<InstructionsPageProps> = ({ onBack }) =>
             
             <div className="bg-gray-100 rounded-lg p-6 mb-8">
               <img 
-                src="/.playwright-mcp/url-input-modal.png" 
+                src="/url-input-modal.png" 
                 alt="URL Input Modal" 
                 className="w-full rounded-lg shadow-md"
               />
@@ -120,7 +120,7 @@ export const InstructionsPage: React.FC<InstructionsPageProps> = ({ onBack }) =>
               
               <div className="bg-gray-100 rounded-lg p-6 mb-6">
                 <img 
-                  src="/.playwright-mcp/bulk-upload-interface.png" 
+                  src="/bulk-upload-interface.png" 
                   alt="Bulk Upload Interface" 
                   className="w-full rounded-lg shadow-md"
                 />
@@ -184,7 +184,7 @@ https://oldsite.com/page3,`}
               
               <div className="bg-gray-100 rounded-lg p-6 mb-6">
                 <img 
-                  src="/.playwright-mcp/wayback-machine-interface.png" 
+                  src="/wayback-machine-interface.png" 
                   alt="Wayback Machine Interface" 
                   className="w-full rounded-lg shadow-md"
                 />
@@ -250,7 +250,7 @@ https://oldsite.com/page3,`}
               
               <div className="bg-gray-100 rounded-lg p-6 mb-6">
                 <img 
-                  src="/.playwright-mcp/semrush-interface.png" 
+                  src="/semrush-interface.png" 
                   alt="SEMrush Interface" 
                   className="w-full rounded-lg shadow-md"
                 />
