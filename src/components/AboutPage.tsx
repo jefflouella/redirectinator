@@ -143,137 +143,141 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
 
         {/* Current Capabilities & Extension Status */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-16">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-            Current Capabilities & Extension Status
-          </h2>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Default Mode */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <div className="flex items-center mb-4">
-                <div className="bg-blue-100 w-10 h-10 rounded-lg flex items-center justify-center mr-3">
-                  <svg
-                    className="h-5 w-5 text-blue-600"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
+              Current Capabilities & Extension Status
+            </h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+              {/* Default Mode */}
+              <div className="bg-gray-50 rounded-lg p-6 h-full">
+                <div className="flex items-center mb-6">
+                  <div className="bg-blue-100 w-12 h-12 rounded-lg flex items-center justify-center mr-4">
+                    <svg
+                      className="h-6 w-6 text-blue-600"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Default Mode
+                  </h3>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Default Mode
-                </h3>
+                <ul className="text-sm text-gray-600 space-y-3">
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-3 text-lg">✓</span>
+                    HTTP redirects (301, 302, 303, 307, 308)
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-3 text-lg">✓</span>
+                    Redirect chains and loops
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-3 text-lg">✓</span>
+                    Domain changes and HTTPS upgrades
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-3 text-lg">✓</span>
+                    Affiliate link detection and blocking
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-3 text-lg">✓</span>
+                    Wayback Machine historical URL discovery
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-3 text-lg">✓</span>
+                    SEMrush campaign integration
+                  </li>
+                </ul>
               </div>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-2">✓</span>
-                  HTTP redirects (301, 302, 303, 307, 308)
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Redirect chains and loops
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Domain changes and HTTPS upgrades
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Affiliate link detection and blocking
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Wayback Machine historical URL discovery
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-2">✓</span>
-                  SEMrush campaign integration
-                </li>
-              </ul>
-            </div>
 
-            {/* Advanced Mode */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <div className="flex items-center mb-4">
-                <div className="bg-purple-100 w-10 h-10 rounded-lg flex items-center justify-center mr-3">
-                  <svg
-                    className="h-5 w-5 text-purple-600"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+              {/* Advanced Mode */}
+              <div className="bg-gray-50 rounded-lg p-6 h-full">
+                <div className="flex items-center mb-6">
+                  <div className="bg-purple-100 w-12 h-12 rounded-lg flex items-center justify-center mr-4">
+                    <svg
+                      className="h-6 w-6 text-purple-600"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Advanced Mode
+                  </h3>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Advanced Mode
-                </h3>
+                <ul className="text-sm text-gray-600 space-y-3">
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-3 text-lg">✓</span>
+                    Meta Refresh redirects (HTML meta tags)
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-3 text-lg">✓</span>
+                    JavaScript redirects (window.location changes)
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-3 text-lg">✓</span>
+                    Comprehensive redirect type analysis
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-3 text-lg">✓</span>
+                    Complete redirect chain visualization
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-3 text-lg">✓</span>
+                    Mixed redirect type detection
+                  </li>
+                </ul>
               </div>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Meta Refresh redirects (HTML meta tags)
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-2">✓</span>
-                  JavaScript redirects (window.location changes)
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Comprehensive redirect type analysis
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Complete redirect chain visualization
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Mixed redirect type detection
-                </li>
-              </ul>
             </div>
           </div>
 
           {/* Extension Status */}
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-blue-500 mt-0.5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h4 className="font-medium text-blue-900 mb-2">
-                  Browser Extension Required
-                </h4>
-                <p className="text-sm text-blue-700">
-                  Advanced mode is available through our browser extension (Chrome & Firefox). 
-                  The extension is currently in pre-release testing and requires manual installation. 
-                  <a
-                    href="/extensions"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium underline hover:text-blue-800 ml-1"
+          <div className="mt-8 max-w-4xl mx-auto">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-blue-500 mt-0.5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
                   >
-                    Download and install the extension
-                  </a>
-                  to unlock advanced redirect detection capabilities.
-                </p>
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-blue-900 mb-2">
+                    Browser Extension Required
+                  </h4>
+                  <p className="text-sm text-blue-700">
+                    Advanced mode is available through our browser extension (Chrome & Firefox). 
+                    The extension is currently in pre-release testing and requires manual installation. 
+                    <a
+                      href="/extensions"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium underline hover:text-blue-800 ml-1"
+                    >
+                      Download and install the extension
+                    </a>
+                    to unlock advanced redirect detection capabilities.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
