@@ -379,10 +379,10 @@ https://oldsite.com/page3,`}
           <div className="text-orange-800 space-y-3">
             <p className="font-medium">Installation Options:</p>
             <ol className="list-decimal list-inside space-y-2 ml-4">
-              <li><strong>Developer Mode:</strong> Go to <code>about:config</code>, set <code>xpinstall.signatures.required</code> to <code>false</code>, restart Firefox, then install the .xpi file</li>
-              <li><strong>Temporary Add-on:</strong> Go to <code>about:debugging</code> → "This Firefox" → "Load Temporary Add-on" → select <code>manifest.json</code></li>
-              <li><strong>Firefox Developer Edition:</strong> Download Firefox Developer Edition (has relaxed restrictions)</li>
-              <li><strong>Firefox ESR:</strong> Download Firefox Extended Support Release</li>
+              <li><strong>Temporary Add-on (Works in any Firefox):</strong> Go to <code>about:debugging</code> → "This Firefox" → "Load Temporary Add-on" → select <code>manifest.json</code> from extracted .zip file</li>
+              <li><strong>Firefox Developer Edition:</strong> Download Firefox Developer Edition, then set <code>xpinstall.signatures.required</code> to <code>false</code> in <code>about:config</code></li>
+              <li><strong>Firefox ESR:</strong> Download Firefox Extended Support Release, then set <code>xpinstall.signatures.required</code> to <code>false</code> in <code>about:config</code></li>
+              <li><strong>Note:</strong> Regular Firefox doesn't allow disabling signature verification - use Developer Edition or ESR</li>
             </ol>
             <p className="text-sm text-orange-700 mt-3">
               <strong>Note:</strong> Firefox requires extensions to be verified. Use one of the methods above to install the unverified extension.

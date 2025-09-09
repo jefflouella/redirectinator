@@ -128,10 +128,11 @@ export const ExtensionsPage: React.FC<ExtensionsPageProps> = ({ onBack }) => {
                 </div>
                 <div className="text-xs text-orange-700 bg-orange-50 p-3 rounded border border-orange-200">
                   <p className="font-medium mb-1">Installation Note:</p>
-                  <p>Firefox requires extensions to be verified. If installation fails:</p>
+                  <p>Firefox requires extensions to be verified. If .xpi installation fails:</p>
                   <ul className="list-disc list-inside mt-1 space-y-1">
-                    <li>Go to <code>about:config</code> → set <code>xpinstall.signatures.required</code> to <code>false</code></li>
-                    <li>Or use <code>about:debugging</code> → "Load Temporary Add-on"</li>
+                    <li><strong>Easiest:</strong> Use <code>about:debugging</code> → "Load Temporary Add-on" → select <code>manifest.json</code></li>
+                    <li><strong>Permanent:</strong> Use Firefox Developer Edition or ESR</li>
+                    <li><strong>Note:</strong> Regular Firefox doesn't allow disabling signature verification</li>
                   </ul>
                 </div>
               </div>
